@@ -1,2 +1,3 @@
 # bones-kernel
-C library including bones metatyping, memory management, reduced syntax tree, code generation, interpretation and runtime reflection and debugging.
+The bones-kernel is a C library which includes the type system and function selection. Jones is the python interface 
+to the bones-kernel.
