@@ -1,0 +1,59 @@
+# IDEs
+.idea/
+*.xcodeproj/
+
+# c / yacc intermediate files
+*.so
+*.o
+*.dSYM/
+y.tab.c
+
+# python
+__pycache__/
+
+# macos
+.DS_Store
+
+# binaries
+/py/build/
+/py/bones/
+src/play/setjmp_play
+tdd/tdd_bones/tdd_tm
+src/mc99/play/handcrafted
+src/mc99/play/hello
+src/mc99/play/_minc99
+src/mc99/yacc
+src/mc99/play/qbe/knight
+src/mc99/play/qbe/knight_O2
+src/mc99/play/qbe/knight_O1
+src/mc99/play/qbe/knight_mir0
+src/mc99/play/qbe/knight_mir1
+src/mc99/play/qbe/knight_mir2
+src/mc99/play/qbe/knight_mir3
+src/mc99/play/qbe/knight_mir.bmir0
+src/mc99/play/qbe/knight_mir.bmir1
+src/mc99/play/qbe/knight_mir.bmir2
+src/mc99/play/qbe/knight_mir.bmir3
+src/mc99/play/qbe/knight_cc
+src/mc99/play/qbe/knight2
+src/mc99/play/qbe/knight_O3
+src/mc99/play/qbe/mandel
+src/mc99/play/qbe/queen
+
+# wip links
+include/bk/om.h
+src/jones/mod_jones_wip.h
+
+src/bk/om.c
+src/jones/mod_jones_wip.c
+src/jones/pyom.c
+src/jones/pyplay.c
+tdd/tdd_bones/tdd_om.c
+
+py/tests/test_om.py
+
+src/play
+
+py/setup-wip.py
+
+docs-wip

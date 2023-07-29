@@ -1,0 +1,110 @@
+DIRECTORY STRUCTURE
+
+bk - bones kernel
+    ├── include - c api definition - i.e. types and function signatures
+    ├── lib - scripts and config for compiling a shared library / dll
+    ├── src - c source and macros
+    ├── tdd - development focussed tests (more complete test code can be found in coppertop-bones/dm)
+    └── README.md
+
+
+BUILDING
+Use relative includes to make building Python libraries easier since only one .c file per lib is needed in setup.py.
+
+
+COMPONENTS
+
+bk - bones kernel - the runtime for the bones langauge and coppertop bones
+
+    symbol manager
+    enum manager
+    type manager
+    memory manager
+        block manager
+        buckets - arena style memory manager
+    object manager - automatic memory management based on RC Immix
+    lib
+        hash index - utilities for implementing hash tables etc
+        abstract os interface
+        sorting
+    text pad - string manipulation library that uses the buckets arena style memory manager
+
+jones - python interface to the various parts of the bones kernel and additionally:
+    pyfns - partial functions and piping
+    pyfs - function selection, i.e. multi-dispatch
+
+lang - components to implement C99, bones and type-lang
+    rst - reduced syntax tree
+    cg - code generators to convert rst into code for QBE and MIR (and maybe LLVM) back end compilers
+    mc99 - a minimal C99 compiler derived from QBE's minic
+
+qu - quant utilities
+    black - european style closed form option pricing
+    brent - brent's method for root finding
+    dists - distributions
+    mt - mersenne twister
+
+
+CONCEPTS
+
+symbol - interned strings (term borrowed from kdb+)
+enum - list of symbols
+type - a label used by a type system to carry out some analysis
+binding - pointing a name to a value
+assignment - putting a value into a variable
+type schema - a skeleton / abstract description of a compound type when gaps are annotated by schema variables,
+  e.g. T1 & txt, is a type schema that encompasses all types that have an intersection with txt
+
+
+ABBRIEVIATION CHEATSHEET
+
+bk - bones kernel
+jones - python interface to the bones kernel
+hi - hash index
+os - operating system
+em - enum manager (i.e. for lists of symbols)
+k - kernel
+mm - memory manager
+om - object manager
+sm - symbol manager
+tm - type manager
+tp - text pad
+sl - symbol list
+tl - type list
+rp - relative pointer
+bmt - bones meta type
+btypeid - an integer uniquely identifying a type
+bmetatypeid - an integer uniquely identifying the sort of type (see BTYPES)
+spaceid - a btypeid (which must be an atom) uniquely identifying a space
+symlist - a length prefixed C array of symbols
+typelist - a length prefixed C array of types
+slid - an integer uniquely identifying a symlist
+tlid - an integer uniquely identifying a typelist
+seq - sequence
+schemavar - schema variable
+btsummary - a 32-bit struct containing btypeid, bmetatypeid and various flags
+
+
+NAMING CONVENTIONS
+CAPITALS - constants, macros, structures
+pub - public functions (static)
+pvt - private functions (non-static)
+tdd - private functions that may be publicly exposed (via config) for testing
+_t - suffix to indicate a type
+
+
+BTYPES
+
+atom - basic label
+inter - intersection type
+union - union type
+tuple - product type - elements are access by index and are not named
+struct - product type - elements are accessed by index and are named
+record - product type - elements are accessed by name
+sequence - exponential / arrow type - elements are accessed by index
+map - exponential / arrow type - elements are accessed by key
+fn - function - exponential type - elements are accessed by tuple, may be overloaded
+schemavar - a placeholder used in a type schema - a skeleton t
+
+recursive - a type is recursive when one of its children / grandchildren include it
+space - an atom, used to track which types that are not allowed be intersected - e.g. int & txt
