@@ -1,33 +1,26 @@
-// ---------------------------------------------------------------------------------------------------------------------
-//
-//                             Copyright (c) 2022 David Briant. All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
-// with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
-// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
-// the specific language governing permissions and limitations under the License.
-//
-// ---------------------------------------------------------------------------------------------------------------------
+#ifndef __JONES___JONES_C
+#define __JONES___JONES_C "jones/__jones.c"
+
+
+#include "../../include/all.cfg"
+#include "pipe_ops.c"
+#include "../bk/os.c"
+//#include "../../include/bk/common.h"
+//#include "PyBType.c"
+#include "fn_select.c"
+#include "mem.c"
+//#include "pipe_ops.c"
+//#include "play.c"
+//#include "sigN.c"
+#include "toy.c"
 
 
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Writing the Setup Configuration File - https://docs.python.org/3/distutils/configfile.html
-// build with > python setup.py build
-// ---------------------------------------------------------------------------------------------------------------------
-
-#include "pj_all.h"
-
-
-
-
-//typedef const ju16 *c_u16_array;
+//typedef const unsigned short *c_u16_array;
 //typedef const char *kh_cstr_t;
 
 
-// to start swith we'll just use null terminated / sized utf8 as our txt format - we shouldn't need to worry very much
+// to start swith we'll just use null terminated / sized utf8 as our char format - we shouldn't need to worry very much
 // about unicode as we can convert classes and mix types and classes with ease
 //
 // https://docs.python.org/3/c-api/unicode.html#utf-8-codecs
@@ -44,7 +37,7 @@
 // init module
 // ---------------------------------------------------------------------------------------------------------------------
 
-static PyMethodDef free_fns[] = {
+pvt PyMethodDef free_fns[] = {
     {"toAddress", (PyCFunction)                 _toAddress, METH_FASTCALL, "toAddress(object)\n\nanswer the address of object and it's refcount"},
     {"toPtr", (PyCFunction)                     _toPtr, METH_FASTCALL, "toPtr(object)\n\nanswer the address of object"},
     {"toObj",                                   _toObj, METH_VARARGS, "toObj(address)\n\nreturn the ptr as an object"},
@@ -71,7 +64,7 @@ static PyMethodDef free_fns[] = {
     {"sc_getFnId", (PyCFunction)                _SC_get_result, METH_FASTCALL, ""},
     {"sc_fillQuerySlotAndGetFnId", (PyCFunction) _SC_fill_query_slot_and_get_result, METH_FASTCALL, "sc_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
     {"sc_tArgsFromQuery", (PyCFunction)         _SC_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
-    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction) _SC_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_fillQuerySlotWithPyBTypesOf", (PyCFunction) _SC_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
 
 //    {"type_new",                                Shifter_type_new, METH_VARARGS | METH_KEYWORDS, ""},
 
@@ -81,11 +74,11 @@ static PyMethodDef free_fns[] = {
     // play
     {"execShell",                               _execShell, METH_VARARGS, "Execute a shell command."},
     {"sizeofFredJoe", (PyCFunction)             _sizeofFredJoe, METH_FASTCALL, "tuple with sizeOf Fred and Joe in it"},
-    {NULL, NULL, 0, NULL}
+    {0, 0, 0, 0}
 };
 
 
-static PyModuleDef jones_module = {
+pvt PyModuleDef jones_module = {
     PyModuleDef_HEAD_INIT,
     .m_name = "jones",
     .m_doc = "as in archibald",
@@ -96,149 +89,133 @@ static PyModuleDef jones_module = {
 
 //    {"bmodule", T_OBJECT, offsetof(Fn, bmodule), READONLY, "bones module name"},
 
-PyMODINIT_FUNC PyInit_jones(void) {
+export_py PyMODINIT_FUNC PyInit_jones(void) {
     PyObject *m;
 
 // TODO make cross platform
-//    ju32 num_pages = _1GB / db_os_page_size();
+//    unsigned int num_pages = _1GB / db_os_page_size();
 //    VA *va = init_va(num_pages);
-//    if (va == NULL) return NULL;
+//    if (va == 0) return 0;
 //    g_va = va;
 
-
     m = PyModule_Create(&jones_module);
-    if (m == NULL) return NULL;
-
-//    PyObject *tbc = Py_None;
-//    Py_XINCREF(tbc);
-//    if (PyModule_AddObject(m, "_", tbc) < 0) {
-//        Py_XDECREF(tbc);
-//        return NULL;
-//    }
-    // PyModule_AddObject() stole a reference to obj:
-    // Py_DECREF(obj) is not needed here
-
+    if (m == 0) return 0;
 
     // JonesError
-    JonesError = PyErr_NewException("jones.JonesError", NULL, NULL);
+    JonesError = PyErr_NewException("jones.JonesError", 0, 0);
     if (PyModule_AddObject(m, "error", JonesError) < 0) {
         Py_XDECREF(JonesError);
         Py_CLEAR(JonesError);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
     // JonesSyntaxError
-    JonesSyntaxError = PyErr_NewException("jones.JonesSyntaxError", NULL, NULL);
+    JonesSyntaxError = PyErr_NewException("jones.JonesSyntaxError", 0, 0);
     if (PyModule_AddObject(m, "error", JonesSyntaxError) < 0) {
         Py_XDECREF(JonesSyntaxError);
         Py_CLEAR(JonesSyntaxError);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    // add BTypeCls
-    if (PyType_Ready(&BTypeCls) < 0) return NULL;
-    if (PyModule_AddObject(m, "BType", (PyObject *) &BTypeCls) < 0) {
-        Py_DECREF(&BTypeCls);
+    // add PyBTypeCls
+    if (PyType_Ready(&PyBTypeCls) < 0) return 0;
+    if (PyModule_AddObject(m, "BType", (PyObject *) &PyBTypeCls) < 0) {
+        Py_DECREF(&PyBTypeCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
     // add function classes
-    if (PyType_Ready(&FnCls) < 0) return NULL;
+    if (PyType_Ready(&FnCls) < 0) return 0;
     if (PyModule_AddObject(m, "_fn", (PyObject *) &FnCls) < 0) {
         Py_DECREF(&FnCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&PFnCls) < 0) return NULL;
+    if (PyType_Ready(&PFnCls) < 0) return 0;
     if (PyModule_AddObject(m, "_pfn", (PyObject *) &PFnCls) < 0) {
         Py_DECREF(&PFnCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&NullaryCls) < 0) return NULL;
+    if (PyType_Ready(&NullaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_nullary", (PyObject *) &NullaryCls) < 0) {
         Py_DECREF(&NullaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&UnaryCls) < 0) return NULL;
+    if (PyType_Ready(&UnaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_unary", (PyObject *) &UnaryCls) < 0) {
         Py_DECREF(&UnaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&BinaryCls) < 0) return NULL;
+    if (PyType_Ready(&BinaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_binary", (PyObject *) &BinaryCls) < 0) {
         Py_DECREF(&BinaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&TernaryCls) < 0) return NULL;
+    if (PyType_Ready(&TernaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_ternary", (PyObject *) &TernaryCls) < 0) {
         Py_DECREF(&TernaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&PNullaryCls) < 0) return NULL;
+    if (PyType_Ready(&PNullaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_pnullary", (PyObject *) &PNullaryCls) < 0) {
         Py_DECREF(&PNullaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&PUnaryCls) < 0) return NULL;
+    if (PyType_Ready(&PUnaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_punary", (PyObject *) &PUnaryCls) < 0) {
         Py_DECREF(&PUnaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&PBinaryCls) < 0) return NULL;
+    if (PyType_Ready(&PBinaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_pbinary", (PyObject *) &PBinaryCls) < 0) {
         Py_DECREF(&PBinaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-    if (PyType_Ready(&PTernaryCls) < 0) return NULL;
+    if (PyType_Ready(&PTernaryCls) < 0) return 0;
     if (PyModule_AddObject(m, "_pternary", (PyObject *) &PTernaryCls) < 0) {
         Py_DECREF(&PTernaryCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
-//    if (PyType_Ready(&RauCls) < 0) return NULL;
+//    if (PyType_Ready(&RauCls) < 0) return 0;
 //    if (PyModule_AddObject(m, "_rau", (PyObject *) &RauCls) < 0) {
 //        Py_DECREF(&RauCls);
 //        Py_DECREF(m);
-//        return NULL;
+//        return 0;
 //    }
 
 
-    // init the partial classes
-//    if (PyType_Ready(&PNullaryCls) < 0) return NULL;
-//    if (PyType_Ready(&PUnaryCls) < 0) return NULL;
-//    if (PyType_Ready(&PBinaryCls) < 0) return NULL;
-//    if (PyType_Ready(&PTernaryCls) < 0) return NULL;
-//    if (PyType_Ready(&PRauCls) < 0) return NULL;
-
-
     // add ToyCls
-    if (PyType_Ready(&ToyCls) < 0) return NULL;
+    if (PyType_Ready(&ToyCls) < 0) return 0;
     if (PyModule_AddObject(m, "Toy", (PyObject *) &ToyCls) < 0) {
         Py_DECREF(&ToyCls);
         Py_DECREF(m);
-        return NULL;
+        return 0;
     }
 
     return m;
 }
+
+
+#endif  // __JONES___JONES_C

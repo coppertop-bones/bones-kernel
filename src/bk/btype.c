@@ -1,22 +1,27 @@
-#ifndef BK_BTYPE_C
-#define BK_BTYPE_C "bk/btype.c"
+#ifndef __BK_BTYPE_C
+#define __BK_BTYPE_C "bk/btype.c"
 
-#include "bk/buckets.h"
-#include "bk/btype.h"
 
-int newNominal(char *name, struct BTypeManager *tm) {
+#include "../../include/all.cfg"
+#include "buckets.c"
+#include "../../include/bk/btype.h"
+
+
+tdd int newNominal(char *name, struct BTypeManager *tm) {
     // get symId for name
     // check doesn't exist
     return 1;
 }
 
-int setNominal(char *name, btype bt, struct BTypeManager *tm) {
+
+tdd int setNominal(char *name, btype bt, struct BTypeManager *tm) {
     // get symId for name
     // check doesn't exist
     return 1;
 }
 
-struct BTypeManager * newBTypeManager() {
+
+pvt struct BTypeManager * newBTypeManager() {
     struct BTypeManager *tm = (struct BTypeManager *) malloc(sizeof(struct BTypeManager));
     tm->bType_byBTypeId = (struct BType*) malloc(1001 * sizeof(struct BType));
 
@@ -32,4 +37,5 @@ struct BTypeManager * newBTypeManager() {
     return tm;
 }
 
-#endif // BK_BTYPE_C
+
+#endif  // __BK_BTYPE_C

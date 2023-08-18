@@ -1,5 +1,7 @@
-#ifndef BK_BUCKETS_H
-#define BK_BUCKETS_H "bk/buckets.h"
+#ifndef __BK_BUCKETS_H
+#define __BK_BUCKETS_H "bk/buckets.h"
+
+#include "bk.h"
 
 struct Buckets {
     void *first_bucket;     // 8
@@ -26,17 +28,17 @@ typedef struct Buckets Buckets;
 typedef struct BucketsCheckpoint BucketsCheckpoint;
 typedef struct BucketHeader BucketHeader;
 
-void * initBuckets(Buckets *a, unsigned long chunkSize);
-void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align);
-void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int align);
-void checkpointBuckets(Buckets *a, BucketsCheckpoint *s);
-void resetToCheckpoint(Buckets *a, BucketsCheckpoint *s);
-void cleanBuckets(void *first_bucket);
-void freeBuckets(void *first_bucket);
-unsigned long numBuckets(BucketHeader *first_bucket);
-int inBuckets(Buckets *a, void *p);
-int isAlive(Buckets *a, void *p);
-int isDead(Buckets *a, void *p);
+tdd void * initBuckets(Buckets *a, unsigned long chunkSize);
+tdd void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align);
+tdd void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int align);
+tdd void checkpointBuckets(Buckets *a, BucketsCheckpoint *s);
+tdd void resetToCheckpoint(Buckets *a, BucketsCheckpoint *s);
+tdd void cleanBuckets(void *first_bucket);
+tdd void freeBuckets(void *first_bucket);
+tdd unsigned long numBuckets(BucketHeader *first_bucket);
+tdd int inBuckets(Buckets *a, void *p);
+tdd int isAlive(Buckets *a, void *p);
+tdd int isDead(Buckets *a, void *p);
 
 
-#endif // BK_BUCKETS_H
+#endif // __BK_BUCKETS_H

@@ -1,7 +1,7 @@
-#ifndef BK_BTYPE_H
-#define BK_BTYPE_H "bk/btype.h"
+#ifndef __BK_BTYPE_H
+#define __BK_BTYPE_H "bk/btype.h"
 
-#include "bk/buckets.h"
+#include "buckets.h"
 
 
 // OPEN: add aliases so can do - typedef can automatically add aliased
@@ -281,4 +281,4 @@ struct BTypeManager {
 
 
 
-#endif // BK_BTYPE_H
+#endif // __BK_BTYPE_H

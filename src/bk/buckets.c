@@ -1,9 +1,11 @@
-#ifndef BK_BUCKETS_C
-#define BK_BUCKETS_C "bk/buckets.c"
+#ifndef __BK_BUCKETS_C
+#define __BK_BUCKETS_C "bk/buckets.c"
 
+
+#include "../../include/all.cfg"
 #include <stdlib.h>
-#include "bk/common/pp.h"
-#include "bk/buckets.h"
+#include "../../include/bk/buckets.h"
+#include "pp.c"
 
 void nyi(char *msg, ...);
 
@@ -24,11 +26,11 @@ unsigned int PAGE_SIZE = 4096;
 
 
 
-void *_nextBucket(Buckets *a, unsigned int n, unsigned int align);
-void *_allocBucket(size_t size);
+export void *_nextBucket(Buckets *a, unsigned int n, unsigned int align);
+export void *_allocBucket(size_t size);
 
 
-void * initBuckets(Buckets *a, unsigned long chunkSize) {
+export void * initBuckets(Buckets *a, unsigned long chunkSize) {
     a->first_bucket = 0;
     a->current_bucket = 0;
     a->next = 0;
@@ -37,7 +39,7 @@ void * initBuckets(Buckets *a, unsigned long chunkSize) {
     return _nextBucket(a, 0, 1);
 }
 
-void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align) {
+export void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align) {
     void *p;
     p = a->next + (align - ((unsigned long)a->next % align));
     if ((p + n) > a->eoc) {
@@ -50,7 +52,7 @@ void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align) {
     return p;
 }
 
-void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int align) {
+export void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int align) {
     if (!p  || p != a->last_alloc) return allocInBuckets(a, n, align);
     if ((p + n) > a->eoc) {
         void *chunk = _nextBucket(a, n, align);
@@ -62,7 +64,7 @@ void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int align)
     return p;
 }
 
-void* _nextBucket(Buckets *a, unsigned int n, unsigned int align) {
+export void * _nextBucket(Buckets *a, unsigned int n, unsigned int align) {
     void *p;  BucketHeader *ch;
     if (!a->current_bucket) {
         // OPEN: allocate enough pages to hold size n aligned to align
@@ -85,35 +87,35 @@ void* _nextBucket(Buckets *a, unsigned int n, unsigned int align) {
     return p;
 }
 
-void *_allocBucket(size_t size) {
+export void * _allocBucket(size_t size) {
     void *p;  BucketHeader *ch;
     p = malloc(size);                              // OPEN: cache, page and set alignment options
     if (!p) return 0;
     ch = (BucketHeader *)p;
-    ch->next_chunk = NULL;
+    ch->next_chunk = 0;
     ch->eoc = p + size - 1;
     return p;
 }
 
-void checkpointBuckets(Buckets *a, BucketsCheckpoint *s) {
+export void checkpointBuckets(Buckets *a, BucketsCheckpoint *s) {
     s->current_bucket = a->current_bucket;
     s->next = a->next;
     s->eoc = a->eoc;
     s->last_alloc = a->last_alloc;
 }
 
-void resetToCheckpoint(Buckets *a, BucketsCheckpoint *s) {
+export void resetToCheckpoint(Buckets *a, BucketsCheckpoint *s) {
     a->current_bucket = s->current_bucket;
     a->next = s->next;
     a->eoc = s->eoc;
     a->last_alloc = s->last_alloc;
 }
 
-void cleanBuckets(void *first_bucket) {
+export void cleanBuckets(void *first_bucket) {
     nyi("cleanBuckets");
 }
 
-void freeBuckets(void *first_bucket) {
+export void freeBuckets(void *first_bucket) {
     void *current, *next;
     current = first_bucket;
     while (current) {
@@ -123,7 +125,7 @@ void freeBuckets(void *first_bucket) {
     }
 }
 
-unsigned long numBuckets(BucketHeader *first_bucket) {
+export unsigned long numBuckets(BucketHeader *first_bucket) {
     if (!first_bucket) return 0;
     unsigned long n = 0;
     do {
@@ -134,22 +136,23 @@ unsigned long numBuckets(BucketHeader *first_bucket) {
     return n;
 }
 
-int inBuckets(Buckets *a, void *p) {
+export int inBuckets(Buckets *a, void *p) {
     // answers true if p is in any bucket (dead or alive)
     nyi("inBuckets");
     return 0;
 }
 
-int isAlive(Buckets *a, void *p) {
+export int isAlive(Buckets *a, void *p) {
     // answers true if p is alive in an owned bucket
     nyi("isAlive");
     return 0;
 }
 
-int isDead(Buckets *a, void *p) {
+export int isDead(Buckets *a, void *p) {
     // answers true if p is dead in am owned bucket
     nyi("isDead");
     return 0;
 }
 
-#endif // BK_BUCKETS_C
+
+#endif  // __BK_BUCKETS_C
