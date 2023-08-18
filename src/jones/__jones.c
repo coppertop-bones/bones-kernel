@@ -64,7 +64,7 @@ pvt PyMethodDef free_fns[] = {
     {"sc_getFnId", (PyCFunction)                _SC_get_result, METH_FASTCALL, ""},
     {"sc_fillQuerySlotAndGetFnId", (PyCFunction) _SC_fill_query_slot_and_get_result, METH_FASTCALL, "sc_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
     {"sc_tArgsFromQuery", (PyCFunction)         _SC_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
-    {"sc_fillQuerySlotWithPyBTypesOf", (PyCFunction) _SC_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction) _SC_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
 
 //    {"type_new",                                Shifter_type_new, METH_VARARGS | METH_KEYWORDS, ""},
 
@@ -87,7 +87,7 @@ pvt PyModuleDef jones_module = {
 };
 
 
-//    {"bmodule", T_OBJECT, offsetof(Fn, bmodule), READONLY, "bones module name"},
+//    {"bmodule", T_OBJECT, offsetof(struct Fn, bmodule), READONLY, "bones module name"},
 
 export_py PyMODINIT_FUNC PyInit_jones(void) {
     PyObject *m;

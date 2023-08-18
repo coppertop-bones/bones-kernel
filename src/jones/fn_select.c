@@ -9,7 +9,7 @@
 
 
 // from pj_pipe_op.h
-static PyObject * Partial_o_tbc(Partial *, void *);
+static PyObject * Partial_o_tbc(struct Partial *, void *);
 
 static PyTypeObject NullaryCls;
 static PyTypeObject PNullaryCls;
@@ -157,7 +157,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
         // otherwise, is it a jones Fn? if so get the type of the whole family
         else if (argCls == &NullaryCls || argCls == &UnaryCls || argCls == &BinaryCls || argCls == &TernaryCls) {
             // call the fn.d.get_t(arg)
-            Fn *f = (Fn *) arg;
+            struct Fn *f = (struct Fn *) arg;
             PyObject *d = f->d;
             if (!PyCallable_Check(d)) return PyErr_Format(PyExc_TypeError, "args[%l].d is not a callable", 0); // this should be defended in the Fn setter of d
             maybe = PyObject_GetAttrString(d, "_t");
@@ -171,7 +171,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
         // otherwise, is it a jones Partial Fn? if so get the partial type of the overload, i.e. args[%l].d._tPartial(num_args, o_tbc)
         else if (argCls == &PNullaryCls || argCls == &PUnaryCls || argCls == &PBinaryCls || argCls == &PTernaryCls ) {
             // call the fn.d.get_t(arg)
-            Partial *p = (Partial *) arg;
+            struct Partial *p = (struct Partial *) arg;
             PyObject *d = p->Fn.d;
             if (!PyCallable_Check(d)) return PyErr_Format(PyExc_TypeError, "args[%l].d is not a callable", 0); // this should be defended in the Fn setter of d
             PyObject *_tPartial = PyObject_GetAttrString(d, "_tPartial");

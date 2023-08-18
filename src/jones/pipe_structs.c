@@ -8,26 +8,26 @@
 #include "../bk/fn_select.c"
 
 
-typedef struct {
+struct Base {
     PyObject_VAR_HEAD
-} Base;
+};
 
-typedef struct {
-    Base Base;
+struct Fn {
+    struct Base Base;
     PyObject *name;
     PyObject *bmod;
     PyObject *d;            // dispatcher
     PyObject *TBCSentinel;
-} Fn;
+};
 
-typedef struct {
-    Fn Fn;
+struct Partial {
+    struct Fn Fn;
     unsigned char num_tbc;            // the number of arguments missing in the args array
                             // pad48
     PyObject *pipe1;        // 1st piped arg for binaries and ternaries
     PyObject *pipe2;        // 2nd piped arg for ternaries
     PyObject *args[];
-} Partial;
+};
 
 
 static PyObject *JonesError;

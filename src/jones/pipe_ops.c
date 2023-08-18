@@ -74,7 +74,7 @@ pvt PyTypeObject PTernaryCls;
 pvt PyTypeObject PRauCls;
 
 pvt int Partial_initFromFn(
-    Partial *self, PyObject *name, PyObject *bmod, PyObject *d, PyObject *TBCSentinel, unsigned char num_tbc,
+    struct Partial *self, PyObject *name, PyObject *bmod, PyObject *d, PyObject *TBCSentinel, unsigned char num_tbc,
     PyObject *pipe1, PyObject *args[]
 );
 
@@ -100,11 +100,11 @@ pvt PyObject * _pternary_nb_rshift(PyObject *, PyObject *);
 pvt PyObject * _nullary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
     if (tLhs == &NullaryCls) {
-        Fn *fn = (Fn*) lhs;
+        struct Fn *fn = (struct Fn*) lhs;
         return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else if (tRhs == &NullaryCls) {
-        Fn *fn = (Fn*) rhs;
+        struct Fn *fn = (struct Fn*) rhs;
         return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else
@@ -115,11 +115,11 @@ pvt PyObject * _nullary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 pvt PyObject * _pnullary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
     if (tLhs == &PNullaryCls) {
-        Fn *fn = (Fn*) lhs;
+        struct Fn *fn = (struct Fn*) lhs;
         return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else if (tRhs == &PNullaryCls) {
-        Fn *fn = (Fn*) rhs;
+        struct Fn *fn = (struct Fn*) rhs;
         return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else
@@ -150,13 +150,13 @@ pvt PyObject * _unary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else if (tRhs == &PTernaryCls) return _pternary_nb_rshift(lhs, rhs);
         else {
             // 1. _unary >> argN - syntax error
-            Fn *fn = (Fn*) lhs;
+            struct Fn *fn = (struct Fn*) lhs;
             return PyErr_Format(PyExc_SyntaxError, "First arg to unary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         }
     }
     if (tRhs == &UnaryCls) {
         // 3. arg1 >> _unary - dispatch, arg1 cannot be a class from this module as it would already have been piped
-        Fn *fn = (Fn*) rhs;
+        struct Fn *fn = (struct Fn*) rhs;
         return PyObject_CallOneArg(fn->d, lhs);
     }
     else
@@ -176,14 +176,14 @@ pvt PyObject * _punary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else if (tRhs == &PTernaryCls) return _pternary_nb_rshift(lhs, rhs);
         else {
             // 2. _punary >> argN - syntax error
-            Partial *partial = (Partial *) lhs;
+            struct Partial *partial = (struct Partial *) lhs;
             return PyErr_Format(PyExc_SyntaxError, "First arg to unary style partial fn %s.%s must be piped from the left", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         }
     }
     if (tRhs == &PUnaryCls) {
         // 4. pipe1 >> _punary - dispatch, arg1 cannot be a class from this module as it would already have been piped
         // PyObject_CallObject
-        Partial * partial = (Partial *) rhs;
+        struct Partial * partial = (struct Partial *) rhs;
         if (partial->num_tbc > 1)
             return PyErr_Format(PyExc_SyntaxError, "Trying to pipe an argument into unary style partial fn %s.%s that needs a total of %u more arguments", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
         // this should not be called re-entrantly but we can't stop it - so detect and throw as it would be hard to debug
@@ -227,15 +227,15 @@ pvt PyObject * _binary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else if (tRhs == &PTernaryCls) return _pternary_nb_rshift(lhs, rhs);
         else {
             // 1. _binary >> argN
-            Fn *fn = (Fn *) lhs;
+            struct Fn *fn = (struct Fn *) lhs;
             return PyErr_Format(PyExc_SyntaxError, "First arg to binary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         }
     }
     if (tRhs == &BinaryCls) {
         // 3. arg1 >> _binary - create a partial that can pipe one more argument
-        Partial *partial = (Partial *) ((&PBinaryCls)->tp_alloc(&PBinaryCls, 0));       // 0 as don't need to catch any args
+        struct Partial *partial = (struct Partial *) ((&PBinaryCls)->tp_alloc(&PBinaryCls, 0));       // 0 as don't need to catch any args
         if (partial == 0) Py_RETURN_NOTIMPLEMENTED;
-        Fn *fn = (Fn *) rhs;
+        struct Fn *fn = (struct Fn *) rhs;
         Partial_initFromFn(
             partial,
             (PyObject *) fn->name,
@@ -258,7 +258,7 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
     if (tLhs == &PBinaryCls) {
         // 2. _pbinary >> arg2 - dispatch (unless the is the first argument and the rhs is a function)
-        Partial *partial = (Partial *) lhs;
+        struct Partial *partial = (struct Partial *) lhs;
         if (partial->pipe1 == 0 && (tRhs == &UnaryCls || tRhs == &BinaryCls || tRhs == &TernaryCls || tRhs == &PUnaryCls || tRhs == &PBinaryCls || tRhs == &PTernaryCls)) Py_RETURN_NOTIMPLEMENTED;
         if (partial->pipe1 == 0) return PyErr_Format(PyExc_SyntaxError, "Trying to pipe the 2nd argument into binary style partial fn %s.%s but the first argument hasn't been piped yet", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         if (Py_SIZE(partial) == 0)
@@ -288,7 +288,7 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     }
     else if (tRhs == &PBinaryCls) {
         // 4. arg1 >> _pbinary - check this is the first arg, then create a partial that can pipe one more argument
-        Partial *partial = (Partial *) rhs;
+        struct Partial *partial = (struct Partial *) rhs;
         if (partial->num_tbc != 2)
             return PyErr_Format(PyExc_SyntaxError, "2 arguments will be piped into binary style partial fn %s.%s - but %u required", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
         if (partial->pipe1 != 0)
@@ -298,7 +298,7 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         // x = 1 >> fred >> (2 >> fred >> 3)
         // is valid - so the first copy (from partial to piping mode) cannot be finessed
         Py_ssize_t num_args = Py_SIZE(partial);
-        Partial *newPartial = (Partial *) ((&PBinaryCls)->tp_alloc(&PBinaryCls, num_args));
+        struct Partial *newPartial = (struct Partial *) ((&PBinaryCls)->tp_alloc(&PBinaryCls, num_args));
         if (newPartial == 0) return 0;            // OPEN raise an error
         Partial_initFromFn(
             newPartial,
@@ -338,21 +338,21 @@ pvt PyObject * _ternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else if (tRhs == &PTernaryCls) return _pternary_nb_rshift(lhs, rhs);
         else {
             // 1. _binary >> argN
-            Fn *fn = (Fn *) lhs;
+            struct Fn *fn = (struct Fn *) lhs;
             return PyErr_Format(PyExc_SyntaxError, "First arg to binary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         }
     }
 
     if (tLhs == &TernaryCls) {
         // 1. _ternary >> argN
-        Fn *fn = (Fn *) lhs;
+        struct Fn *fn = (struct Fn *) lhs;
         return PyErr_Format(PyExc_SyntaxError, "First arg to ternary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else if (tRhs == &TernaryCls) {
         // 3. arg1 >> _ternary - create a partial that can pipe two more arguments
-        Partial *partial = (Partial *) ((&PTernaryCls)->tp_alloc(&PTernaryCls, 0));     // 0 as don't need to catch any args
+        struct Partial *partial = (struct Partial *) ((&PTernaryCls)->tp_alloc(&PTernaryCls, 0));     // 0 as don't need to catch any args
         if (partial == 0) return 0;
-        Fn *fn = (Fn *) rhs;
+        struct Fn *fn = (struct Fn *) rhs;
         Partial_initFromFn(
             partial,
             (PyObject *) fn->name,
@@ -375,7 +375,7 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
     if (tLhs == &PTernaryCls) {
         // 2. _pternary >> arg2Or3 - if 2 is missing then keep it else it must be 3 so dispatch
-        Partial *partial = (Partial *) lhs;
+        struct Partial *partial = (struct Partial *) lhs;
         if (partial->pipe1 == 0) return PyErr_Format(PyExc_SyntaxError, "Trying to pipe the 2nd argument into ternary style partial fn %s.%s but the first argument hasn't been piped yet", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         if (partial->pipe1 != 0 && partial->pipe2 == 0) {
             // keeping argument 2
@@ -417,7 +417,7 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     }
     else if (tRhs == &PTernaryCls) {
         // 4. arg1 >> _pternary - check this is the first arg, then create a partial that can pipe one more argument
-        Partial *partial = (Partial *) rhs;
+        struct Partial *partial = (struct Partial *) rhs;
         if (partial->num_tbc != 3)
             return PyErr_Format(PyExc_SyntaxError, "3 arguments will be piped into ternary style partial fn %s.%s - but %u required", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
         if (partial->pipe1 != 0)
@@ -427,7 +427,7 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         // x = 1 >> fred >> (2 >> fred >> 3)
         // is valid - so the first copy (from partial to piping mode) cannot be finessed
         Py_ssize_t num_args = Py_SIZE(partial);
-        Partial *newPartial = (Partial *) ((&PTernaryCls)->tp_alloc(&PTernaryCls, num_args));
+        struct Partial *newPartial = (struct Partial *) ((&PTernaryCls)->tp_alloc(&PTernaryCls, num_args));
         if (newPartial == 0) return 0;            // OPEN raise an error
         Partial_initFromFn(
             newPartial,
@@ -462,7 +462,7 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
 // Fn(...)
 
-pvt PyObject * _Fn__call__(Fn *fn, PyObject *args, PyObject *kwds) {
+pvt PyObject * _Fn__call__(struct Fn *fn, PyObject *args, PyObject *kwds) {
     int num_tbc = 0;  Py_ssize_t num_args = PyTuple_GET_SIZE(args);
     if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "%s.%s does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     if (num_args > MAX_ARGS) return PyErr_Format(PyExc_SyntaxError, "Maximum number of args for fn %s.%s is %s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), MAX_ARGS);
@@ -477,12 +477,12 @@ pvt PyObject * _Fn__call__(Fn *fn, PyObject *args, PyObject *kwds) {
         else if (t == &RauCls && num_args >= 1) return PyObject_CallObject(fn->d, args);
         else return PyErr_Format(PyExc_SyntaxError, "Not enough args for fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     else {
-        Partial *partial;
-        if (t == &NullaryCls && num_args >= 0) partial = (Partial *) ((&PNullaryCls)->tp_alloc(&PNullaryCls, num_args));
-        else if (t == &UnaryCls && num_args >= 1) partial = (Partial *) ((&PUnaryCls)->tp_alloc(&PUnaryCls, num_args));
-        else if (t == &BinaryCls && num_args >= 2) partial = (Partial *) ((&PBinaryCls)->tp_alloc(&PBinaryCls, num_args));
-        else if (t == &TernaryCls && num_args >= 3) partial = (Partial *) ((&PTernaryCls)->tp_alloc(&PTernaryCls, num_args));
-        else if (t == &RauCls && num_args >= 1) partial = (Partial *) ((&PRauCls)->tp_alloc(&PRauCls, num_args));
+        struct Partial *partial;
+        if (t == &NullaryCls && num_args >= 0) partial = (struct Partial *) ((&PNullaryCls)->tp_alloc(&PNullaryCls, num_args));
+        else if (t == &UnaryCls && num_args >= 1) partial = (struct Partial *) ((&PUnaryCls)->tp_alloc(&PUnaryCls, num_args));
+        else if (t == &BinaryCls && num_args >= 2) partial = (struct Partial *) ((&PBinaryCls)->tp_alloc(&PBinaryCls, num_args));
+        else if (t == &TernaryCls && num_args >= 3) partial = (struct Partial *) ((&PTernaryCls)->tp_alloc(&PTernaryCls, num_args));
+        else if (t == &RauCls && num_args >= 1) partial = (struct Partial *) ((&PRauCls)->tp_alloc(&PRauCls, num_args));
         else return PyErr_Format(PyExc_SyntaxError, "Not enough args for fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         if (partial == 0) return 0;
         Partial_initFromFn(
@@ -510,7 +510,7 @@ pvt PyObject * _Fn__call__(Fn *fn, PyObject *args, PyObject *kwds) {
 
 // Partial(...)
 
-pvt PyObject * _Partial__call__(Partial *partial, PyObject *args, PyObject *kwds) {
+pvt PyObject * _Partial__call__(struct Partial *partial, PyObject *args, PyObject *kwds) {
     int new_missing = 0;  Py_ssize_t num_args = PyTuple_GET_SIZE(args);  PyObject * TBC = partial->Fn.TBCSentinel;
     if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "%s.%s does not take keyword arguments", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
     if (num_args != partial->num_tbc) return PyErr_Format(PyExc_SyntaxError, "Wrong number of args to partial fn %s.%s - %l expected, %l given", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc, num_args);
@@ -537,7 +537,7 @@ pvt PyObject * _Partial__call__(Partial *partial, PyObject *args, PyObject *kwds
     }
     else {
         // create another partial
-        Partial *new_partial = (Partial *) Py_TYPE(partial)->tp_alloc(Py_TYPE(partial), full_size);
+        struct Partial *new_partial = (struct Partial *) Py_TYPE(partial)->tp_alloc(Py_TYPE(partial), full_size);
         Partial_initFromFn(
             new_partial, partial->Fn.name, partial->Fn.bmod, partial->Fn.d, TBC,
             new_missing, 0, partial->args
@@ -562,7 +562,7 @@ pvt PyObject * _Partial__call__(Partial *partial, PyObject *args, PyObject *kwds
 
 // Partial misc
 
-pvt PyObject * Partial_o_tbc(Partial *partial, void* closure) {
+pvt PyObject * Partial_o_tbc(struct Partial *partial, void* closure) {
     Py_ssize_t full_size = Py_SIZE(partial);  PyObject **args = partial->args;  PyObject * TBC = partial->Fn.TBCSentinel;
     if (partial->pipe1 != 0 || partial->pipe2 != 0) return 0;
     int num_tbc = 0;
@@ -579,7 +579,7 @@ pvt PyObject * Partial_o_tbc(Partial *partial, void* closure) {
     return answer;
 }
 
-pvt PyObject * Partial_args(Partial *partial, void* closure) {
+pvt PyObject * Partial_args(struct Partial *partial, void* closure) {
     Py_ssize_t full_size = Py_SIZE(partial);  PyObject **args = partial->args;  PyObject * TBC = partial->Fn.TBCSentinel;
     if (partial->pipe1 != 0 || partial->pipe2 != 0) return 0;
     PyObject *answer = PyTuple_New(full_size);
@@ -618,8 +618,8 @@ pvt PyObject * Partial_args(Partial *partial, void* closure) {
 // np.array(5) >> fn
 // fred.__array_ufunc__   args: (<ufunc 'right_shift'>, '__call__', array(5), fred)
 
-pvt PyObject * _Common__array_ufunc__(Fn *fn, PyObject *args, PyObject *kwds) {
-//pvt PyObject * _Common__array_ufunc__(Fn *fn, PyObject *const *args, Py_ssize_t num_args) {
+pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *args, PyObject *kwds) {
+//pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *const *args, Py_ssize_t num_args) {
     Py_ssize_t num_args = PyTuple_GET_SIZE(args);
     if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "fn %s.%s.__array_ufunc__ does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     if (num_args != 4) return PyErr_Format(PyExc_SyntaxError, "Wrong number of args to fn %s.%s.__array_ufunc__ - %l expected, %l given", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), 4, num_args);
@@ -642,7 +642,7 @@ pvt PyObject * _Common__array_ufunc__(Fn *fn, PyObject *args, PyObject *kwds) {
 
 // Fn lifecycle
 
-pvt void Fn_dealloc(Fn *self) {
+pvt void Fn_dealloc(struct Fn *self) {
     Py_DECREF(self->name);
     Py_DECREF(self->bmod);
     Py_DECREF(self->d);
@@ -652,12 +652,12 @@ pvt void Fn_dealloc(Fn *self) {
 
 pvt PyObject * Fn_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     if (PyTuple_GET_SIZE(args) != 4) return PyErr_Format(ProgrammerError, "Must be created as Fn(name, bmod, d, TBCSentinel)");
-    Fn *instance = (Fn *) type->tp_alloc(type, 0);
+    struct Fn *instance = (struct Fn *) type->tp_alloc(type, 0);
     if (instance == 0) return 0;
     return (PyObject *) instance;
 }
 
-pvt int Fn_init(Fn *self, PyObject *args, PyObject *kwds) {
+pvt int Fn_init(struct Fn *self, PyObject *args, PyObject *kwds) {
     if (!PyArg_ParseTuple(args, "UUOO:", &self->name, &self->bmod, &self->d, &self->TBCSentinel)) return -1;
     Py_INCREF(self->name);
     Py_INCREF(self->bmod);
@@ -674,7 +674,7 @@ pvt int Fn_init(Fn *self, PyObject *args, PyObject *kwds) {
 
 // Partial lifecycle
 
-pvt void Partial_dealloc(Partial *self) {
+pvt void Partial_dealloc(struct Partial *self) {
     Py_DECREF(self->Fn.name);
     Py_DECREF(self->Fn.bmod);
     Py_DECREF(self->Fn.d);
@@ -692,7 +692,7 @@ pvt void Partial_dealloc(Partial *self) {
 }
 
 pvt int Partial_initFromFn(
-        Partial *self, PyObject *name, PyObject *bmod, PyObject *d, PyObject *TBCSentinel, unsigned char num_tbc,
+        struct Partial *self, PyObject *name, PyObject *bmod, PyObject *d, PyObject *TBCSentinel, unsigned char num_tbc,
         PyObject *pipe1, PyObject *args[]) {
 
     self->Fn.name = name;
@@ -723,16 +723,16 @@ pvt int Partial_initFromFn(
 
 // members, get/setter, methods
 
-pvt PyObject * Fn_get_doc(Fn *self, void *closure) {
+pvt PyObject * Fn_get_doc(struct Fn *self, void *closure) {
     return PyUnicode_FromString("Fn...");
 }
 
-pvt PyObject * Fn_get_d(Fn *self, void *closure) {
+pvt PyObject * Fn_get_d(struct Fn *self, void *closure) {
     Py_INCREF(self->d);
     return self->d;
 }
 
-pvt int Fn_set_d(Fn *self, PyObject *d, void* closure) {
+pvt int Fn_set_d(struct Fn *self, PyObject *d, void* closure) {
     if (!PyCallable_Check(d)) {
         PyErr_Format(PyExc_TypeError, "d is not a callable");
         return -1;
@@ -749,8 +749,8 @@ pvt PyGetSetDef Fn_getsetters[] = {
 };
 
 pvt PyMemberDef Fn_members[] = {
-    {"name", T_OBJECT, offsetof(Fn, name), READONLY, "function name"},
-    {"bmod", T_OBJECT, offsetof(Fn, bmod), READONLY, "bones module name"},
+    {"name", T_OBJECT, offsetof(struct Fn, name), READONLY, "function name"},
+    {"bmod", T_OBJECT, offsetof(struct Fn, bmod), READONLY, "bones module name"},
     {0}
 };
 
@@ -766,13 +766,13 @@ pvt PyGetSetDef Partial_getsetters[] = {
 };
 
 pvt PyMemberDef Partial_members[] = {
-    {"name", T_OBJECT, offsetof(Partial, Fn.name), READONLY, "function name"},
-    {"bmod", T_OBJECT, offsetof(Partial, Fn.bmod), READONLY, "bones module name"},
-    {"d", T_OBJECT, offsetof(Partial, Fn.d), READONLY, "dispatcher"},
-    {"num_tbc", T_UBYTE, offsetof(Partial, num_tbc), READONLY, "number of argument to be confirmed"},
+    {"name", T_OBJECT, offsetof(struct Partial, Fn.name), READONLY, "function name"},
+    {"bmod", T_OBJECT, offsetof(struct Partial, Fn.bmod), READONLY, "bones module name"},
+    {"d", T_OBJECT, offsetof(struct Partial, Fn.d), READONLY, "dispatcher"},
+    {"num_tbc", T_UBYTE, offsetof(struct Partial, num_tbc), READONLY, "number of argument to be confirmed"},
     {"num_args", T_UBYTE, offsetof(PyVarObject, ob_size), READONLY, "total number of arguments"},
-    {"pipe1", T_OBJECT, offsetof(Partial, pipe1), READONLY, "first piped arg"},
-    {"pipe2", T_OBJECT, offsetof(Partial, pipe2), READONLY, "second piped arg"},
+    {"pipe1", T_OBJECT, offsetof(struct Partial, pipe1), READONLY, "first piped arg"},
+    {"pipe2", T_OBJECT, offsetof(struct Partial, pipe2), READONLY, "second piped arg"},
     {0}
 };
 
@@ -803,7 +803,7 @@ pvt PyNumberMethods _pternary_tp_as_number = {.nb_rshift = (binaryfunc) _pternar
 pvt PyTypeObject FnCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_name = "jones._fn",
-    .tp_basicsize = sizeof(Base),
+    .tp_basicsize = sizeof(struct Base),
     .tp_itemsize = 0,
     .tp_doc = PyDoc_STR("_fn"),
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
@@ -813,7 +813,7 @@ pvt PyTypeObject FnCls = {
 pvt PyTypeObject PFnCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_name = "jones._pfn",
-    .tp_basicsize = sizeof(Base),
+    .tp_basicsize = sizeof(struct Base),
     .tp_itemsize = 0,
     .tp_doc = PyDoc_STR("_pfn"),
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
@@ -824,7 +824,7 @@ pvt PyTypeObject NullaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &FnCls,
     .tp_name = "jones._nullary",
-    .tp_basicsize = sizeof(Fn),
+    .tp_basicsize = sizeof(struct Fn),
     .tp_itemsize = 0,
     .tp_doc = PyDoc_STR("_nullary() - todo delegate to d"),
     .tp_flags = Py_TPFLAGS_DEFAULT,
@@ -842,7 +842,7 @@ pvt PyTypeObject PNullaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &PFnCls,
     .tp_name = "jones._pnullary",
-    .tp_basicsize = sizeof(Partial),
+    .tp_basicsize = sizeof(struct Partial),
     .tp_itemsize = sizeof(PyObject *),
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_dealloc = (destructor) Partial_dealloc,
@@ -858,7 +858,7 @@ pvt PyTypeObject UnaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &FnCls,
     .tp_name = "jones._unary",
-    .tp_basicsize = sizeof(Fn),
+    .tp_basicsize = sizeof(struct Fn),
     .tp_itemsize = 0,
     .tp_doc = PyDoc_STR("_unary() - todo delegate to d"),
     .tp_flags = Py_TPFLAGS_DEFAULT,
@@ -876,7 +876,7 @@ pvt PyTypeObject PUnaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &PFnCls,
     .tp_name = "jones._punary",
-    .tp_basicsize = sizeof(Partial),
+    .tp_basicsize = sizeof(struct Partial),
     .tp_itemsize = sizeof(PyObject *),
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_dealloc = (destructor) Partial_dealloc,
@@ -892,7 +892,7 @@ pvt PyTypeObject BinaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &FnCls,
     .tp_name = "jones._binary",
-    .tp_basicsize = sizeof(Fn),
+    .tp_basicsize = sizeof(struct Fn),
     .tp_itemsize = 0,
     .tp_doc = PyDoc_STR("_binary() - todo delegate to d"),
     .tp_flags = Py_TPFLAGS_DEFAULT,
@@ -910,7 +910,7 @@ pvt PyTypeObject PBinaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &PFnCls,
     .tp_name = "jones._pbinary",
-    .tp_basicsize = sizeof(Partial),
+    .tp_basicsize = sizeof(struct Partial),
     .tp_itemsize = sizeof(PyObject *),
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_dealloc = (destructor) Partial_dealloc,
@@ -926,7 +926,7 @@ pvt PyTypeObject TernaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &FnCls,
     .tp_name = "jones._ternary",
-    .tp_basicsize = sizeof(Fn),
+    .tp_basicsize = sizeof(struct Fn),
     .tp_itemsize = 0,
     .tp_doc = PyDoc_STR("_ternary() - todo delegate to d"),
     .tp_flags = Py_TPFLAGS_DEFAULT,
@@ -944,7 +944,7 @@ pvt PyTypeObject PTernaryCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_base = &PFnCls,
     .tp_name = "jones._pternary",
-    .tp_basicsize = sizeof(Partial),
+    .tp_basicsize = sizeof(struct Partial),
     .tp_itemsize = sizeof(PyObject *),
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_dealloc = (destructor) Partial_dealloc,
@@ -960,7 +960,7 @@ pvt PyTypeObject PTernaryCls = {
 //    PyVarObject_HEAD_INIT(0, 0)
 //    .tp_base = &FnCls,
 //    .tp_name = "jones._rau",
-//    .tp_basicsize = sizeof(Fn),
+//    .tp_basicsize = sizeof(struct Fn),
 //    .tp_itemsize = 0,
 //    .tp_doc = PyDoc_STR("_rau() - todo delegate to d"),
 //    .tp_flags = Py_TPFLAGS_DEFAULT,
@@ -978,7 +978,7 @@ pvt PyTypeObject PTernaryCls = {
 //    PyVarObject_HEAD_INIT(0, 0)
 //    .tp_base = &FnCls,
 //    .tp_name = "jones._prau",
-//    .tp_basicsize = sizeof(Partial),
+//    .tp_basicsize = sizeof(struct Partial),
 //    .tp_itemsize = sizeof(PyObject *),
 //    .tp_flags = Py_TPFLAGS_DEFAULT,
 //    .tp_dealloc = (destructor) Partial_dealloc,
