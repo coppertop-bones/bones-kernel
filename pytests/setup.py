@@ -1,13 +1,14 @@
-from setuptools import setup, find_packages
+from os import path
+from setuptools import setup
 from distutils.core import Extension
 
-# read the contents of README.md file
-from os import path
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, '..', 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+parent_folder = path.abspath(path.join(path.dirname(__file__), '..'))
 
-version = '2023.07.29.1'
+# read the contents of README.md file
+with open(path.join(parent_folder, 'README.md'), encoding='utf-8') as f:
+  long_description = f.read()
+
+version = '2023.08.18.1'
 
 # print(find_packages())
 # https://stackoverflow.com/questions/27281785/python-setup-py-how-to-set-the-path-for-the-generated-so
@@ -25,12 +26,7 @@ setup(
     'bones.lang',
     'coppertop',
   ],
-  ext_modules=[Extension(
-    "bones.jones",
-    sources=[
-      "./src/jones/__jones.c",
-    ]
-  )],
+  ext_modules=[Extension("bones.jones", [path.join(parent_folder, "src/jones/__jones.c")])],
   # package_dir = {'': 'core'},
   # namespace_packages=['coppertop_'],
   version=version,
@@ -54,7 +50,6 @@ setup(
     'Intended Audience :: Science/Research',
     'Topic :: Utilities',
     'License :: OSI Approved :: BSD License',
-    'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',

@@ -10,7 +10,7 @@
 #include <windows.h>
 #include "../../include/bk/bk.h"
 
-export int os_page_size() {
+pub int os_page_size() {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     return si.dwPageSize;
@@ -30,7 +30,7 @@ export int os_page_size() {
 #endif
 
 
-export int os_cache_line_size() {
+pub int os_cache_line_size() {
     size_t lineSize = 0;
     DWORD bufferSize = 0;
     DWORD i = 0;

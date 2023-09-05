@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "../../include/bk/bk.h"
 
-export size_t os_cache_line_size() {
+pub size_t os_cache_line_size() {
     FILE * p = 0;
     p = fopen("/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size", "r");
     unsigned int lineSize = 0;

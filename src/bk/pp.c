@@ -8,13 +8,34 @@
 #include "../../include/bk/bk.h"
 
 
-pvt void die_(char *preamble, char *msg, va_list args) {
-//    fprintf(stderr, "\nbefore end of line %d: ", isrcline);
-    fprintf(stderr, "%s", preamble);
-    vfprintf(stderr, msg, args);
-//    fprintf(stderr, "\nin %s\n\n", srcFfn);
-    // OPEN: use setjmp and longjmp with deallocation of linked list of arenas
-    exit(1);
+// logging
+enum {
+    lex = 1,
+    parse = 2,
+    emit = 4,
+    info = 8,
+    error = 16,
+    pt = 32,        // parse tree
+};
+int g_logging_level = info;     // OPEN: add filter as well as level?
+
+
+// define die_ in client
+pvt void die_(char *preamble, char *msg, va_list args);
+//{
+//    fprintf(stderr, "%s", preamble);
+//    vfprintf(stderr, msg, args);
+//    exit(1);
+//}
+
+pvt void PP(int level, char *msg, ...) {
+    if (level & g_logging_level) {
+        va_list args;
+        va_start(args, msg);
+        vfprintf(stderr, msg, args);
+        fprintf(stderr, "\n");
+        va_end(args);
+    }
 }
 
 pvt void die(char *msg, ...) {

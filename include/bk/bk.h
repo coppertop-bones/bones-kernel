@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "../all.cfg"
 
 
 #define _4K 4096

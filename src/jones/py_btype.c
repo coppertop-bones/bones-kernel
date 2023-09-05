@@ -1,5 +1,5 @@
-#ifndef JONES_PYBTYPE_C
-#define JONES_PYBTYPE_C "jones/PyTypes.c"
+#ifndef JONES_PY_BTYPE_C
+#define JONES_PY_BTYPE_C "jones/py_btype.c"
 
 #include "pipe_structs.c"
 
@@ -63,4 +63,4 @@ static PyTypeObject PyBTypeCls = {
 };
 
 
-#endif  // JONES_PYBTYPE_C
+#endif  // JONES_PY_BTYPE_C

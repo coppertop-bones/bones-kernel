@@ -3,16 +3,11 @@
 
 
 #include "../../include/bk/bk.h"
+#include "../../include/bk/os.h"
 #include "pp.c"
 #include <sys/sysctl.h>
 #include <libc.h>
 
-export int os_cache_line_size();
-export int os_page_size();
-export void * jvmreserve(void *start, size_t size);
-export int jvmrelease();
-export int jmprotect(void *start, size_t size, int prot);
-export int jmrelease(void *start, size_t size);
 
 #if defined _WIN64 || defined _WIN32
 #include "os_win64.c"

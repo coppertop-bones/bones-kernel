@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include "os.c"
-#include "../../include/bk/constants.h"
+#include "../../include/bk/bk.h"
 
 
 #define CACHE_LINE_SIZE_M1_COMPATIBLE 128

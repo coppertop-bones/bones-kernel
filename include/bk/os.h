@@ -6,13 +6,13 @@
 #include "bk.h"
 
 
-export int os_cache_line_size();
-export int os_page_size();
+pub int os_cache_line_size();
+pub int os_page_size();
 
-export void * jvmreserve(void *start, size_t size);
-export int jvmrelease();
-export int jmprotect(void *start, size_t size, int prot);
-export int jmrelease(void *start, size_t size);
+pub void * jvmreserve(void *start, size_t size);
+pub int jvmrelease();
+pub int jmprotect(void *start, size_t size, int prot);
+pub int jmrelease(void *start, size_t size);
 
 
 #endif // __BK_OS_H

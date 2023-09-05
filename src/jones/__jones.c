@@ -89,7 +89,7 @@ pvt PyModuleDef jones_module = {
 
 //    {"bmodule", T_OBJECT, offsetof(struct Fn, bmodule), READONLY, "bones module name"},
 
-export_py PyMODINIT_FUNC PyInit_jones(void) {
+pyapi PyMODINIT_FUNC PyInit_jones(void) {
     PyObject *m;
 
 // TODO make cross platform
@@ -217,5 +217,10 @@ export_py PyMODINIT_FUNC PyInit_jones(void) {
     return m;
 }
 
+pvt void die_(char *preamble, char *msg, va_list args) {
+    fprintf(stderr, "%s", preamble);
+    vfprintf(stderr, msg, args);
+    exit(1);
+}
 
 #endif  // __JONES___JONES_C

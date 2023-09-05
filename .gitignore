@@ -1,8 +1,4 @@
-
 .idea/
-
 *.so
-
 *.o
-
-srcpy/tests/__pycache__/
+../pytests/tests/__pycache__/

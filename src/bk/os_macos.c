@@ -43,33 +43,33 @@
 #include <sys/sysctl.h>
 #include <libc.h>
 
-export int os_cache_line_size() {
+pub int os_cache_line_size() {
     size_t lineSize = 0;
     size_t sizeOfLineSize = sizeof(lineSize);
     sysctlbyname("hw.cachelinesize", &lineSize, &sizeOfLineSize, 0, 0);
     return lineSize;
 }
 
-export int os_page_size() {
+pub int os_page_size() {
     return getpagesize();
 }
 
-export void * jvmreserve(void *start, size_t size) {
+pub void * jvmreserve(void *start, size_t size) {
     // reserves virtual address space - marked as PROT_NONE
     return (void *) 0;
 }
 
-export int jvmrelease() {
+pub int jvmrelease() {
     // tidying up before shutdown?
     return 1;
 }
 
-export int jmprotect(void *start, size_t size, int prot) {
+pub int jmprotect(void *start, size_t size, int prot) {
     // check start is page aligned and size is whole number of pages
     return 1;
 }
 
-export int jmrelease(void *start, size_t size) {
+pub int jmrelease(void *start, size_t size) {
     // tell os the range is no longer needed via madvise
     // mark as PROT_NONE via mprotect
     return 1;
