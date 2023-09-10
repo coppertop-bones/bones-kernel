@@ -37,11 +37,11 @@ pvt PyObject * _SC_fill_query_slot_and_get_result(PyObject *mod, PyObject *const
         // get the id from each tArg
         struct PyBType *tArg = (struct PyBType *) PyTuple_GetItem(tArgs, o);
         if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(JonesError, "Arg is not a BType");
-        TypeNum TN1 = tArg->id & 0xFFFF;
-        TypeNum TN2 = (tArg->id & 0xFFFF0000) >> 16;
-        PY_ASSERT_INT_WITHIN_CLOSED(TN1, "id", 1, MAX_NUM_T1_TYPES);
+        TypeNum BTL = tArg->id & 0xFFFF;
+        TypeNum BTU = (tArg->id & 0xFFFF0000) >> 16;
+        PY_ASSERT_INT_WITHIN_CLOSED(BTL, "id", 1, MAX_NUM_T1_TYPES);
         // put typeNum into the query scratchpad
-        query[o + 1] = TN1;                //TODO handle T2
+        query[o + 1] = BTL;                //TODO handle T2
     }
     // add the size
     query[0] = 0x001F & num_args;
@@ -121,7 +121,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
     PyObject *_CoWProxy = pyargs[4];
     if (!PyType_Check(_CoWProxy)) return PyErr_Format(PyExc_TypeError, "_CoWProxy, argument 5, is not a python class");
 
-    TypeNum *query, TN1, TN2;
+    TypeNum *query, BTL, BTU;
     query = P_QUERY(sc);
 
     // if all the arguments are types then hasValue will be false, else if any argument is a value it hasValue will
@@ -143,19 +143,19 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             }
             else
                 t = (struct PyBType *) py;
-            TN1 = t->id & 0xFFFF;
-            TN2 = (t->id & 0xFFFF0000) >> 16;
-            query[o_slot] = TN1;  o_slot++;
-            if (TN1 & HAS_TN2_MASK) {query[o_slot] = TN2;  o_slot++;}
+            BTL = t->id & 0xFFFF;
+            BTU = (t->id & 0xFFFF0000) >> 16;
+            query[o_slot] = BTL;  o_slot++;
+            if (BTL & HAS_TN2_MASK) {query[o_slot] = BTU;  o_slot++;}
         }
 
         // otherwise, is it a BType?
         else if (PyObject_IsInstance(arg, (PyObject *) &PyBTypeCls)) {
             t = (struct PyBType *) arg;
-            TN1 = t->id & 0xFFFF;
-            TN2 = (t->id & 0xFFFF0000) >> 16;
-            query[o_slot] = TN1;  o_slot++;
-            if (TN1 & HAS_TN2_MASK) {query[o_slot] = TN2;  o_slot++;}
+            BTL = t->id & 0xFFFF;
+            BTU = (t->id & 0xFFFF0000) >> 16;
+            query[o_slot] = BTL;  o_slot++;
+            if (BTL & HAS_TN2_MASK) {query[o_slot] = BTU;  o_slot++;}
         }
 
         // otherwise, is it a jones Fn? if so get the type of the whole family
@@ -167,10 +167,10 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             maybe = PyObject_GetAttrString(d, "_t");
             if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._t didn't answer a BType", o);
             t = (struct PyBType *) maybe;
-            TN1 = t->id & 0xFFFF;
-            TN2 = (t->id & 0xFFFF0000) >> 16;
-            query[o_slot] = TN1;  o_slot++;
-            if (TN1 & HAS_TN2_MASK) {query[o_slot] = TN2;  o_slot++;}
+            BTL = t->id & 0xFFFF;
+            BTU = (t->id & 0xFFFF0000) >> 16;
+            query[o_slot] = BTL;  o_slot++;
+            if (BTL & HAS_TN2_MASK) {query[o_slot] = BTU;  o_slot++;}
             hasValue = true;
         }
 
@@ -192,10 +192,10 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             if (result == 0) return 0;    // the call attempt will have set an exception
             if (!PyObject_IsInstance(result, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._tPartial didn't answer a BType", o);
             t = (struct PyBType *) result;
-            TN1 = t->id & 0xFFFF;
-            TN2 = (t->id & 0xFFFF0000) >> 16;
-            query[o_slot] = TN1;  o_slot++;
-            if (TN1 & HAS_TN2_MASK) {query[o_slot] = TN2;  o_slot++;}
+            BTL = t->id & 0xFFFF;
+            BTU = (t->id & 0xFFFF0000) >> 16;
+            query[o_slot] = BTL;  o_slot++;
+            if (BTL & HAS_TN2_MASK) {query[o_slot] = BTU;  o_slot++;}
             hasValue = true;
         }
         else {
@@ -204,10 +204,10 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             if (maybe != 0) {
                 if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "The _t attribute of args[%l] is not a BType", o);
                 t = (struct PyBType *) maybe;
-                TN1 = t->id & 0xFFFF;
-                TN2 = (t->id & 0xFFFF0000) >> 16;
-                query[o_slot] = TN1;  o_slot++;
-                if (TN1 & HAS_TN2_MASK) {query[o_slot] = TN2;  o_slot++;}
+                BTL = t->id & 0xFFFF;
+                BTU = (t->id & 0xFFFF0000) >> 16;
+                query[o_slot] = BTL;  o_slot++;
+                if (BTL & HAS_TN2_MASK) {query[o_slot] = BTU;  o_slot++;}
                 hasValue = true;
                 continue;
             }
@@ -227,10 +227,10 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             }
             else
                 t = (struct PyBType *) py;
-            TN1 = t->id & 0xFFFF;
-            TN2 = (t->id & 0xFFFF0000) >> 16;
-            query[o_slot] = TN1;  o_slot++;
-            if (TN1 & HAS_TN2_MASK) {query[o_slot] = TN2;  o_slot++;}
+            BTL = t->id & 0xFFFF;
+            BTU = (t->id & 0xFFFF0000) >> 16;
+            query[o_slot] = BTL;  o_slot++;
+            if (BTL & HAS_TN2_MASK) {query[o_slot] = BTU;  o_slot++;}
             hasValue = true;
         }
     }

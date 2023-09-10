@@ -1,9 +1,9 @@
 Bones Kernel provides
-- type system
-- metatypes
-- function selection
+- symbols and enums, i.e. interned strings and groups of them
+- type manager - provides api to create and inspect types
+- function selection - api to register and query overloads from function argument signatures
 - fast memory management with GC, compaction and CoW support - IMMIX inspired
-- reduced syntax tree - suitable for C and bones
+- reduced syntax tree - suitable for both C and bones
 
 
 walker - walks objects to determine live object closure, needs to know if a type contains a pointer

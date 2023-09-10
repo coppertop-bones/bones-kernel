@@ -28,9 +28,9 @@ typedef unsigned short TypeNum;
 #define TN_NULL 0x0000
 
 // signature encoding
-typedef unsigned short TN1;          // bit 15 - hasUpper, bit 14 - isPointer, bit 13-0 are the first 16k types
-typedef unsigned short TN2;          // bits 15-4 reserved for sig cache payload, bits 2-0 make total up to 128k types
-typedef unsigned short SigHeader;    // bits 15-5 reserved, bits 4-0 size in bytes (can handle up to 16 TN2 arguments)
+typedef unsigned short BTL;          // bit 15 - hasUpper, bit 14-0 are the first 32k types
+typedef unsigned short BTU;          // bits 15-4 reserved for sig cache payload, bits 2-0 make total up to 256k types
+typedef unsigned short SigHeader;    // bits 15-5 reserved, bits 4-0 size in bytes (can handle up to 16 BTU arguments)
 
 
 typedef char* err;
