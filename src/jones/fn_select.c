@@ -26,7 +26,7 @@ pvt PyObject * _SC_fill_query_slot_and_get_result(PyObject *mod, PyObject *const
     PyObject *tArgs = args[1];
     if (!PyTuple_Check(tArgs)) return 0;
 
-    SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
     Py_ssize_t num_args = PyTuple_Size(args[1]);
     PY_ASSERT_INT_WITHIN_CLOSED(num_args, "numArgs", 1, 16);
 
@@ -57,7 +57,7 @@ pvt PyObject * _SC_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t n
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;
 
-    SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
     Py_ssize_t num_args = PyTuple_Size(args[1]);
     PY_ASSERT_INT_WITHIN_CLOSED(num_args, "numArgs", 1, 16);
 
@@ -103,7 +103,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
 
     // get pSC
     if (!PyLong_Check(pyargs[0])) return PyErr_Format(PyExc_TypeError, "pSC, argument 1, is not a ptr (long)");
-    SelectorCache *sc = PyLong_AsVoidPtr(pyargs[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(pyargs[0]);
 
     // get args
     PyObject *args = pyargs[1];
@@ -247,7 +247,7 @@ pvt PyObject * _SC_tArgs_from_query(PyObject *mod, PyObject *const *params, pyss
     if (nparams != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
 
     if (!PyLong_Check(params[0])) return 0;
-    SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
 
     PyObject *PyBTypeById = params[1];
     if (!PyList_Check(PyBTypeById)) return 0;
@@ -284,7 +284,7 @@ pvt PyObject * _SC_next_free_array_index(PyObject *mod, PyObject *const *args, p
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
-    SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
     return PyLong_FromLong(SC_next_free_array_index(sc));
 }
 
@@ -298,7 +298,7 @@ pvt PyObject * _SC_atArrayPut(PyObject *mod, PyObject *const *args, pyssize narg
     if (!PyLong_Check(args[2])) return 0;
     if (!PyLong_Check(args[3])) return 0;
 
-    SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
     fu8 index = (fu8) PyLong_AsLong(args[1]);
     PY_ASSERT_INT_WITHIN_CLOSED(index, "index", 1, sc->num_slots);
     unsigned short *sig = PyLong_AsVoidPtr(args[2]);
@@ -344,7 +344,7 @@ pvt PyObject * _SC_new(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     unsigned char num_args = (unsigned char) PyLong_AsLong(args[0]);
     unsigned char array_n_slots = (unsigned char) PyLong_AsLong(args[1]);
 
-    SelectorCache * sc = malloc(SC_new_size(num_args, array_n_slots));  // OPEN trap error from SC_new_size
+    struct SelectorCache * sc = malloc(SC_new_size(num_args, array_n_slots));  // OPEN trap error from SC_new_size
     if (sc == 0) return 0;
     TRAP_PY( SC_init(sc, num_args, array_n_slots) );
     return PyLong_FromVoidPtr(sc);
@@ -365,14 +365,14 @@ pvt PyObject * _SC_drop(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) 
 
 pvt PyObject * _SC_slot_width(PyObject *mod, PyObject *const *params, pyssize nparams) {
     if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
-    SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
     return PyLong_FromLong(sc->slot_width);
 }
 
 
 pvt PyObject * _SC_num_slots(PyObject *mod, PyObject *const *params, pyssize nparams) {
     if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
-    SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
     return PyLong_FromLong(sc->num_slots);
 }
 
@@ -383,7 +383,7 @@ pvt PyObject * _SC_pQuery(PyObject *mod, PyObject *const *args, pyssize nargs) {
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
-    SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
     return PyLong_FromVoidPtr(P_QUERY(sc));
 }
 
@@ -395,7 +395,7 @@ pvt PyObject * _SC_pArray(PyObject *mod, PyObject *const *args, pyssize nargs) {
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
-    SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
     return PyLong_FromVoidPtr(P_SIG_ARRAY(sc));
 }
 
