@@ -1,8 +1,8 @@
-#ifndef __BK_BTYPE_H
-#define __BK_BTYPE_H "bk/btype.h"
+#ifndef __BK_BM_H
+#define __BK_BM_H "bk/tm.h"
 
 #include "bk.h"
-#include "sym.h"
+#include "sm.h"
 #include "buckets.h"
 
 
@@ -10,8 +10,6 @@
 //<:Symb> lval(<:Node&ptr> n) {
 //<:Symb> lval(<:pNode> n) {
 // could we do <:unsigned int>
-
-// https://cdecl.org/
 
 
 // addressOf and deref - may create new types
@@ -26,7 +24,6 @@
 // need counting sort too
 
 
-// https://stackoverflow.com/questions/6159677/gcc-clang-msvc-extension-for-specifying-c-enum-size
 enum bmetatype : unsigned char {
     btnom = 1,  // nominal - atomic type with a given name
         // set ops
@@ -62,7 +59,7 @@ typedef enum : BTYPE_TYPE {
 
 
 #define DESC_ID unsigned int
-#define SYM_ID unsigned int
+
 
 struct BType {
     enum bmetatype meta;            // 1 + 3 pad OPEN: could do 4 bits + 28 bits (250k) for type
@@ -87,12 +84,12 @@ struct BTTuple {
 };
 
 struct BTStruct {
-    SYM_ID *names;                  // 8
+    bsym *names;                  // 8
     BTypeList types;                // 4 + n * 4
 };
 
 struct BTRec {
-    SYM_ID *names;                  // 8
+    bsym *names;                  // 8
     BTypeList types;                // 4 + n * 4
 };
 
@@ -108,7 +105,7 @@ struct BTMap {
 struct BTFunc {
     btype tRet;                     // 4
     btype tFn;                      // 4
-    SYM_ID *names;                  // 8
+    bsym *names;                  // 8
     BTypeList *argtypes;            // 4 + n * 4
 };
 
@@ -285,4 +282,4 @@ struct TM {
 
 
 
-#endif // __BK_BTYPE_H
+#endif // __BK_BM_H

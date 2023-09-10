@@ -2,11 +2,14 @@
 #define __BK_EM_H "bk/em.h"
 
 #include "bk.h"
-#include "sym.h"
+#include "sm.h"
 
 struct EM {
 
 };
+
+pub void em_init(struct EM *em);
+pub void em_free(struct EM *em);
 
 // sort order stuff
 

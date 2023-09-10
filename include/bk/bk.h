@@ -23,7 +23,11 @@
 #define _1TB 1099511627776
 
 
-typedef unsigned int RP;    // relative pointer
+typedef unsigned int RP;        // relative pointer
+typedef unsigned int bsym;      // 4 billion symbols
+typedef unsigned short benum;   // 65k enumns
+// 256k types
+
 
 typedef char* err;
 #define ok 0

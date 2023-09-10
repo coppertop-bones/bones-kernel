@@ -19,7 +19,7 @@ the following schema encodes types into a u16 array and can handle up to a type 
 type_nums[] is u16 aligned
 
 N -> max size of sig in multiples of u16 -1 -> 5 bits up to 32 shorts (16 args without enforcing shorter type nums)
-P -> payload (i.e. the function slot for this overload) - 16 bits so 64k possible functions
+P -> payload (i.e. the function slot for this overload) - 16 bits so 64k possible functions - divided into upper and lower payloads
 T -> btype (18 bits -> 256k types)
     LBT -> 15 bits (15-1)
     UBT -> 3 bits (18-16)
@@ -27,44 +27,39 @@ U -> has UBT type (1 bit)
 H -> hit count (8 bits -> 256 hot hits before incrementing cold hit)
 
 
+|       HC / LP       |         ...         |       UP / SS       |
+| HHHH HHHH PPPP P--- |         ...         | PPPP PPPP PPPN NNNN |
 
-LP / H (lower payload / hit count)
-| PPPP PHHH HHHH H--- |
 
-UP / N (upper payload / sig size)
-| PPPP PPPP PPPN NNNN |
+|         UBT         |         LBT         |
+| 0000 0000 0000 0TTT | UTTT TTTT TTTT TTTT |
 
-LBT
-| UTTT TTTT TTTT TTTT |
-
-UBT
-| 00000 000 0000 0TTT |
 
 
 e.g. 1 arg overloads
 |         MSB         |         ...         |         LSB         |
 
-|  LP / HC / A1-UBT   |       A1-LBT        |       UP / SS       |
-| PPPP PHHH HHHH HTTT | 1TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0001 |
+|  HC / LP / A1-UBT   |       A1-LBT        |       UP / SS       |
+| HHHH HHHH PPPP PTTT | 1TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0001 |
 
-|       LP / HC       |       A1-LBT        |       UP / SS       |
-| PPPP PHHH HHHH H000 | 0TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0000 |
+|       HC / LP       |       A1-LBT        |       UP / SS       |
+| HHHH HHHH PPPP P000 | 0TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0000 |
 
 
 e.g. 2 arg overloads
 |         MSB         |         ...         |         ...         |         ...         |         LSB         |
 
-|  LP / HC / A2-UBT   |       A2-LBT        |       A1-UBT        |       A1-LBT        |       UP / SS       |
-| PPPP PHHH HHHH HTTT | 1TTT TTTT TTTT TTTT | 00000 000 0000 0TTT | 1TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0011 |
+|  HC / LP / A2-UBT   |       A2-LBT        |       A1-UBT        |       A1-LBT        |       UP / SS       |
+| HHHH HHHH PPPP PTTT | 1TTT TTTT TTTT TTTT | 00000 000 0000 0TTT | 1TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0011 |
 
-|       LP / HC       |       A2-LBT        |       A1-UBT        |       A1-LBT        |       UP / SS       |
-| PPPP PHHH HHHH H000 | 0TTT TTTT TTTT TTTT | 00000 000 0000 0TTT | 1TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0010 |
+|       HC / LP       |       A2-LBT        |       A1-UBT        |       A1-LBT        |       UP / SS       |
+| HHHH HHHH PPPP P000 | 0TTT TTTT TTTT TTTT | 00000 000 0000 0TTT | 1TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0010 |
 
-|       LP / HC       |       A2-UBT        |       A2-LBT        |       A1-LBT        |       UP / SS       |
-| PPPP PHHH HHHH H000 | 00000 000 0000 0TTT | 1TTT TTTT TTTT TTTT | 0TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0010 |
+|       HC / LP       |       A2-UBT        |       A2-LBT        |       A1-LBT        |       UP / SS       |
+| HHHH HHHH PPPP P000 | 00000 000 0000 0TTT | 1TTT TTTT TTTT TTTT | 0TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0010 |
 
-|       LP / HC       |                     |       A2-LBT        |       A1-LBT        |       UP / SS       |
-| PPPP PHHH HHHH H000 | 0000 0000 0000 0000 | 0TTT TTTT TTTT TTTT | 0TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0001 |
+|       HC / LP       |                     |       A2-LBT        |       A1-LBT        |       UP / SS       |
+| HHHH HHHH PPPP P000 | 0000 0000 0000 0000 | 0TTT TTTT TTTT TTTT | 0TTT TTTT TTTT TTTT | PPPP PPPP PPP0 0001 |
 
 
 OPEN: could reverse order of arguments in overload as last arg is likely to bre more type volatile than first arg?
@@ -80,6 +75,12 @@ minimal compared to the locality gained
 encode function number in sigheader - in bits 15 to 5 - allowing a max of 2048 overloads, with 16 arguments
 
 
+sig array has a variable length encoding
+SigHeader header - last 5 bits are length in u16 so 11111 = 31 which is taken as 32 (as it makes no sense to
+dispatch on 0 args)
+
+sig arrays must be stored sparsely in the hash part of the cache but could be stored consecutively in the array
+part of the cache - for the moment only do sparse - only advantage of compact is avoiding cache misses
 
 
 
@@ -96,10 +97,9 @@ n is 1, 2, 4, 8
 2 args 1 overload would be 5 * u16 + u8 + u8 = 12 bytes so fits in 1 object slot
 
 
-typedef struct {
+struct SelectorCache {
     unsigned char slot_width;                         // in count of unsigned short - 3 of a 1 arg, 5 for a 2 arg, ..., 33 for a 16 arg
     unsigned char num_slots;                          // number of slots in the array (we also have a scratch slot for the query)
-    unsigned short hash_n_slots;                      // at 50% this can hold 32k functions (should be enough!!!???)
     //    unsigned short count_buf_size
     //    unsigned short count_buf_next
     //    unsigned short *count_buf
@@ -109,6 +109,6 @@ typedef struct {
     // OPEN: is this needed in bones or just Python
     //    unsigned short sig_array[num_slots][slot_width];
     //    unsigned short sig_hash[hash_n_slots][slot_width];// a hash table of signatures - we'll borrow techniques from else where to organise
-} SelectorCache;
+};
 
 

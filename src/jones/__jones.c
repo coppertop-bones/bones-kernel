@@ -6,7 +6,8 @@
 #include "pipe_ops.c"
 #include "../bk/os.c"
 //#include "../../include/bk/common.h"
-//#include "PyBType.c"
+#include "py_btype.c"
+#include "py_kernel.c"
 #include "fn_select.c"
 #include "mem.c"
 //#include "pipe_ops.c"
@@ -119,13 +120,22 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
         return 0;
     }
 
-    // add PyBTypeCls
+    // PyBTypeCls
     if (PyType_Ready(&PyBTypeCls) < 0) return 0;
     if (PyModule_AddObject(m, "BType", (PyObject *) &PyBTypeCls) < 0) {
         Py_DECREF(&PyBTypeCls);
         Py_DECREF(m);
         return 0;
     }
+
+    // PyKernelCls
+    if (PyType_Ready(&PyKernelCls) < 0) return 0;
+    if (PyModule_AddObject(m, "Kernel", (PyObject *) &PyKernelCls) < 0) {
+        Py_DECREF(&PyKernelCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
 
     // add function classes
     if (PyType_Ready(&FnCls) < 0) return 0;

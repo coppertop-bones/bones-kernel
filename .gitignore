@@ -2,3 +2,5 @@
 *.so
 *.o
 ../pytests/tests/__pycache__/
+
+pytests/tests/__pycache__/
