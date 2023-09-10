@@ -4,7 +4,7 @@
 
 #include "../../include/all.cfg"
 #include "../../include/bk/bk.h"
-#include "../../include/bk/btype.h"
+#include "../../include/bk/kernel.h"
 #include "utils.c"
 
 

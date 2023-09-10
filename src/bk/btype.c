@@ -4,7 +4,7 @@
 
 #include "../../include/all.cfg"
 #include "buckets.c"
-#include "../../include/bk/btype.h"
+#include "../../include/bk/tm.h"
 
 
 tdd int newNominal(char *name, struct BTypeManager *tm) {

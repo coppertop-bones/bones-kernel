@@ -23,12 +23,7 @@
 #define _1TB 1099511627776
 
 
-
-// signature encoding
-typedef unsigned short LBT;          // bit 15 - hasUpper, bit 14-0 are the first 32k types
-typedef unsigned short UBT;          // bits 15-4 reserved for sig cache payload, bits 2-0 make total up to 256k types
-typedef unsigned short SigHeader;    // bits 15-5 reserved, bits 4-0 size in bytes (can handle up to 16 arguments)
-
+typedef unsigned int RP;    // relative pointer
 
 typedef char* err;
 #define ok 0
@@ -39,9 +34,6 @@ typedef char* err;
 // null termination so standard c string functions can work - size prefix allows for slightly faster comparison as
 // we check size first
 
-
-// 0x0000_FFFF_FFFF_FFFF
-#define B_PTR_MASK 0x0000FFFFFFFFFFFF
 
 
 #define SIGNAL(msg) return (err) join_txts(3, __FUNCTION__, ": ", msg);       /* __PRETTY_FUNCTION__, __FILE__, __LINE__, __FUNCTION__, __func__ */

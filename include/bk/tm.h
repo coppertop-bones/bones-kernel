@@ -1,6 +1,8 @@
 #ifndef __BK_BTYPE_H
 #define __BK_BTYPE_H "bk/btype.h"
 
+#include "bk.h"
+#include "sym.h"
 #include "buckets.h"
 
 
@@ -256,7 +258,8 @@ enum managedmode : char {
 // -----------------
 
 
-struct BTypeManager {
+struct TM {
+    struct SM *sm;
     char **txt_bySymId;                 // kept in string Buckets
     struct map *symid_byName;           // keys are pointers into symtxts Buckets
     unsigned int *order_bySymId;

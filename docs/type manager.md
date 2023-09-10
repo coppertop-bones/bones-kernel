@@ -1,16 +1,17 @@
 ## tm - type manager
 product_size_type - u16 - handles products up to 64k in length
 
-bt_summaries - array of bt_summary - indexed by bt_id \
-bt_sizes - array of product_size_type - indexed by bt_id \
-bt_desc_rps - array of bt_desc_rp - indexed by bt_id \
-bt_name_rps - array of istring_rp - indexed by bt_id (sparce so could be optimised with a 1024 length probe and hash) \
-bt_name_rpToBt_idMap - hash to get the bt_id for a name \
+
+bt_summaries - array of bt_summary - indexed by btype \
+bt_sizes - array of product_size_type - indexed by btype \
+bt_desc_rps - array of bt_desc_rp - indexed by btype \
+bt_name_rps - array of istring_rp - indexed by btype (sparce so could be optimised with a 1024 length probe and hash) \
+bt_name_rpToBt_idMap - hash to get the btype for a name \
 btypelists - buffer of btypelist - used for intersectDescs, unionDescs and tupleDescs \
 btypelistoffsets - buffer of btypeoffsetlist - used for intersectDescs, unionDescs and tupleDescs - not sure about it yet \
 symlists - buffer of symlist - e.g. for records, structs, fns, etc \
-btypelist_rpToTuple_idMap - hash to get a tuples bt_id from an ordered list of types - also can find a 
-btypelist_rp from a list of bt_id \
+btypelist_rpToTuple_idMap - hash to get a tuples btype from an ordered list of types - also can find a 
+btypelist_rp from a list of btype \
 structDescs - buffer of structDesc \
 seqDescs - array of seqDesc \
 mapDescs - array of mapDesc \
@@ -27,7 +28,7 @@ isPtr - 1 bit - can deref immediately \
 hasPtr - 1 bit - needs scanning if hasPtr, if not hasPtr we know it is contiguous memory \
 hasT - 1 bit - code gen might be needed \
 unused - 2 bit \
-24 lsbs reserved as bt_id
+24 lsbs reserved as btype
 
 
 ### bt_summary - 1 byte
@@ -59,7 +60,7 @@ lower 24 bits - descRP into the relevant description array
 
 
 ### btypelist - variable
-size prefixed list of bt_id
+size prefixed list of btype
 
 
 ### btypeoffsetlist - variable
