@@ -22,16 +22,15 @@ struct Fn {
 
 struct Partial {
     struct Fn Fn;
-    unsigned char num_tbc;            // the number of arguments missing in the args array
+    unsigned char num_tbc;  // the number of arguments missing in the args array
                             // pad48
     PyObject *pipe1;        // 1st piped arg for binaries and ternaries
     PyObject *pipe2;        // 2nd piped arg for ternaries
     PyObject *args[];
 };
 
-
-static PyObject *JonesError;
-static PyObject *JonesSyntaxError;
+pvt PyObject *JonesError;
+pvt PyObject *JonesSyntaxError;
 
 
 #endif  // __JONES_PIPE_STRUCTS_C

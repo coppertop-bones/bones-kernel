@@ -34,7 +34,7 @@ enum bmetatype : unsigned char {
     bttup = 4,  // tuple - ordered list of other types
     btstr = 5,  // struct - ordered and named list of other types
     btrec = 6,  // record - sorted named list of other types
-        // exponentials
+        // exponentials (variable size, elements all the same size)
     btseq = 7,  // sequence - tElement
     btmap = 8,  // map / dictionary - tKey, tValue
     btfnc = 9,  // function - argnames, tArgs, tRet, tFunc, num args

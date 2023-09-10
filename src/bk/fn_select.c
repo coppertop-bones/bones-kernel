@@ -7,26 +7,6 @@
 #include "utils.c"
 
 
-// we only keep hits in the cache as cache misses mean "not found" which initiates a fitsWithin search, and then either
-// a type error is raised or the new hit is added to the cache
-// we want to count the number of hits so we can sort according to hits -> which hopefully will be faster overall
-
-// assuming that L1 & L2 cache misses are important for the dispatch we compact the signatures
-// a type can be TN1 or TN2 so the number of slots is 1 byte for header + 2 * num_args - TN1 is 1 short, TN2 is 2 shorts
-// we have 48 bits in a 1 arg signature however we only can rely on there being space in the first and last short
-// so we have 32 bits to play with
-
-
-// SHORT (16-bit) ALIGNED
-// |         TN2          |           TN1            |      Sig Header     |
-// | PPPPP HHH HHHH H TTT | TN2 Po TT TTTT TTTT TTTT | PPPP PPPP PPP NNNNN |
-//
-// N -> max size of sig in multiples of SHORT -> 5 bits up to 32 shorts (16 args without winging it)
-// P -> payload (i.e. the function slot for this overload)
-// T -> type (17 bits -> 128k types)
-// Po -> is pointer (1 bit)
-// TN2 -> is TN2 type
-// H -> hit count (8 bits -> 256 hot hits before incrementing cold hit)
 
 
 //pointers
