@@ -40,7 +40,7 @@ pvt PyObject * _SC_fill_query_slot_and_get_result(PyObject *mod, PyObject *const
         if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(JonesError, "Arg is not a BType");
         lower = tArg->btid & LOWER_TYPE_MASK;
         upper = (tArg->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
-        upperFlag = upper ? HAS_UPPER_MASK : 0;
+        upperFlag = upper ? HAS_UPPER_TYPE_FLAG : 0;
         PY_ASSERT_INT_WITHIN_CLOSED(upper, "btid", 0, MAX_UPPER_TYPE);
         // put btid into the query scratchpad
         query[o + 1] = lower | upperFlag;
@@ -148,7 +148,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             lower = t->btid & LOWER_TYPE_MASK;
             upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_MASK; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
         }
 
         // otherwise, is it a BType?
@@ -157,7 +157,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             lower = t->btid & LOWER_TYPE_MASK;
             upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_MASK; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
         }
 
         // otherwise, is it a jones Fn? if so get the type of the whole family
@@ -172,7 +172,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             lower = t->btid & LOWER_TYPE_MASK;
             upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_MASK; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
             hasValue = true;
         }
 
@@ -197,7 +197,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             lower = t->btid & LOWER_TYPE_MASK;
             upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_MASK; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
             hasValue = true;
         }
         else {
@@ -209,7 +209,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
                 lower = t->btid & LOWER_TYPE_MASK;
                 upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
                 query[o_slot] = lower;  o_slot++;
-                if (upper) {query[o_slot - 1] |= HAS_UPPER_MASK; query[o_slot] = upper;  o_slot++;}
+                if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
                 hasValue = true;
                 continue;
             }
@@ -232,7 +232,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             lower = t->btid & LOWER_TYPE_MASK;
             upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_MASK; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
             hasValue = true;
         }
     }
@@ -260,7 +260,7 @@ pvt PyObject * _SC_tArgs_from_query(PyObject *mod, PyObject *const *params, pyss
     pyssize o_next = 1;
     for (pyssize o = 0; o < num_args; o++) {
         btype btid = query[o_next];
-        if (btid & HAS_UPPER_MASK) {
+        if (btid & HAS_UPPER_TYPE_FLAG) {
             o_next++;
             btid &= LOWER_TYPE_MASK;                                            // remove the hasUpper flag
             btid |= ((query[o_next] & MAX_UPPER_TYPE) << UPPER_TYPE_SHIFT);     // add the upper part

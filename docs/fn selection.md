@@ -16,7 +16,6 @@ so we have 32 bits to play with
 
 the following schema encodes types into a u16 array and can handle up to a type space of size 256k
 
-type_nums[] is u16 aligned
 
 N -> max size of sig in multiples of u16 -1 -> 5 bits up to 32 shorts (16 args without enforcing shorter type nums)
 P -> payload (i.e. the function slot for this overload) - 16 bits so 64k possible functions - divided into upper and lower payloads
@@ -104,7 +103,7 @@ struct SelectorCache {
     //    unsigned short count_buf_next
     //    unsigned short *count_buf
     //    func *call_back
-    unsigned short type_nums[];
+    unsigned short buf[];
     //    unsigned short query[1][slot_width];      // a buffer of the right size to copy the compressed bt_ids from the call site
     // OPEN: is this needed in bones or just Python
     //    unsigned short sig_array[num_slots][slot_width];
