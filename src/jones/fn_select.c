@@ -146,18 +146,18 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             else
                 t = (struct PyBType *) py;
             lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
+            upper = t->btid & UPPER_TYPE_MASK;
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
         }
 
         // otherwise, is it a BType?
         else if (PyObject_IsInstance(arg, (PyObject *) &PyBTypeCls)) {
             t = (struct PyBType *) arg;
             lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
+            upper = (t->btid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
         }
 
         // otherwise, is it a jones Fn? if so get the type of the whole family
@@ -170,9 +170,9 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._t didn't answer a BType", o);
             t = (struct PyBType *) maybe;
             lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
+            upper = (t->btid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
             hasValue = true;
         }
 
@@ -195,9 +195,9 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             if (!PyObject_IsInstance(result, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._tPartial didn't answer a BType", o);
             t = (struct PyBType *) result;
             lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
+            upper = (t->btid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
             hasValue = true;
         }
         else {
@@ -207,9 +207,9 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
                 if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "The _t attribute of args[%l] is not a BType", o);
                 t = (struct PyBType *) maybe;
                 lower = t->btid & LOWER_TYPE_MASK;
-                upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
+                upper = (t->btid & UPPER_TYPE_MASK);
                 query[o_slot] = lower;  o_slot++;
-                if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
+                if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
                 hasValue = true;
                 continue;
             }
@@ -230,9 +230,9 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             else
                 t = (struct PyBType *) py;
             lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
+            upper = (t->btid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
-            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper;  o_slot++;}
+            if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
             hasValue = true;
         }
     }
