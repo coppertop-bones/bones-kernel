@@ -12,7 +12,7 @@
 struct SigN {
     PyObject_HEAD
     SigHeader h;
-    TypeNum types[];
+    unsigned short types[];
 };
 
 
@@ -60,7 +60,7 @@ static PyTypeObject SigNCls = {
     .tp_name = "jones.SigN",
     .tp_doc = PyDoc_STR("Type signature of a 1 arg function"),
     .tp_basicsize = sizeof(struct SigN),
-    .tp_itemsize = sizeof(TypeNum),
+    .tp_itemsize = sizeof(unsigned short),
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_new = SigN_new,
     .tp_init = (initproc) SigN_init,

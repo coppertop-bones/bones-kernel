@@ -7,12 +7,12 @@
 
 struct PyBType {
     PyObject_HEAD
-    unsigned int id;
+    btype btid;
 };
 
 
 pvt PyMemberDef PyBType_members[] = {
-        {"id", T_UINT, offsetof(struct PyBType, id), 0, "type id (u32)"},
+        {"id", T_UINT, offsetof(struct PyBType, btid), 0, "id (u32)"},
         {0}
 };
 
@@ -35,9 +35,9 @@ pvt PyObject * PyBType_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
 //pvt int PyBType_init(struct PyBType *self, PyObject *args, PyObject *kwds) {
 //    static char *kwlist[] = {"id", 0};
-//    int id;
-//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &id)) return -1;
-//    self->id = id;
+//    int btid;
+//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &btid)) return -1;
+//    self->btid = btid;
 //    return 0;
 //}
 

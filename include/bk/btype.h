@@ -58,6 +58,7 @@ typedef enum : BTYPE_TYPE {
     _null = 8,          // empty set
 } btype;
 
+
 #define DESC_ID unsigned int
 #define SYM_ID unsigned int
 

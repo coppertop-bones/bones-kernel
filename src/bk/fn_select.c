@@ -4,6 +4,7 @@
 
 #include "../../include/all.cfg"
 #include "../../include/bk/bk.h"
+#include "../../include/bk/btype.h"
 #include "utils.c"
 
 
@@ -35,19 +36,21 @@
 //    doubles? or we can align the payload?, e.g. to cache lines or possibly set lines?
 
 
+typedef unsigned short PAYLOAD;
 
-#define MAX_NUM_T1_TYPES _16K
-#define MAX_NUM_T2_TYPES _128K
+// masks for embedding the code
+#define SIZE_MASK 0x001F            // 0000 0000 0001 1111
 
-// masks for for embedding the code
-#define V_LMASK 0x001F                      // 0000 0000 0001 1111
-#define V_UMASK 0xFFE0
-#define LAST_TN_PAYLOAD_SHIFT 3
-#define LAST_TN_HITS_SHIFT 8
-#define LAST_TN_HITS_MASK 0xFF00
-#define HAS_TN2_MASK 0x8000                 // 1000 0000 0000 0000
-#define IS_PTR_MASK 0x4000                  // 0100 0000 0000 0000
-#define TN2_SHIFT 16
+#define LOWER_PAYLOAD_MASK 0x001F   // 0000 0000 0001 1111
+#define UPPER_PAYLOAD_MASK 0xFFE0   // 1111 1111 1110 0000
+#define LAST_PAYLOAD_SHIFT 3
+
+#define HAS_UPPER_MASK 0x8000       // 1000 0000 0000 0000
+#define UPPER_TYPE_SHIFT 15
+#define LOWER_TYPE_MASK 0x00007FFF  // 0000 0000 0000 0000 0111 1111 1111 1111
+#define UPPER_TYPE_MASK 0xFFFF8000  // 1111 1111 1111 1111 1000 0000 0000 0000
+#define MAX_UPPER_TYPE 0            // when have done upper make it 7
+
 
 // pSig vs replicating sig
 // pSig is 8bytes - sig1 is 4 to 6 bytes, sig2 is 6 to 10 bytes, sig3 is 8 to 14 bytes
@@ -59,18 +62,18 @@
 // encode function number in sigheader - in bits 15 to 5 - allowing a max of 2048 overloads, with 16 arguments
 
 typedef struct {
-    unsigned char slot_width;                         // in count of TypeNum
+    unsigned char slot_width;                         // in count of u16
     unsigned char num_slots;                          // number of slots in the array (we also have a scratch slot for the query)
     unsigned short hash_n_slots;                      // at 50% this can hold 32k functions (should be enough!!!???)
 //    unsigned short count_buf_size
 //    unsigned short count_buf_next
-//    TypeNum *count_buf
+//    unsigned short *count_buf
 //    func *call_back
-    TypeNum type_nums[];
-//    TypeNum query[1][slot_width];      // a buffer of the right size to copy the TypeNums from the call site
+    unsigned short type_nums[];
+//    unsigned short query[1][slot_width];      // a buffer of the right size to copy the bt_ids from the call site
                                             // OPEN: is this needed in bones or just Python
-//    TypeNum sig_array[num_slots][slot_width];
-//    TypeNum sig_hash[hash_n_slots][slot_width];// a hash table of signatures - we'll borrow techniques from else where to organise
+//    unsigned short sig_array[num_slots][slot_width];
+//    unsigned short sig_hash[hash_n_slots][slot_width];// a hash table of signatures - we'll borrow techniques from else where to organise
 } SelectorCache;
 
 // OPEN: maybe add query count so can sort by it - for mo just track in Python
@@ -83,28 +86,28 @@ typedef struct {
 
 // sig array has a variable length encoding
 // SigHeader header - last 5 bits are length in u16 so 11111 = 31 which is taken as 32 (as it makes no sense to 
-// dispatch on 0 args) so in total we can hold between 16 u32 TypeNums and 32 u16 TypeNums
+// dispatch on 0 args)
 
 // sig arrays must be stored sparsely in the hash part of the cache but could be stored consecutively in the array
 // part of the cache - for the moment only do sparse - only advantage of compact is avoiding cache misses
 
-pvt void SC_at_array_put(SelectorCache *sc, int index, TypeNum sig[], unsigned short v) {
+pvt void SC_at_array_put(SelectorCache *sc, int index, unsigned short sig[], PAYLOAD payload) {
     // index is one based, sig is size prefixed array of T1|T2
-    TypeNum *dest = P_SIG_ARRAY(sc) + (index - 1) * sc->slot_width;
-    TypeNum size = sig[0] & V_LMASK;
-    dest[0] = (v & V_UMASK) | size;
+    unsigned short *dest = P_SIG_ARRAY(sc) + (index - 1) * sc->slot_width;
+    unsigned short size = sig[0] & SIZE_MASK;
+    dest[0] = (payload & UPPER_PAYLOAD_MASK) | size;
     for (fu8 o=1; o < size + 2; o++) dest[o] = sig[o];
-    TypeNum *pad_array = dest + size + 2;
+    unsigned short *pad_array = dest + size + 2;
     size_t num_to_pad = sc->slot_width - (size + 1);
-    for (fu8 o=0; o < num_to_pad; o++) pad_array[o] = TN_NULL;
+    for (fu8 o=0; o < num_to_pad; o++) pad_array[o] = 0;
     fu8 o_last = sc->slot_width - 1;
-    dest[o_last] = dest[o_last] | ((v & V_LMASK) << LAST_TN_PAYLOAD_SHIFT);
+    dest[o_last] = dest[o_last] | ((payload & LOWER_PAYLOAD_MASK) << LAST_PAYLOAD_SHIFT);
 }
 
 pvt unsigned char SC_next_free_array_index(SelectorCache *sc) {
     fu16 num_slots = sc->num_slots;
     fu16 slot_width = sc->slot_width;
-    TypeNum *array = P_SIG_ARRAY(sc);
+    unsigned short *array = P_SIG_ARRAY(sc);
     for (fu16 o=0; o < num_slots; o++) if ((array + o * slot_width)[0] == 0x0000) return o + 1;
     return 0;
 }
@@ -113,21 +116,21 @@ pvt unsigned char SC_next_free_array_index(SelectorCache *sc) {
 
 // printf("query[o]: %#02x, sig[o]: %#02x\n", query[o], sig[o]);
 
-pvt inline fu16 fast_compare_sig(TypeNum query[], TypeNum sig[], fu8 slot_width) {
+pvt inline fu16 fast_compare_sig(unsigned short query[], unsigned short sig[], fu8 slot_width) {
     fu16 N = query[0];
-    if (N != (sig[0] & V_LMASK)) return 0;                                       // check count
+    if (N != (sig[0] & LOWER_PAYLOAD_MASK)) return 0;                                       // check count
     for (fu8 o = 1; o <= N; o++) {
-        if (query[o] != sig[o]) return 0;                                        // check TypeNums
-//        if (query[o] == TN_NULL) return (sig[0] & V_UMASK) | ((sig[o_last] >> LAST_TN_PAYLOAD_SHIFT) & V_LMASK);   // check null terminal
+        if (query[o] != sig[o]) return 0;                                        // check compressed bt_ids
+//        if (query[o] == 0) return (sig[0] & UPPER_PAYLOAD_MASK) | ((sig[o_last] >> LAST_PAYLOAD_SHIFT) & LOWER_PAYLOAD_MASK);   // check null terminal
     }
-//    if (query[o_last] != (sig[o_last] & V_UMASK)) return 0;                             // check last
-    return (sig[0] & V_UMASK) | ((sig[slot_width - 1] >> LAST_TN_PAYLOAD_SHIFT) & V_LMASK);
+//    if (query[o_last] != (sig[o_last] & UPPER_PAYLOAD_MASK)) return 0;                             // check last
+    return (sig[0] & UPPER_PAYLOAD_MASK) | ((sig[slot_width - 1] >> LAST_PAYLOAD_SHIFT) & LOWER_PAYLOAD_MASK);
 }
 
 // the client will likely probe array first, compute a hash if missing, then probe from hash start
-pvt fu16 fast_probe_sigs(TypeNum query[], TypeNum sigs[], fu8 slot_width, fu16 num_slots) {
+pvt fu16 fast_probe_sigs(unsigned short query[], unsigned short sigs[], fu8 slot_width, fu16 num_slots) {
     for (fu32 o = 0; o < num_slots; o++) {
-        if (*(sigs + o * slot_width) == TN_NULL) return 0;
+        if (*(sigs + o * slot_width) == 0) return 0;
         fu16 v = fast_compare_sig(query, sigs + o * slot_width, slot_width);
         if (v) return v;
     }
@@ -137,7 +140,7 @@ pvt fu16 fast_probe_sigs(TypeNum query[], TypeNum sigs[], fu8 slot_width, fu16 n
 pvt size_t SC_new_size(unsigned char num_args, unsigned char num_slots) {
     // OPEN check range and return err (like in SC_init)
     unsigned char slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
-    return sizeof(SelectorCache) + sizeof(TypeNum) * ((size_t)num_slots + 1) * (size_t)slot_width;
+    return sizeof(SelectorCache) + sizeof(unsigned short) * ((size_t)num_slots + 1) * (size_t)slot_width;
 }
 
 pvt err SC_init(SelectorCache *sc, unsigned char num_args, unsigned char num_slots) {
@@ -148,9 +151,9 @@ pvt err SC_init(SelectorCache *sc, unsigned char num_args, unsigned char num_slo
     sc -> slot_width = slot_width;
     sc -> num_slots = num_slots;
     sc -> hash_n_slots = 0x0000;
-    TypeNum *query = P_QUERY(sc);
+    unsigned short *query = P_QUERY(sc);
     for (int i=0; i < (int)slot_width; i++) query[i] = 0x0000;
-    TypeNum *array = P_SIG_ARRAY(sc);
+    unsigned short *array = P_SIG_ARRAY(sc);
     for (int i=0; i < (int)slot_width * (int)num_slots; i++) array[i] = 0x0000;
     return ok;
 }
