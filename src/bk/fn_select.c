@@ -50,21 +50,21 @@ struct SelectorCache {
 pvt void SC_at_array_put(struct SelectorCache *sc, int index, unsigned short sig[], PAYLOAD payload) {
     // index is one based, sig is size prefixed array of T1|T2
     unsigned short *dest = P_SIG_ARRAY(sc) + (index - 1) * sc->slot_width;
-    unsigned short size = sig[0] & SIZE_MASK;
+    int size = sig[0] & SIZE_MASK;
     dest[0] = (payload & UPPER_PAYLOAD_MASK) | size;
-    for (fu8 o=1; o < size + 2; o++) dest[o] = sig[o];
+    for (int o=1; o < size + 2; o++) dest[o] = sig[o];
     unsigned short *pad_array = dest + size + 2;
-    size_t num_to_pad = sc->slot_width - (size + 1);
-    for (fu8 o=0; o < num_to_pad; o++) pad_array[o] = 0;
-    fu8 o_last = sc->slot_width - 1;
-    dest[o_last] = dest[o_last] | ((payload & LOWER_PAYLOAD_MASK) << LOWER_PAYLOAD_SHIFT);
+    int num_to_pad = sc->slot_width - (size + 1);
+    for (int o=0; o < num_to_pad; o++) pad_array[o] = 0;
+    int o_last = sc->slot_width - 1;
+    dest[o_last] = 0x0000 | ((payload & LOWER_PAYLOAD_MASK) << LOWER_PAYLOAD_SHIFT);
 }
 
 pvt unsigned char SC_next_free_array_index(struct SelectorCache *sc) {
-    fu16 num_slots = sc->num_slots;
-    fu16 slot_width = sc->slot_width;
+    int num_slots = sc->num_slots;
+    int slot_width = sc->slot_width;
     unsigned short *array = P_SIG_ARRAY(sc);
-    for (fu16 o=0; o < num_slots; o++) if ((array + o * slot_width)[0] == 0x0000) return o + 1;
+    for (int o=0; o < num_slots; o++) if ((array + o * slot_width)[0] == 0x0000) return o + 1;
     return 0;
 }
 
@@ -76,36 +76,42 @@ pvt inline fu16 fast_compare_sig(unsigned short query[], unsigned short sig[], f
 //        if (query[o] == 0) return (sig[0] & UPPER_PAYLOAD_MASK) | ((sig[o_last] >> LOWER_PAYLOAD_SHIFT) & LOWER_PAYLOAD_MASK);   // check null terminal
     }
 //    if (query[o_last] != (sig[o_last] & UPPER_PAYLOAD_MASK)) return 0;                             // check last
-    return (sig[0] & UPPER_PAYLOAD_MASK) | ((sig[slot_width - 1] >> LOWER_PAYLOAD_SHIFT) & LOWER_PAYLOAD_MASK);
+    fu8 o_last = slot_width - 1;
+    unsigned int hc = (sig[o_last] & HC_MASK + HC_INC) & HC_MASK;
+    if (hc == 0) { // if wrapped inc off struct hit count
+
+    }
+    sig[o_last] = hc | (sig[o_last] & NOT_HC_MASK);
+    return (sig[0] & UPPER_PAYLOAD_MASK) | ((sig[o_last] >> LOWER_PAYLOAD_SHIFT) & LOWER_PAYLOAD_MASK);
 }
 
 // the client will likely probe array first, compute a hash if missing, then probe from hash start
-pvt fu16 fast_probe_sigs(unsigned short query[], unsigned short sigs[], fu8 slot_width, fu16 num_slots) {
-    for (fu32 o = 0; o < num_slots; o++) {
+pvt int fast_probe_sigs(unsigned short query[], unsigned short sigs[], int slot_width, int num_slots) {
+    for (int o = 0; o < num_slots; o++) {
         if (*(sigs + o * slot_width) == 0) return 0;
-        fu16 v = fast_compare_sig(query, sigs + o * slot_width, slot_width);
+        int v = fast_compare_sig(query, sigs + o * slot_width, slot_width);
         if (v) return v;
     }
     return 0;
 }
 
-pvt size_t SC_new_size(unsigned char num_args, unsigned char num_slots) {
+pvt size_t SC_new_size(int num_args, int num_slots) {
     // OPEN check range and return err (like in SC_init)
-    unsigned char slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
-    return sizeof(struct SelectorCache) + sizeof(unsigned short) * ((size_t)num_slots + 1) * (size_t)slot_width;
+    int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
+    return sizeof(struct SelectorCache) + sizeof(unsigned short) * (num_slots + 1) * slot_width;
 }
 
-pvt err SC_init(struct SelectorCache *sc, unsigned char num_args, unsigned char num_slots) {
-    unsigned char slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
+pvt err SC_init(struct SelectorCache *sc, int num_args, int num_slots) {
+    int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
     if (!(1 <= num_args && num_args <=16)) SIGNAL("num_args is not within {1, 16}");         // OPEN add num_args value to msg
     if (!(1 <= num_slots && num_slots <=128)) SIGNAL("num_slots is not within {1, 128}");
 
     sc -> slot_width = slot_width;
     sc -> num_slots = num_slots;
     unsigned short *query = P_QUERY(sc);
-    for (int i=0; i < (int)slot_width; i++) query[i] = 0x0000;
+    for (int i=0; i < slot_width; i++) query[i] = 0x0000;
     unsigned short *array = P_SIG_ARRAY(sc);
-    for (int i=0; i < (int)slot_width * (int)num_slots; i++) array[i] = 0x0000;
+    for (int i=0; i < slot_width * num_slots; i++) array[i] = 0x0000;
     return ok;
 }
 
