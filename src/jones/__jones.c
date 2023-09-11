@@ -3,34 +3,16 @@
 
 
 #include "../../include/all.cfg"
-#include "pipe_ops.c"
+#include "pyfn.c"
 #include "../bk/os.c"
-//#include "../../include/bk/common.h"
-#include "py_btype.c"
-#include "py_kernel.c"
-#include "fn_select.c"
-#include "mem.c"
-//#include "pipe_ops.c"
-//#include "play.c"
-//#include "sigN.c"
-#include "toy.c"
+#include "pybtype.c"
+#include "pykernel.c"
+#include "sc.c"
+#include "fns.c"
+#include "play.c"
 
 
 
-//typedef const unsigned short *c_u16_array;
-//typedef const char *kh_cstr_t;
-
-
-// to start swith we'll just use null terminated / sized utf8 as our char format - we shouldn't need to worry very much
-// about unicode as we can convert classes and mix types and classes with ease
-//
-// https://docs.python.org/3/c-api/unicode.html#utf-8-codecs
-// PyObject *PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const char *errors, Py_ssize_t *consumed)
-// const char *PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *size)
-
-// This decision is backed up by
-// https://utf8everywhere.org/
-// https://developer.twitter.com/en/docs/counting-characters
 
 
 
@@ -50,31 +32,30 @@ pvt PyMethodDef free_fns[] = {
     {"malloc", (PyCFunction)                    _malloc, METH_FASTCALL, ""},
     {"getPageSize", (PyCFunction)               _pageSize, METH_FASTCALL, "system page size"},
     {"getCacheLineSize", (PyCFunction)          _getCacheLineSize, METH_FASTCALL, "system cache line size"},
-//    {"reserve", (PyCFunction)                   _reserve, METH_FASTCALL, "reserve(pVA, numPages)"},
-//    {"getVaPtr", (PyCFunction)                  _getVaPtr, METH_FASTCALL, "getVaPtr()"},
 
-    {"sc_new", (PyCFunction)                    _SC_new, METH_FASTCALL, "sc_init(numArgs, arrayLen) -> pSC"},
-    {"sc_drop", (PyCFunction)                   _SC_drop, METH_FASTCALL, "sc_drop(pSC) -> None"},
-    {"sc_slotWidth", (PyCFunction)              _SC_slot_width, METH_FASTCALL, "sc_slotWidth(pSC) -> count"},
-    {"sc_numSlots", (PyCFunction)               _SC_num_slots, METH_FASTCALL, "sc_numSlots(pSC) -> count"},
-    {"sc_drop", (PyCFunction)                   _SC_drop, METH_FASTCALL, "sc_drop(pSC) -> None"},
-    {"scNextFreeArrayIndex", (PyCFunction)      _SC_next_free_array_index, METH_FASTCALL, ""},
-    {"scAtArrayPut", (PyCFunction)              _SC_atArrayPut, METH_FASTCALL, "puts a fnId in the selection cache"},
-    {"scQueryPtr", (PyCFunction)                _SC_pQuery, METH_FASTCALL, "scQueryPtr(pSC)\n\nanswer a pointer to the query buffer"},
-    {"scArrayPtr", (PyCFunction)                _SC_pArray, METH_FASTCALL, "scArrayPtr(pSC)\n\nanswer a pointer to the array of sigs"},
-    {"sc_getFnId", (PyCFunction)                _SC_get_result, METH_FASTCALL, ""},
-    {"sc_fillQuerySlotAndGetFnId", (PyCFunction) _SC_fill_query_slot_and_get_result, METH_FASTCALL, "sc_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
-    {"sc_tArgsFromQuery", (PyCFunction)         _SC_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
-    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction) _SC_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_new", (PyCFunction)                    _sc_new, METH_FASTCALL, "sc_new(numArgs, arrayLen) -> pSC"},
+    {"sc_drop", (PyCFunction)                   _sc_drop, METH_FASTCALL, "sc_drop(pSC) -> None"},
+    {"sc_nextFreeArrayIndex", (PyCFunction)     _sc_next_free_array_index, METH_FASTCALL, ""},
+    {"sc_atArrayPut", (PyCFunction)             _sc_atArrayPut, METH_FASTCALL, "sc_atArrayPut(pSC, index, pSig, fnId) -> Void\n\nin pSig belonging to pSC, at index put fnId"},
+    {"sc_queryPtr", (PyCFunction)               _sc_pQuery, METH_FASTCALL, "scQueryPtr(pSC)\n\nanswer a pointer to the query buffer"},
+    {"sc_getFnId", (PyCFunction)                _sc_get_result, METH_FASTCALL, ""},
+    {"sc_tArgsFromQuery", (PyCFunction)         _sc_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction) _sc_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
+
+    {"sc_test_arrayPtr", (PyCFunction)          _sc_test_pArray, METH_FASTCALL, "sc_test_arrayPtr(pSC)\n\nanswer a pointer to the array of sigs"},
+    {"sc_test_slotWidth", (PyCFunction)         _sc_test_slot_width, METH_FASTCALL, "sc_test_slotWidth(pSC) -> count"},
+    {"sc_test_numSlots", (PyCFunction)          _sc_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
+    {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _sc_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
 
 //    {"type_new",                                Shifter_type_new, METH_VARARGS | METH_KEYWORDS, ""},
-
-
-//    {"unreserve", (PyCFunction)                 _unreserve, METH_FASTCALL, ""},
 
     // play
     {"execShell",                               _execShell, METH_VARARGS, "Execute a shell command."},
     {"sizeofFredJoe", (PyCFunction)             _sizeofFredJoe, METH_FASTCALL, "tuple with sizeOf Fred and Joe in it"},
+    {"reserve", (PyCFunction)                   _reserve, METH_FASTCALL, "reserve(pVA, numPages)"},
+//    {"unreserve", (PyCFunction)                 _unreserve, METH_FASTCALL, ""},
+    {"getVaPtr", (PyCFunction)                  _getVaPtr, METH_FASTCALL, "getVaPtr()"},
+
     {0, 0, 0, 0}
 };
 
@@ -102,20 +83,20 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
     m = PyModule_Create(&jones_module);
     if (m == 0) return 0;
 
-    // JonesError
-    JonesError = PyErr_NewException("jones.JonesError", 0, 0);
-    if (PyModule_AddObject(m, "error", JonesError) < 0) {
-        Py_XDECREF(JonesError);
-        Py_CLEAR(JonesError);
+    // PyJonesError
+    PyJonesError = PyErr_NewException("jones.JonesError", 0, 0);
+    if (PyModule_AddObject(m, "error", PyJonesError) < 0) {
+        Py_XDECREF(PyJonesError);
+        Py_CLEAR(PyJonesError);
         Py_DECREF(m);
         return 0;
     }
 
-    // JonesSyntaxError
-    JonesSyntaxError = PyErr_NewException("jones.JonesSyntaxError", 0, 0);
-    if (PyModule_AddObject(m, "error", JonesSyntaxError) < 0) {
-        Py_XDECREF(JonesSyntaxError);
-        Py_CLEAR(JonesSyntaxError);
+    // PyJonesSyntaxError
+    PyJonesSyntaxError = PyErr_NewException("jones.JonesSyntaxError", 0, 0);
+    if (PyModule_AddObject(m, "error", PyJonesSyntaxError) < 0) {
+        Py_XDECREF(PyJonesSyntaxError);
+        Py_CLEAR(PyJonesSyntaxError);
         Py_DECREF(m);
         return 0;
     }
@@ -152,74 +133,67 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
         return 0;
     }
 
-    if (PyType_Ready(&NullaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_nullary", (PyObject *) &NullaryCls) < 0) {
-        Py_DECREF(&NullaryCls);
+    if (PyType_Ready(&PyNullaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_nullary", (PyObject *) &PyNullaryCls) < 0) {
+        Py_DECREF(&PyNullaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-    if (PyType_Ready(&UnaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_unary", (PyObject *) &UnaryCls) < 0) {
-        Py_DECREF(&UnaryCls);
+    if (PyType_Ready(&PyUnaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_unary", (PyObject *) &PyUnaryCls) < 0) {
+        Py_DECREF(&PyUnaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-    if (PyType_Ready(&BinaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_binary", (PyObject *) &BinaryCls) < 0) {
-        Py_DECREF(&BinaryCls);
+    if (PyType_Ready(&PyBinaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_binary", (PyObject *) &PyBinaryCls) < 0) {
+        Py_DECREF(&PyBinaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-    if (PyType_Ready(&TernaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_ternary", (PyObject *) &TernaryCls) < 0) {
-        Py_DECREF(&TernaryCls);
+    if (PyType_Ready(&PyTernaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_ternary", (PyObject *) &PyTernaryCls) < 0) {
+        Py_DECREF(&PyTernaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-    if (PyType_Ready(&PNullaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_pnullary", (PyObject *) &PNullaryCls) < 0) {
-        Py_DECREF(&PNullaryCls);
+    if (PyType_Ready(&PyPNullaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_pnullary", (PyObject *) &PyPNullaryCls) < 0) {
+        Py_DECREF(&PyPNullaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-    if (PyType_Ready(&PUnaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_punary", (PyObject *) &PUnaryCls) < 0) {
-        Py_DECREF(&PUnaryCls);
+    if (PyType_Ready(&PyPUnaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_punary", (PyObject *) &PyPUnaryCls) < 0) {
+        Py_DECREF(&PyPUnaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-    if (PyType_Ready(&PBinaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_pbinary", (PyObject *) &PBinaryCls) < 0) {
-        Py_DECREF(&PBinaryCls);
+    if (PyType_Ready(&PyPBinaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_pbinary", (PyObject *) &PyPBinaryCls) < 0) {
+        Py_DECREF(&PyPBinaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-    if (PyType_Ready(&PTernaryCls) < 0) return 0;
-    if (PyModule_AddObject(m, "_pternary", (PyObject *) &PTernaryCls) < 0) {
-        Py_DECREF(&PTernaryCls);
+    if (PyType_Ready(&PyPTernaryCls) < 0) return 0;
+    if (PyModule_AddObject(m, "_pternary", (PyObject *) &PyPTernaryCls) < 0) {
+        Py_DECREF(&PyPTernaryCls);
         Py_DECREF(m);
         return 0;
     }
 
-//    if (PyType_Ready(&RauCls) < 0) return 0;
-//    if (PyModule_AddObject(m, "_rau", (PyObject *) &RauCls) < 0) {
-//        Py_DECREF(&RauCls);
-//        Py_DECREF(m);
-//        return 0;
-//    }
 
-
-    // add ToyCls
-    if (PyType_Ready(&ToyCls) < 0) return 0;
-    if (PyModule_AddObject(m, "Toy", (PyObject *) &ToyCls) < 0) {
-        Py_DECREF(&ToyCls);
+    // add PyToyCls
+    if (PyType_Ready(&PyToyCls) < 0) return 0;
+    if (PyModule_AddObject(m, "Toy", (PyObject *) &PyToyCls) < 0) {
+        Py_DECREF(&PyToyCls);
         Py_DECREF(m);
         return 0;
     }

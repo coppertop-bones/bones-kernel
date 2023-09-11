@@ -2,18 +2,13 @@
 #define JONES_PY_BTYPE_C "jones/py_btype.c"
 
 #include "python.h"
-#include "pipe_structs.c"
+#include "_common.h"
 #include "../../include/bk/tm.h"
 
 
-struct PyBType {
-    PyObject_HEAD
-    btype btid;
-};
-
 
 pvt PyMemberDef PyBType_members[] = {
-        {"id", T_UINT, offsetof(struct PyBType, btid), 0, "id (u32)"},
+        {"id", T_UINT, offsetof(struct PyBType, btype), 0, "id (u32)"},
         {0}
 };
 
@@ -36,14 +31,14 @@ pvt PyObject * PyBType_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
 //pvt int PyBType_init(struct PyBType *self, PyObject *args, PyObject *kwds) {
 //    static char *kwlist[] = {"id", 0};
-//    int btid;
-//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &btid)) return -1;
-//    self->btid = btid;
+//    int btype;
+//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &btype)) return -1;
+//    self->btype = btype;
 //    return 0;
 //}
 
 
-static PyTypeObject PyBTypeCls = {
+pvt PyTypeObject PyBTypeCls = {
         PyVarObject_HEAD_INIT(0, 0)
         .tp_name = "jones.BType",
         .tp_doc = PyDoc_STR("TBC"),

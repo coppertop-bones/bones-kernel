@@ -5,12 +5,6 @@
 #include "../bk/kernel.c"
 
 
-struct PyKernel {
-    PyObject_HEAD
-    struct K *pKernel;
-};
-
-
 pvt PyMemberDef PyKernel_members[] = {
 //        {"id", T_UINT, offsetof(struct PyKernel, btid), 0, "id (u32)"},
         {0}
@@ -47,7 +41,7 @@ pvt PyObject * PyKernel_new(PyTypeObject *type, PyObject *args, PyObject *kwds) 
 //}
 
 
-static PyTypeObject PyKernelCls = {
+pvt PyTypeObject PyKernelCls = {
         PyVarObject_HEAD_INIT(0, 0)
         .tp_name = "jones.Kernel",
         .tp_doc = PyDoc_STR("TBC"),

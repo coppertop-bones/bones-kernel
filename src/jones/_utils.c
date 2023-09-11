@@ -7,10 +7,9 @@
 #include "Python.h"
 #include "structmember.h"       // https://github.com/python/cpython/blob/main/Include/structmember.h
 
-typedef Py_ssize_t pyssize;
-
 
 // PyExc_ValueError, PyExc_TypeError
+
 #define PY_ASSERT_INT_WITHIN_CLOSED(variable, accessorDesc, lb, ub) \
     if (!((lb) <= (variable) && (variable) <= (ub))) { \
         char *s1, *s2, *s3; \
@@ -18,7 +17,7 @@ typedef Py_ssize_t pyssize;
         asprintf (&s2, "%li", (long)(ub)); \
         asprintf (&s3, "%li", (long)(variable)); \
         char *msg = join_txts(12, __FUNCTION__, ": ", accessorDesc, " = ", s3, " but {", s1, " <= ", accessorDesc, " <= ", s2, "}"); \
-        PyObject *answer =  PyErr_Format(JonesError, msg); \
+        PyObject *answer =  PyErr_Format(PyJonesError, msg); \
         free(s1); \
         free(s2); \
         free(s3); \
@@ -31,7 +30,7 @@ typedef Py_ssize_t pyssize;
     { \
         char *retval = (src); \
         if (retval != 0) { \
-            PyObject *answer = PyErr_Format(JonesError, (const char *) retval); \
+            PyObject *answer = PyErr_Format(PyJonesError, (const char *) retval); \
             free(retval); \
             return answer; \
         } \
@@ -70,11 +69,6 @@ pvt PyObject * _raiseWrongNumberOfArgs(const char * fName, int numExpected, Py_s
         }
     }
 }
-
-
-
-
-
 
 
 

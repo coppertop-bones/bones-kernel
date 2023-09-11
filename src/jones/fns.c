@@ -3,15 +3,12 @@
 
 
 #include "../../include/bk/bk.h"
-#include "pipe_structs.c"
+#include "_common.h"
 
-
-// 0x0000_FFFF_FFFF_FFFF
-#define B_PTR_MASK 0x0000FFFFFFFFFFFF
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// free fns
+// memory manipulation
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _toAddress(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
@@ -67,7 +64,7 @@ pvt PyObject * _atU16(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (!PyLong_Check(args[1])) return 0;        // size_t index
 
     size_t index = PyLong_AsSize_t(args[1]);
-    unsigned short *pItem = ((unsigned short*) (PyLong_AsSize_t(args[0]) & B_PTR_MASK)) + index - 1;
+    unsigned short *pItem = ((unsigned short*) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
 
     return PyLong_FromLong(*pItem);
 }
@@ -83,7 +80,7 @@ pvt PyObject * _atU16Put(PyObject *mod, PyObject *const *args, Py_ssize_t nargs)
     if (!PyLong_Check(args[3])) return 0;        // u16
 
     size_t index = PyLong_AsSize_t(args[1]);
-    unsigned short *pItem = ((unsigned short*) (PyLong_AsSize_t(args[0]) & B_PTR_MASK)) + index - 1;
+    unsigned short *pItem = ((unsigned short*) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
     unsigned short mask = (unsigned short) PyLong_AsLong(args[2]);           // OPEN check range before converting
     unsigned short v = (unsigned short) PyLong_AsLong(args[3]);
 
@@ -100,7 +97,7 @@ pvt PyObject * _atU8(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (!PyLong_Check(args[1])) return 0;        // size_t index
 
     size_t index = PyLong_AsSize_t(args[1]);
-    unsigned char *pItem = ((unsigned char*) (PyLong_AsSize_t(args[0]) & B_PTR_MASK)) + index - 1;
+    unsigned char *pItem = ((unsigned char*) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
 
     return PyLong_FromLong(*pItem);
 }
@@ -116,7 +113,7 @@ pvt PyObject * _atU8Put(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) 
     if (!PyLong_Check(args[3])) return 0;        // u8
 
     size_t index = (size_t) PyLong_AsSize_t(args[1]);
-    unsigned char *pItem = ((unsigned char*) (PyLong_AsSize_t(args[0]) & B_PTR_MASK)) + index - 1;
+    unsigned char *pItem = ((unsigned char*) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
     unsigned char mask = (unsigned char) PyLong_AsLong(args[2]);
     unsigned char v = (unsigned char) PyLong_AsLong(args[3]);
 

@@ -29,8 +29,8 @@ typedef unsigned short PAYLOAD;
 #define HC_INC  0x0100
 
 struct SelectorCache {
-    unsigned char slot_width;                         // in count of u16
-    unsigned char num_slots;                          // number of slots in the array (plus scratch slot for the query)
+    unsigned char slot_width;       // in count of u16
+    unsigned char num_slots;        // number of slots in the array (plus scratch slot for the query)
     unsigned short buf[];
 };
 

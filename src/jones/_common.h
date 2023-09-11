@@ -5,7 +5,8 @@
 #define PY_SSIZE_T_CLEAN
 
 #include "Python.h"
-#include "../bk/fn_select.c"
+#include "../../include/bk/bk.h"
+#include "../../include/bk/tm.h"
 
 
 struct Base {
@@ -29,8 +30,35 @@ struct Partial {
     PyObject *args[];
 };
 
-pvt PyObject *JonesError;
-pvt PyObject *JonesSyntaxError;
+struct PyBType {
+    PyObject_HEAD
+    btype btype;
+};
+
+struct PyKernel {
+    PyObject_HEAD
+    struct K *pKernel;
+};
+
+
+pvt PyObject *PyJonesError;
+pvt PyObject *PyJonesSyntaxError;
+
+pvt PyTypeObject PyBTypeCls;
+pvt PyTypeObject PyKernelCls;
+
+pvt PyTypeObject PyNullaryCls;
+pvt PyTypeObject PyUnaryCls;
+pvt PyTypeObject PyBinaryCls;
+pvt PyTypeObject PyTernaryCls;
+
+pvt PyTypeObject PyPNullaryCls;
+pvt PyTypeObject PyPUnaryCls;
+pvt PyTypeObject PyPBinaryCls;
+pvt PyTypeObject PyPTernaryCls;
+
+
+#define PTR_MASK 0x0000FFFFFFFFFFFF
 
 
 #endif  // __JONES_PIPE_STRUCTS_C

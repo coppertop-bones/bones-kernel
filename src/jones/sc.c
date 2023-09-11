@@ -2,58 +2,22 @@
 #define JONES_SELECT_FN_C "jones/select_fn.c"
 
 
-#include "pipe_structs.c"
+#include "_common.h"
 #include "../../include/bk/bk.h"
-#include "utils.c"
-#include "py_btype.c"
+#include "../bk/sc.c"
+#include "_utils.c"
+#include "pybtype.c"
 
 
 static PyObject * Partial_o_tbc(struct Partial *, void *);      // from pipe_ops.c
 
-static PyTypeObject NullaryCls;
-static PyTypeObject PNullaryCls;
-static PyTypeObject UnaryCls;
-static PyTypeObject PUnaryCls;
-static PyTypeObject BinaryCls;
-static PyTypeObject PBinaryCls;
-static PyTypeObject TernaryCls;
-static PyTypeObject PTernaryCls;
 
 
-pvt PyObject * _SC_fill_query_slot_and_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
-    if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
-    if (!PyLong_Check(args[0])) return 0;
-    PyObject *tArgs = args[1];
-    if (!PyTuple_Check(tArgs)) return 0;
+// ---------------------------------------------------------------------------------------------------------------------
+// main api
+// ---------------------------------------------------------------------------------------------------------------------
 
-    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
-    Py_ssize_t num_args = PyTuple_Size(args[1]);
-    PY_ASSERT_INT_WITHIN_CLOSED(num_args, "numArgs", 1, 16);
-
-    unsigned short *query, *array, lower, upper, upperFlag;
-    query = P_QUERY(sc);
-    array = P_SIG_ARRAY(sc);
-
-    for (fu8 o = 0; o < num_args; o++) {
-        // get the id from each tArg
-        struct PyBType *tArg = (struct PyBType *) PyTuple_GetItem(tArgs, o);
-        if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(JonesError, "Arg is not a BType");
-        lower = tArg->btid & LOWER_TYPE_MASK;
-        upper = (tArg->btid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
-        upperFlag = upper ? HAS_UPPER_TYPE_FLAG : 0;
-        PY_ASSERT_INT_WITHIN_CLOSED(upper, "btid", 0, MAX_UPPER_TYPE);
-        // put btid into the query scratchpad
-        query[o + 1] = lower | upperFlag;
-    }
-    // add the size
-    query[0] = 0x001F & num_args;
-
-    // answer the result
-    return PyLong_FromLong(fast_probe_sigs(query, array, sc->slot_width, sc->num_slots));
-}
-
-
-pvt PyObject * _SC_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _sc_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;
 
@@ -69,7 +33,7 @@ pvt PyObject * _SC_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t n
 }
 
 
-pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const *pyargs, Py_ssize_t npyargs) {
+pvt PyObject * _sc_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const *pyargs, Py_ssize_t npyargs) {
 
     //    # get the types of the arguments
     //    hasValue = False  # used to figure if it's just a dispatch query
@@ -108,7 +72,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
     // get args
     PyObject *args = pyargs[1];
     if (!PyTuple_Check(args)) return PyErr_Format(PyExc_TypeError, "t, argument 2, is not a tuple");
-    pyssize num_args = PyTuple_Size(args);
+    Py_ssize_t num_args = PyTuple_Size(args);
     PY_ASSERT_INT_WITHIN_CLOSED(num_args, "numArgs", 1, 16);
 
     // get BTypeByType
@@ -130,7 +94,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
     // be true, thus for inspection purposes we can return the function itself rather than calling it - enabling the
     // user to check that they are dispatching to the anticipated function
     bool hasValue = false;
-    pyssize o_slot = 1;
+    Py_ssize_t o_slot = 1;
 
     for (fu8 o = 0; o < num_args; o++) {
         PyObject *arg = PyTuple_GET_ITEM(args, o);
@@ -145,8 +109,8 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             }
             else
                 t = (struct PyBType *) py;
-            lower = t->btid & LOWER_TYPE_MASK;
-            upper = t->btid & UPPER_TYPE_MASK;
+            lower = t->btype & LOWER_TYPE_MASK;
+            upper = t->btype & UPPER_TYPE_MASK;
             query[o_slot] = lower;  o_slot++;
             if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
         }
@@ -154,14 +118,14 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
         // otherwise, is it a BType?
         else if (PyObject_IsInstance(arg, (PyObject *) &PyBTypeCls)) {
             t = (struct PyBType *) arg;
-            lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK);
+            lower = t->btype & LOWER_TYPE_MASK;
+            upper = (t->btype & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
             if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
         }
 
         // otherwise, is it a jones Fn? if so get the type of the whole family
-        else if (argCls == &NullaryCls || argCls == &UnaryCls || argCls == &BinaryCls || argCls == &TernaryCls) {
+        else if (argCls == &PyNullaryCls || argCls == &PyUnaryCls || argCls == &PyBinaryCls || argCls == &PyTernaryCls) {
             // call the fn.d.get_t(arg)
             struct Fn *f = (struct Fn *) arg;
             PyObject *d = f->d;
@@ -169,15 +133,15 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             maybe = PyObject_GetAttrString(d, "_t");
             if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._t didn't answer a BType", o);
             t = (struct PyBType *) maybe;
-            lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK);
+            lower = t->btype & LOWER_TYPE_MASK;
+            upper = (t->btype & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
             if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
             hasValue = true;
         }
 
         // otherwise, is it a jones Partial Fn? if so get the partial type of the overload, i.e. args[%l].d._tPartial(num_args, o_tbc)
-        else if (argCls == &PNullaryCls || argCls == &PUnaryCls || argCls == &PBinaryCls || argCls == &PTernaryCls ) {
+        else if (argCls == &PyPNullaryCls || argCls == &PyPUnaryCls || argCls == &PyPBinaryCls || argCls == &PyPTernaryCls ) {
             // call the fn.d.get_t(arg)
             struct Partial *p = (struct Partial *) arg;
             PyObject *d = p->Fn.d;
@@ -194,8 +158,8 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             if (result == 0) return 0;    // the call attempt will have set an exception
             if (!PyObject_IsInstance(result, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._tPartial didn't answer a BType", o);
             t = (struct PyBType *) result;
-            lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK);
+            lower = t->btype & LOWER_TYPE_MASK;
+            upper = (t->btype & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
             if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
             hasValue = true;
@@ -206,8 +170,8 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             if (maybe != 0) {
                 if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "The _t attribute of args[%l] is not a BType", o);
                 t = (struct PyBType *) maybe;
-                lower = t->btid & LOWER_TYPE_MASK;
-                upper = (t->btid & UPPER_TYPE_MASK);
+                lower = t->btype & LOWER_TYPE_MASK;
+                upper = (t->btype & UPPER_TYPE_MASK);
                 query[o_slot] = lower;  o_slot++;
                 if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
                 hasValue = true;
@@ -229,8 +193,8 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
             }
             else
                 t = (struct PyBType *) py;
-            lower = t->btid & LOWER_TYPE_MASK;
-            upper = (t->btid & UPPER_TYPE_MASK);
+            lower = t->btype & LOWER_TYPE_MASK;
+            upper = (t->btype & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
             if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
             hasValue = true;
@@ -241,7 +205,7 @@ pvt PyObject * _SC_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
 }
 
 
-pvt PyObject * _SC_tArgs_from_query(PyObject *mod, PyObject *const *params, pyssize nparams) {
+pvt PyObject * _sc_tArgs_from_query(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
     // (pSc : Selector&ptr, BTypeById : N**BType&pylist) -> N**BType&pytuple
 
     if (nparams != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
@@ -257,15 +221,15 @@ pvt PyObject * _SC_tArgs_from_query(PyObject *mod, PyObject *const *params, pyss
     if (answer == 0) return 0;
 
     unsigned short *query = P_QUERY(sc);
-    pyssize o_next = 1;
-    for (pyssize o = 0; o < num_args; o++) {
-        btype btid = query[o_next];
-        if (btid & HAS_UPPER_TYPE_FLAG) {
+    Py_ssize_t o_next = 1;
+    for (Py_ssize_t o = 0; o < num_args; o++) {
+        btype btype = query[o_next];
+        if (btype & HAS_UPPER_TYPE_FLAG) {
             o_next++;
-            btid &= LOWER_TYPE_MASK;                                            // remove the hasUpper flag
-            btid |= ((query[o_next] & MAX_UPPER_TYPE) << UPPER_TYPE_SHIFT);     // add the upper part
+            btype &= LOWER_TYPE_MASK;                                            // remove the hasUpper flag
+            btype |= ((query[o_next] & MAX_UPPER_TYPE) << UPPER_TYPE_SHIFT);     // add the upper part
         }
-        PyObject *t = PyList_GET_ITEM(PyBTypeById, (pyssize) btid);
+        PyObject *t = PyList_GET_ITEM(PyBTypeById, (Py_ssize_t) btype);
         Py_INCREF(t);
         PyTuple_SET_ITEM(answer, o, t);
         o_next++;
@@ -274,12 +238,12 @@ pvt PyObject * _SC_tArgs_from_query(PyObject *mod, PyObject *const *params, pyss
 }
 
 
-//    pyssize full_size = Py_SIZE(partial);  PyObject **args = partial->args;  PyObject * TBC = partial->Fn.TBCSentinel;
+//    Py_ssize_t full_size = Py_SIZE(partial);  PyObject **args = partial->args;  PyObject * TBC = partial->Fn.TBCSentinel;
 //    if (partial->pipe1 != 0 || partial->pipe2 != 0) return 0;
 //    int num_tbc = 0;
-//    for (pyssize o=0; o < full_size; o++) num_tbc += (args[o] == TBC);
+//    for (Py_ssize_t o=0; o < full_size; o++) num_tbc += (args[o] == TBC);
 
-pvt PyObject * _SC_next_free_array_index(PyObject *mod, PyObject *const *args, pyssize nargs) {
+pvt PyObject * _sc_next_free_array_index(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
@@ -289,7 +253,7 @@ pvt PyObject * _SC_next_free_array_index(PyObject *mod, PyObject *const *args, p
 }
 
 
-pvt PyObject * _SC_atArrayPut(PyObject *mod, PyObject *const *args, pyssize nargs) {
+pvt PyObject * _sc_atArrayPut(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     // pSC : *sc, index : unsigned char, pSig : unsigned short[], fnId : u16
     if (nargs != 4) return _raiseWrongNumberOfArgs(__FUNCTION__, 4, nargs);
     // TODO raise a type error
@@ -310,32 +274,12 @@ pvt PyObject * _SC_atArrayPut(PyObject *mod, PyObject *const *args, pyssize narg
 }
 
 
-pvt PyObject * _SC_get_result_for_query(PyObject *mod, PyObject *const *args, pyssize nargs) {
-    // pQuery:unsigned short*, pSigs:unsigned short*, slot_width:unsigned char, num_slots:unsigned char
-    if (nargs != 4) return _raiseWrongNumberOfArgs(__FUNCTION__, 4, nargs);
-    // TODO raise a type error
-    if (!PyLong_Check(args[0])) return 0;
-    if (!PyLong_Check(args[1])) return 0;
-    if (!PyLong_Check(args[2])) return 0;
-    if (!PyLong_Check(args[3])) return 0;
 
-    unsigned short *query = PyLong_AsVoidPtr(args[0]);
-    unsigned short *sigs = PyLong_AsVoidPtr(args[1]);
-    unsigned long slot_width = PyLong_AsLong(args[2]);
-    unsigned long num_slots = PyLong_AsLong(args[3]);
-    unsigned long x = 0;
-    for (unsigned long i = 0; i < 1; i++) {
-        x = fast_probe_sigs(query, sigs, (unsigned char)slot_width, (unsigned char)num_slots);
-    }
-//    PP_INT("x: ", x);
-    return PyLong_FromLong(x);          // need to return x else the loop gets optimised away :(
-}
-
-
-
+// ---------------------------------------------------------------------------------------------------------------------
 // lifecycle and accessing
+// ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyObject * _SC_new(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _sc_new(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     // TODO raise a descriptive type error
     if (!PyLong_Check(args[0])) return 0;
@@ -351,7 +295,7 @@ pvt PyObject * _SC_new(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
 }
 
 
-pvt PyObject * _SC_drop(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _sc_drop(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
@@ -363,21 +307,7 @@ pvt PyObject * _SC_drop(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) 
 }
 
 
-pvt PyObject * _SC_slot_width(PyObject *mod, PyObject *const *params, pyssize nparams) {
-    if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
-    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
-    return PyLong_FromLong(sc->slot_width);
-}
-
-
-pvt PyObject * _SC_num_slots(PyObject *mod, PyObject *const *params, pyssize nparams) {
-    if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
-    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
-    return PyLong_FromLong(sc->num_slots);
-}
-
-
-pvt PyObject * _SC_pQuery(PyObject *mod, PyObject *const *args, pyssize nargs) {
+pvt PyObject * _sc_pQuery(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     // pSelectorCache:*Selector
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
@@ -388,8 +318,26 @@ pvt PyObject * _SC_pQuery(PyObject *mod, PyObject *const *args, pyssize nargs) {
 }
 
 
-// for development purposes
-pvt PyObject * _SC_pArray(PyObject *mod, PyObject *const *args, pyssize nargs) {
+
+// ---------------------------------------------------------------------------------------------------------------------
+// testing interface
+// ---------------------------------------------------------------------------------------------------------------------
+
+pvt PyObject * _sc_test_slot_width(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
+    if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
+    return PyLong_FromLong(sc->slot_width);
+}
+
+
+pvt PyObject * _sc_test_num_slots(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
+    if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
+    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
+    return PyLong_FromLong(sc->num_slots);
+}
+
+
+pvt PyObject * _sc_test_pArray(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     // pSelectorCache:*Selector
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
@@ -399,6 +347,60 @@ pvt PyObject * _SC_pArray(PyObject *mod, PyObject *const *args, pyssize nargs) {
     return PyLong_FromVoidPtr(P_SIG_ARRAY(sc));
 }
 
+
+pvt PyObject * _sc_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
+    if (!PyLong_Check(args[0])) return 0;
+    PyObject *tArgs = args[1];
+    if (!PyTuple_Check(tArgs)) return 0;
+
+    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    Py_ssize_t num_args = PyTuple_Size(args[1]);
+    PY_ASSERT_INT_WITHIN_CLOSED(num_args, "numArgs", 1, 16);
+
+    unsigned short *query, *array, lower, upper, upperFlag;
+    query = P_QUERY(sc);
+    array = P_SIG_ARRAY(sc);
+
+    for (fu8 o = 0; o < num_args; o++) {
+        // get the id from each tArg
+        struct PyBType *tArg = (struct PyBType *) PyTuple_GetItem(tArgs, o);
+        if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(PyJonesError, "Arg is not a BType");
+        lower = tArg->btype & LOWER_TYPE_MASK;
+        upper = (tArg->btype & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
+        upperFlag = upper ? HAS_UPPER_TYPE_FLAG : 0;
+        PY_ASSERT_INT_WITHIN_CLOSED(upper, "btype", 0, MAX_UPPER_TYPE);
+        // put btype into the query scratchpad
+        query[o + 1] = lower | upperFlag;
+    }
+    // add the size
+    query[0] = 0x001F & num_args;
+
+    // answer the result
+    return PyLong_FromLong(fast_probe_sigs(query, array, sc->slot_width, sc->num_slots));
+}
+
+
+//pvt PyObject * _sc_test_get_result_for_query(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+//    // pQuery:unsigned short*, pSigs:unsigned short*, slot_width:unsigned char, num_slots:unsigned char
+//    if (nargs != 4) return _raiseWrongNumberOfArgs(__FUNCTION__, 4, nargs);
+//    // TODO raise a type error
+//    if (!PyLong_Check(args[0])) return 0;
+//    if (!PyLong_Check(args[1])) return 0;
+//    if (!PyLong_Check(args[2])) return 0;
+//    if (!PyLong_Check(args[3])) return 0;
+//
+//    unsigned short *query = PyLong_AsVoidPtr(args[0]);
+//    unsigned short *sigs = PyLong_AsVoidPtr(args[1]);
+//    unsigned long slot_width = PyLong_AsLong(args[2]);
+//    unsigned long num_slots = PyLong_AsLong(args[3]);
+//    unsigned long x = 0;
+//    for (unsigned long i = 0; i < 1; i++) {
+//        x = fast_probe_sigs(query, sigs, slot_width, num_slots);
+//    }
+////    PP_INT("x: ", x);
+//    return PyLong_FromLong(x);          // need to return x else the loop gets optimised away :(
+//}
 
 
 

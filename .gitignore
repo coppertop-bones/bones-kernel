@@ -1,6 +1,5 @@
 .idea/
 *.so
 *.o
-../pytests/tests/__pycache__/
-
-pytests/tests/__pycache__/
+__pycache__/
+/pytests/build/
