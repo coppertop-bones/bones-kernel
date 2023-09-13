@@ -5,32 +5,17 @@
 #include "../../include/all.cfg"
 #include <stdlib.h>
 #include "../../include/bk/buckets.h"
+#include "os.c"
 #include "pp.c"
 
-void nyi(char *msg, ...);
-
-// OPEN: get PAGE_SIZE from the os
-unsigned int PAGE_SIZE = 4096;
-
-
-// buckets are supposed to be fast on allocation and deallocation
-// implemented as a singly linked list of buckets, state can be saved and reset thus deallocated en-mass
-// buckets can be cleaned for security
-// the last allocation can be resized to be bigger or smaller useful when required size is unknown upfront
-// Buckets can fit into a cache line e.g. 64 bytes
-// Buckets can be used to get a tmp buffer
-//  void *buf = allocInBuckets(all_strings, n:1000, align:1);
-//  ...
-//  reallocInBuckets(all_strings, buf, 0, align:1);
-
-
-
+pvt unsigned int PAGE_SIZE = 0;
 
 tdd void *_nextBucket(Buckets *a, unsigned int n, unsigned int align);
 tdd void *_allocBucket(size_t size);
 
 
 pub void * initBuckets(Buckets *a, unsigned long chunkSize) {
+    if (PAGE_SIZE == 0) {PAGE_SIZE = os_page_size();}
     a->first_bucket = 0;
     a->current_bucket = 0;
     a->next = 0;

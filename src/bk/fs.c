@@ -1,5 +1,8 @@
-#ifndef __BK_FN_SELECT_C
-#define __BK_FN_SELECT_C "bk/fn_select.c"
+// ---------------------------------------------------------------------------------------------------------------------
+// function selector
+// ---------------------------------------------------------------------------------------------------------------------
+#ifndef __BK_FS_C
+#define __BK_FS_C "bk/fs.c"
 
 
 #include "../../include/all.cfg"
@@ -28,15 +31,15 @@ typedef unsigned short PAYLOAD;
 #define NOT_HC_MASK 0x00FF
 #define HC_INC  0x0100
 
-struct SelectorCache {
+struct FunctionSelector {
     unsigned char slot_width;       // in count of u16
     unsigned char num_slots;        // number of slots in the array (plus scratch slot for the query)
     unsigned short buf[];
 };
 
-#define P_QUERY(sc) (&(sc)->buf[0])
-#define P_SIG_ARRAY(sc) (&(sc)->buf[1 * (sc)->slot_width])
-#define P_SIG_HASH(sc) (&(sc)->buf[(1 + (sc)->num_slots) * (sc)->slot_width])
+#define P_QUERY(fs) (&(fs)->buf[0])
+#define P_SIG_ARRAY(fs) (&(fs)->buf[1 * (fs)->slot_width])
+#define P_SIG_HASH(fs) (&(fs)->buf[(1 + (fs)->num_slots) * (fs)->slot_width])
 #define SLOT_WIDTH_FROM_NUM_ARGS(num_args) (1 + 2 * (num_args))
 #define NUM_ARGS_FROM_SLOT_WIDTH(slot_width) ((slot_width - 1) / 2)
 
@@ -46,23 +49,23 @@ struct SelectorCache {
 // |         UBT         |         LBT         |
 // | 0000 0000 0000 0TTT | UTTT TTTT TTTT TTTT |
 
-pvt void SC_at_array_put(struct SelectorCache *sc, int index, unsigned short sig[], PAYLOAD payload) {
+pvt void FS_at_array_put(struct FunctionSelector *fs, int index, unsigned short sig[], PAYLOAD payload) {
     // index is one based, sig is size prefixed array of T1|T2
-    unsigned short *dest = P_SIG_ARRAY(sc) + (index - 1) * sc->slot_width;
+    unsigned short *dest = P_SIG_ARRAY(fs) + (index - 1) * fs->slot_width;
     int size = sig[0] & SIZE_MASK;
     dest[0] = (payload & UPPER_PAYLOAD_MASK) | size;
     for (int o=1; o < size + 2; o++) dest[o] = sig[o];
     unsigned short *pad_array = dest + size + 2;
-    int num_to_pad = sc->slot_width - (size + 1);
+    int num_to_pad = fs->slot_width - (size + 1);
     for (int o=0; o < num_to_pad; o++) pad_array[o] = 0;
-    int o_last = sc->slot_width - 1;
+    int o_last = fs->slot_width - 1;
     dest[o_last] = 0x0000 | ((payload & LOWER_PAYLOAD_MASK) << LOWER_PAYLOAD_SHIFT);
 }
 
-pvt int SC_next_free_array_index(struct SelectorCache *sc) {
-    int num_slots = sc->num_slots;
-    int slot_width = sc->slot_width;
-    unsigned short *array = P_SIG_ARRAY(sc);
+pvt int FS_next_free_array_index(struct FunctionSelector *fs) {
+    int num_slots = fs->num_slots;
+    int slot_width = fs->slot_width;
+    unsigned short *array = P_SIG_ARRAY(fs);
     for (int o=0; o < num_slots; o++) if ((array + o * slot_width)[0] == 0x0000) return o + 1;
     return 0;
 }
@@ -93,30 +96,38 @@ pvt int fast_probe_sigs(unsigned short query[], unsigned short sigs[], int slot_
     return 0;
 }
 
-pvt size_t SC_new_size(int num_args, int num_slots) {
-    // OPEN check range and return err (like in SC_init)
+//pvt size_t FS_required_size(int num_args, int num_slots) {
+//    // OPEN check range and return err (like in FS_create)
+//    int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
+//    return sizeof(struct FunctionSelector) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
+//}
+
+pvt err FS_required_size(int num_args, int num_slots, size_t *size) {
+    if (!(1 <= num_args && num_args <=16)) SIGNAL("num_args is not within {1, 16}");         // OPEN add num_args value to msg
+    if (!(1 <= num_slots && num_slots <=128)) SIGNAL("num_slots is not within {1, 128}");
     int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
-    return sizeof(struct SelectorCache) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
+    *size = sizeof(struct FunctionSelector) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
+    return ok;
 }
 
-pvt err SC_init(struct SelectorCache *sc, int num_args, int num_slots) {
+pvt err FS_create(struct FunctionSelector *fs, int num_args, int num_slots) {
     int i, iHC;
     int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
     if (!(1 <= num_args && num_args <=16)) SIGNAL("num_args is not within {1, 16}");         // OPEN add num_args value to msg
     if (!(1 <= num_slots && num_slots <=128)) SIGNAL("num_slots is not within {1, 128}");
 
-    sc -> slot_width = slot_width;
-    sc -> num_slots = num_slots;
-    unsigned short *query = P_QUERY(sc);
+    fs -> slot_width = slot_width;
+    fs -> num_slots = num_slots;
+    unsigned short *query = P_QUERY(fs);
     for (i=0; i < slot_width; i++) query[i] = 0x0000;
-    unsigned short *array = P_SIG_ARRAY(sc);
+    unsigned short *array = P_SIG_ARRAY(fs);
     for (i=0; i < slot_width * num_slots; i++) array[i] = 0x0000;
     for (iHC=0; iHC < num_slots; iHC++) array[i+iHC] = 0x0000;
     return ok;
 }
 
-pvt void SC_drop(struct SelectorCache *sc) {
+pvt void FS_trash(struct FunctionSelector *fs) {
 }
 
 
-#endif  // __BK_FN_SELECT_C
+#endif  // __BK_FS_C

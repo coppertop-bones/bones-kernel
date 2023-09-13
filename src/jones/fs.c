@@ -1,39 +1,42 @@
-#ifndef JONES_SELECT_C
-#define JONES_SELECT_FN_C "jones/select_fn.c"
+// ---------------------------------------------------------------------------------------------------------------------
+// function selection api
+// ---------------------------------------------------------------------------------------------------------------------
+#ifndef JONES_FS_C
+#define JONES_FS_C "jones/fs.c"
 
 
-#include "_common.h"
+#include "_jones.h"
 #include "../../include/bk/bk.h"
-#include "../bk/sc.c"
+#include "../bk/fs.c"
 #include "_utils.c"
 #include "pybtype.c"
 
 
-static PyObject * Partial_o_tbc(struct Partial *, void *);      // from pipe_ops.c
+static PyObject * Partial_o_tbc(struct Partial *, void *);
 
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// main api
+// osc api
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyObject * _sc_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _fs_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;
 
-    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
     Py_ssize_t num_args = PyTuple_Size(args[1]);
     PY_ASSERT_INT_WITHIN_CLOSED(num_args, "numArgs", 1, 16);
 
-    unsigned short *query = P_QUERY(sc);
-    unsigned short *array = P_SIG_ARRAY(sc);
+    unsigned short *query = P_QUERY(fs);
+    unsigned short *array = P_SIG_ARRAY(fs);
 
     // answer the result
-    return PyLong_FromLong(fast_probe_sigs(query, array, sc->slot_width, sc->num_slots));
+    return PyLong_FromLong(fast_probe_sigs(query, array, fs->slot_width, fs->num_slots));
 }
 
 
-pvt PyObject * _sc_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const *pyargs, Py_ssize_t npyargs) {
+pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const *pyargs, Py_ssize_t npyargs) {
 
     //    # get the types of the arguments
     //    hasValue = False  # used to figure if it's just a dispatch query
@@ -67,7 +70,7 @@ pvt PyObject * _sc_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
 
     // get pSC
     if (!PyLong_Check(pyargs[0])) return PyErr_Format(PyExc_TypeError, "pSC, argument 1, is not a ptr (long)");
-    struct SelectorCache *sc = PyLong_AsVoidPtr(pyargs[0]);
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(pyargs[0]);
 
     // get args
     PyObject *args = pyargs[1];
@@ -88,7 +91,7 @@ pvt PyObject * _sc_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
     if (!PyType_Check(_CoWProxy)) return PyErr_Format(PyExc_TypeError, "_CoWProxy, argument 5, is not a python class");
 
     unsigned short *query, lower, upper;
-    query = P_QUERY(sc);
+    query = P_QUERY(fs);
 
     // if all the arguments are types then hasValue will be false, else if any argument is a value it hasValue will
     // be true, thus for inspection purposes we can return the function itself rather than calling it - enabling the
@@ -205,22 +208,22 @@ pvt PyObject * _sc_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
 }
 
 
-pvt PyObject * _sc_tArgs_from_query(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
+pvt PyObject * _fs_tArgs_from_query(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
     // (pSc : Selector&ptr, BTypeById : N**BType&pylist) -> N**BType&pytuple
 
     if (nparams != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
 
     if (!PyLong_Check(params[0])) return 0;
-    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(params[0]);
 
     PyObject *PyBTypeById = params[1];
     if (!PyList_Check(PyBTypeById)) return 0;
 
-    fu8 num_args = NUM_ARGS_FROM_SLOT_WIDTH(sc->slot_width);
+    fu8 num_args = NUM_ARGS_FROM_SLOT_WIDTH(fs->slot_width);
     PyObject *answer = PyTuple_New(num_args);
     if (answer == 0) return 0;
 
-    unsigned short *query = P_QUERY(sc);
+    unsigned short *query = P_QUERY(fs);
     Py_ssize_t o_next = 1;
     for (Py_ssize_t o = 0; o < num_args; o++) {
         btype btype = query[o_next];
@@ -243,18 +246,18 @@ pvt PyObject * _sc_tArgs_from_query(PyObject *mod, PyObject *const *params, Py_s
 //    int num_tbc = 0;
 //    for (Py_ssize_t o=0; o < full_size; o++) num_tbc += (args[o] == TBC);
 
-pvt PyObject * _sc_next_free_array_index(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _fs_next_free_array_index(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
-    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
-    return PyLong_FromLong(SC_next_free_array_index(sc));
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
+    return PyLong_FromLong(FS_next_free_array_index(fs));
 }
 
 
-pvt PyObject * _sc_atArrayPut(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
-    // pSC : *sc, index : unsigned char, pSig : unsigned short[], fnId : u16
+pvt PyObject * _fs_atArrayPut(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+    // pSC : *fs, index : unsigned char, pSig : unsigned short[], fnId : u16
     if (nargs != 4) return _raiseWrongNumberOfArgs(__FUNCTION__, 4, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
@@ -262,15 +265,15 @@ pvt PyObject * _sc_atArrayPut(PyObject *mod, PyObject *const *args, Py_ssize_t n
     if (!PyLong_Check(args[2])) return 0;
     if (!PyLong_Check(args[3])) return 0;
 
-    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
     fu8 index = (fu8) PyLong_AsLong(args[1]);
-    PY_ASSERT_INT_WITHIN_CLOSED(index, "index", 1, sc->num_slots);
+    PY_ASSERT_INT_WITHIN_CLOSED(index, "index", 1, fs->num_slots);
     unsigned short *sig = PyLong_AsVoidPtr(args[2]);
     unsigned long v = PyLong_AsLong(args[3]);
     PY_ASSERT_INT_WITHIN_CLOSED(v, "v", 0, _64K);
 
-    SC_at_array_put(sc, index, sig, (unsigned short) v);
-    return PyLong_FromVoidPtr(sc);
+    FS_at_array_put(fs, index, sig, (unsigned short) v);
+    return PyLong_FromVoidPtr(fs);
 }
 
 
@@ -279,7 +282,7 @@ pvt PyObject * _sc_atArrayPut(PyObject *mod, PyObject *const *args, Py_ssize_t n
 // lifecycle and accessing
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyObject * _sc_new(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _fs_create(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     // TODO raise a descriptive type error
     if (!PyLong_Check(args[0])) return 0;
@@ -288,33 +291,35 @@ pvt PyObject * _sc_new(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     unsigned char num_args = (unsigned char) PyLong_AsLong(args[0]);
     unsigned char array_n_slots = (unsigned char) PyLong_AsLong(args[1]);
 
-    struct SelectorCache * sc = malloc(SC_new_size(num_args, array_n_slots));  // OPEN trap error from SC_new_size
-    if (sc == 0) return 0;
-    TRAP_PY( SC_init(sc, num_args, array_n_slots) );
-    return PyLong_FromVoidPtr(sc);
+    size_t size = 0;
+    TRAP_PY( FS_required_size(num_args, array_n_slots, &size) );
+    struct FunctionSelector *fs = malloc(size);
+//    struct FunctionSelector *fs = malloc(FS_required_size(num_args, array_n_slots));
+    if (fs == 0) return 0;
+    TRAP_PY( FS_create(fs, num_args, array_n_slots) );
+    return PyLong_FromVoidPtr(fs);
 }
 
 
-pvt PyObject * _sc_drop(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _fs_trash(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
-    void *sc = PyLong_AsVoidPtr(args[0]);
-    SC_drop(sc);
-    free(sc);
+    void *fs = PyLong_AsVoidPtr(args[0]);
+    FS_trash(fs);
+    free(fs);
     Py_RETURN_NONE;
 }
 
 
-pvt PyObject * _sc_pQuery(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
-    // pSelectorCache:*Selector
+pvt PyObject * _fs_pQuery(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
-    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
-    return PyLong_FromVoidPtr(P_QUERY(sc));
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
+    return PyLong_FromVoidPtr(P_QUERY(fs));
 }
 
 
@@ -323,44 +328,43 @@ pvt PyObject * _sc_pQuery(PyObject *mod, PyObject *const *args, Py_ssize_t nargs
 // testing interface
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyObject * _sc_test_slot_width(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
+pvt PyObject * _fs_test_slot_width(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
     if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
-    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
-    return PyLong_FromLong(sc->slot_width);
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(params[0]);
+    return PyLong_FromLong(fs->slot_width);
 }
 
 
-pvt PyObject * _sc_test_num_slots(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
+pvt PyObject * _fs_test_num_slots(PyObject *mod, PyObject *const *params, Py_ssize_t nparams) {
     if (nparams != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nparams);
-    struct SelectorCache *sc = PyLong_AsVoidPtr(params[0]);
-    return PyLong_FromLong(sc->num_slots);
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(params[0]);
+    return PyLong_FromLong(fs->num_slots);
 }
 
 
-pvt PyObject * _sc_test_pArray(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
-    // pSelectorCache:*Selector
+pvt PyObject * _fs_test_pArray(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
-    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
-    return PyLong_FromVoidPtr(P_SIG_ARRAY(sc));
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
+    return PyLong_FromVoidPtr(P_SIG_ARRAY(fs));
 }
 
 
-pvt PyObject * _sc_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;
     PyObject *tArgs = args[1];
     if (!PyTuple_Check(tArgs)) return 0;
 
-    struct SelectorCache *sc = PyLong_AsVoidPtr(args[0]);
+    struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
     Py_ssize_t num_args = PyTuple_Size(args[1]);
     PY_ASSERT_INT_WITHIN_CLOSED(num_args, "numArgs", 1, 16);
 
     unsigned short *query, *array, lower, upper, upperFlag;
-    query = P_QUERY(sc);
-    array = P_SIG_ARRAY(sc);
+    query = P_QUERY(fs);
+    array = P_SIG_ARRAY(fs);
 
     for (fu8 o = 0; o < num_args; o++) {
         // get the id from each tArg
@@ -377,11 +381,11 @@ pvt PyObject * _sc_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
     query[0] = 0x001F & num_args;
 
     // answer the result
-    return PyLong_FromLong(fast_probe_sigs(query, array, sc->slot_width, sc->num_slots));
+    return PyLong_FromLong(fast_probe_sigs(query, array, fs->slot_width, fs->num_slots));
 }
 
 
-//pvt PyObject * _sc_test_get_result_for_query(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+//pvt PyObject * _fs_test_get_result_for_query(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
 //    // pQuery:unsigned short*, pSigs:unsigned short*, slot_width:unsigned char, num_slots:unsigned char
 //    if (nargs != 4) return _raiseWrongNumberOfArgs(__FUNCTION__, 4, nargs);
 //    // TODO raise a type error
@@ -404,4 +408,4 @@ pvt PyObject * _sc_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
 
 
 
-#endif  // JONES_SELECT_FN_C
+#endif  // JONES_FS_C

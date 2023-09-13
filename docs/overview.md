@@ -1,9 +1,17 @@
 Bones Kernel provides
-- symbols and enums, i.e. interned strings and groups of them
-- type manager - provides api to create and inspect types
-- function selection - api to register and query overloads from function argument signatures
-- fast memory management with GC, compaction and CoW support - IMMIX inspired
+- symbol manager - i.e. interned length prefixed (max 64k) null terminated utf8 strings
+- enum manager - groups of symbols
+- type manager - create, inspect and compare types
+- object manager - supports GC, compaction and CoW - IMMIX inspired, intended to be fast
+- function selection - api to register and select functions from argument signatures
 - reduced syntax tree - suitable for both C and bones
+- RST interpreter with stepping
+
+
+lifecycle nomenclature
+create, build, new
+trash, drop, discard, teardown, dismantle,
+
 
 
 walker - walks objects to determine live object closure, needs to know if a type contains a pointer
@@ -47,4 +55,11 @@ case styles for variable names within jones:
 
 null terminated strings are unsigned char
 t_utf8 indicates it maybe uft8
+
+
+create
+trash
+init
+break
+
 

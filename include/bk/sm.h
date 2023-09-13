@@ -11,10 +11,10 @@ struct SM {
     bool sorted;
 };
 
-pub void sm_init(struct SM *sm);
-pub void sm_free(struct SM *sm);
-pub RP sm_sym(struct SM *sm, char const * const name);
-pub char * sm_get(struct SM *sm, RP symRp);
-pub bool sm_le(struct SM *sm, RP a, RP b);
+pub struct SM * sm_create();
+pub void sm_trash(struct SM *);
+pub RP sm_sym(struct SM *, char const * const name);
+pub char * sm_get(struct SM *, RP symRp);
+pub bool sm_le(struct SM *, RP a, RP b);
 
 #endif // __BK_SM_H

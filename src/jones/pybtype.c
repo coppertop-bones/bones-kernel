@@ -2,7 +2,7 @@
 #define JONES_PY_BTYPE_C "jones/py_btype.c"
 
 #include "python.h"
-#include "_common.h"
+#include "_jones.h"
 #include "../../include/bk/tm.h"
 
 

@@ -1,5 +1,5 @@
-#ifndef __JONES_PIPE_STRUCTS_C
-#define __JONES_PIPE_STRUCTS_C "jones/pipe_structs.c"
+#ifndef __JONES__STRUCTS_H
+#define __JONES__STRUCTS_H "jones/_common.h"
 
 
 #define PY_SSIZE_T_CLEAN
@@ -10,7 +10,7 @@
 
 
 struct Base {
-    PyObject_VAR_HEAD
+    PyObject_VAR_HEAD;
 };
 
 struct Fn {
@@ -31,13 +31,28 @@ struct Partial {
 };
 
 struct PyBType {
-    PyObject_HEAD
+    PyObject_HEAD;
     btype btype;
 };
 
 struct PyKernel {
-    PyObject_HEAD
+    PyObject_HEAD;
     struct K *pKernel;
+};
+
+struct PySM {
+    PyObject_HEAD;
+    struct SM *pSm;
+};
+
+struct PyEM {
+    PyObject_HEAD;
+    struct EM *pEm;
+};
+
+struct PyTM {
+    PyObject_HEAD;
+    struct TM *pTm;
 };
 
 
@@ -61,4 +76,4 @@ pvt PyTypeObject PyPTernaryCls;
 #define PTR_MASK 0x0000FFFFFFFFFFFF
 
 
-#endif  // __JONES_PIPE_STRUCTS_C
+#endif  // __JONES__STRUCTS_H

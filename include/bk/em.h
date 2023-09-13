@@ -5,11 +5,11 @@
 #include "sm.h"
 
 struct EM {
-
+    int something;
 };
 
-pub void em_init(struct EM *em);
-pub void em_free(struct EM *em);
+pub struct EM * em_create();
+pub void em_trash(struct EM *);
 
 // sort order stuff
 

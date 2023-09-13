@@ -6,15 +6,15 @@
 #include "buckets.h"
 
 
+// NTS
+//
 // OPEN: add aliases so can do - typedef can automatically add aliased
 //<:Symb> lval(<:Node&ptr> n) {
 //<:Symb> lval(<:pNode> n) {
 // could we do <:unsigned int>
-
-
+//
 // addressOf and deref - may create new types
-
-
+//
 // first do intersections - need to be able to do hash map of btyp *, null terminated just like strings - use the one
 //      I found last year
 // need exclusions for M8, M16, M32, M64 -> i8: m8 & i8_ or poss i8: m8_ & i & signed, etc
@@ -22,6 +22,21 @@
 // ptr1, const1, ptr2, const2, ptr3, const3, extern, the basic c types
 // also need a test framework - python?
 // need counting sort too
+
+
+
+
+typedef enum : BTYPE_TYPE {
+    _nat = 0,           // not a type - i.e. an error code
+    _m8 = 1,
+    _m16 = 2,
+    _m32 = 3,
+    _m64 = 4,
+    _p64 = 5,
+    _i32 = 6,
+    _litint = 7,
+    _null = 8,          // empty set
+} btype;
 
 
 enum bmetatype : unsigned char {
@@ -41,21 +56,6 @@ enum bmetatype : unsigned char {
     btsvr = 10,  // schema variable
 };
 // typedef enum bmetatype : unsigned char Tristate;
-
-
-#define BTYPE_TYPE unsigned int
-
-typedef enum : BTYPE_TYPE {
-    _nat = 0,           // not a type - i.e. an error code
-    _m8 = 1,
-    _m16 = 2,
-    _m32 = 3,
-    _m64 = 4,
-    _p64 = 5,
-    _i32 = 6,
-    _litint = 7,
-    _null = 8,          // empty set
-} btype;
 
 
 #define DESC_ID unsigned int
@@ -279,7 +279,8 @@ struct TM {
     enum bexclusioncat *bexclusioncat_byBTypeId;    // this could also be done as a list of types per category which makes adding CCY etc easier
 };
 
-
+pub struct TM * tm_create();
+pub void tm_trash(struct TM *);
 
 
 #endif // __BK_BM_H

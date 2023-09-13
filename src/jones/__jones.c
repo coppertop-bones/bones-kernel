@@ -3,16 +3,17 @@
 
 
 #include "../../include/all.cfg"
-#include "pyfn.c"
+#include "pyfns.c"
 #include "../bk/os.c"
+#include "../bk/buckets.c"
 #include "pybtype.c"
-#include "pykernel.c"
-#include "sc.c"
-#include "fns.c"
+#include "pymanagers.c"
+#include "fs.c"
+#include "mod.c"
+
+#ifndef EXCLUDE_PLAY
 #include "play.c"
-
-
-
+#endif
 
 
 
@@ -33,19 +34,19 @@ pvt PyMethodDef free_fns[] = {
     {"getPageSize", (PyCFunction)               _pageSize, METH_FASTCALL, "system page size"},
     {"getCacheLineSize", (PyCFunction)          _getCacheLineSize, METH_FASTCALL, "system cache line size"},
 
-    {"sc_new", (PyCFunction)                    _sc_new, METH_FASTCALL, "sc_new(numArgs, arrayLen) -> pSC"},
-    {"sc_drop", (PyCFunction)                   _sc_drop, METH_FASTCALL, "sc_drop(pSC) -> None"},
-    {"sc_nextFreeArrayIndex", (PyCFunction)     _sc_next_free_array_index, METH_FASTCALL, ""},
-    {"sc_atArrayPut", (PyCFunction)             _sc_atArrayPut, METH_FASTCALL, "sc_atArrayPut(pSC, index, pSig, fnId) -> Void\n\nin pSig belonging to pSC, at index put fnId"},
-    {"sc_queryPtr", (PyCFunction)               _sc_pQuery, METH_FASTCALL, "scQueryPtr(pSC)\n\nanswer a pointer to the query buffer"},
-    {"sc_getFnId", (PyCFunction)                _sc_get_result, METH_FASTCALL, ""},
-    {"sc_tArgsFromQuery", (PyCFunction)         _sc_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
-    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction) _sc_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_new", (PyCFunction)                    _fs_create, METH_FASTCALL, "sc_new(numArgs, arrayLen) -> pSC"},
+    {"sc_drop", (PyCFunction)                   _fs_trash, METH_FASTCALL, "sc_drop(pSC) -> None"},
+    {"sc_nextFreeArrayIndex", (PyCFunction)     _fs_next_free_array_index, METH_FASTCALL, ""},
+    {"sc_atArrayPut", (PyCFunction)             _fs_atArrayPut, METH_FASTCALL, "sc_atArrayPut(pSC, index, pSig, fnId) -> Void\n\nin pSig belonging to pSC, at index put fnId"},
+    {"sc_queryPtr", (PyCFunction)               _fs_pQuery, METH_FASTCALL, "scQueryPtr(pSC)\n\nanswer a pointer to the query buffer"},
+    {"sc_getFnId", (PyCFunction)                _fs_get_result, METH_FASTCALL, ""},
+    {"sc_tArgsFromQuery", (PyCFunction)         _fs_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction) _fs_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
 
-    {"sc_test_arrayPtr", (PyCFunction)          _sc_test_pArray, METH_FASTCALL, "sc_test_arrayPtr(pSC)\n\nanswer a pointer to the array of sigs"},
-    {"sc_test_slotWidth", (PyCFunction)         _sc_test_slot_width, METH_FASTCALL, "sc_test_slotWidth(pSC) -> count"},
-    {"sc_test_numSlots", (PyCFunction)          _sc_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
-    {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _sc_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
+    {"sc_test_arrayPtr", (PyCFunction)          _fs_test_pArray, METH_FASTCALL, "sc_test_arrayPtr(pSC)\n\nanswer a pointer to the array of sigs"},
+    {"sc_test_slotWidth", (PyCFunction)         _fs_test_slot_width, METH_FASTCALL, "sc_test_slotWidth(pSC) -> count"},
+    {"sc_test_numSlots", (PyCFunction)          _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
+    {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _fs_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
 
 //    {"type_new",                                Shifter_type_new, METH_VARARGS | METH_KEYWORDS, ""},
 
@@ -190,6 +191,8 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
     }
 
 
+    #ifndef EXCLUDE_PLAY
+
     // add PyToyCls
     if (PyType_Ready(&PyToyCls) < 0) return 0;
     if (PyModule_AddObject(m, "Toy", (PyObject *) &PyToyCls) < 0) {
@@ -197,6 +200,8 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
         Py_DECREF(m);
         return 0;
     }
+
+    #endif
 
     return m;
 }

@@ -26,7 +26,7 @@
 typedef unsigned int RP;        // relative pointer
 typedef unsigned int bsym;      // 4 billion symbols
 typedef unsigned short benum;   // 65k enumns
-// 256k types
+#define BTYPE_TYPE unsigned int // currently ls 18 bits for 256k types
 
 
 typedef char* err;

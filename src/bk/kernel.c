@@ -8,7 +8,7 @@ pub int K_init(struct K *k) {
     return 0;
 }
 
-pub int K_shutdown(struct K *k) {
+pub int K_trash(struct K *k) {
     return 0;
 }
 

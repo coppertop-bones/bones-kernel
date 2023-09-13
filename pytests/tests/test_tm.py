@@ -21,7 +21,7 @@ class tvfloat(float):
 
 
 def test_intersection():
-    k = sys.k
+    k = sys._k
     assert k.tm.btype('GBP') is None
     assert k.tm.btype('_GBP') is None
     assert k.tm.btype('ccy') is None
@@ -46,6 +46,6 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.k = jones.Kernel()
+    sys._k = jones.Kernel()
     main()
-    sys.k = None
+    sys._k = None

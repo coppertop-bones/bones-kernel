@@ -96,7 +96,7 @@ n is 1, 2, 4, 8
 2 args 1 overload would be 5 * u16 + u8 + u8 = 12 bytes so fits in 1 object slot
 
 
-struct SelectorCache {
+struct FunctionSelector {
     unsigned char slot_width;                         // in count of unsigned short - 3 of a 1 arg, 5 for a 2 arg, ..., 33 for a 16 arg
     unsigned char num_slots;                          // number of slots in the array (we also have a scratch slot for the query)
     //    unsigned short count_buf_size

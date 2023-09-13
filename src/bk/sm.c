@@ -1,13 +1,17 @@
-#ifndef __BK_SYM_C
-#define __BK_SYM_C "bk/sym.c"
+#ifndef __BK_SM_C
+#define __BK_SM_C "bk/sm.c"
 
 #include "../../include/bk/sm.h"
 
-pub void sm_init(struct SM *sm) {
+pub struct SM * sm_create() {
+    struct SM *sm = (struct SM *) malloc(sizeof(struct SM));
     // reserve a bunch (4GB) of virtual memory
     sm->istrings = malloc(0xFFFF);
     sm->next = 2;   // loose 2 bytes so 0 is an error code
-    return;
+    return sm;
+}
+
+pub void sm_trash(struct SM *sm) {
 }
 
 pub RP sm_sym(struct SM *sm, char const * const name) {
@@ -27,4 +31,4 @@ pub bool sm_le(struct SM *sm, RP a, RP b) {
     return false;
 }
 
-#endif // __BK_SYM_C
+#endif // __BK_SM_C

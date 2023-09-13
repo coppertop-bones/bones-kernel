@@ -4,16 +4,16 @@
 #include "sm.h"
 #include "em.h"
 #include "tm.h"
-#include "mm.h"
+#include "om.h"
 
 struct K {
     struct SM sm;
     struct EM em;
     struct TM tm;
-    struct MM mm;
+    struct OM om;  // plural? or does an object manager have allocators?
 };
 
-pub int K_init(struct K *k);
-pub int K_shutdown(struct K *k);
+pub struct K * k_create();
+pub int k_trash(struct K *k);
 
 #endif // __BK_KERNEL_H
