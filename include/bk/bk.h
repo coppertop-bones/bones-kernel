@@ -23,9 +23,27 @@
 #define _1TB 1099511627776
 
 
+#ifndef bk_inline
+#ifdef _MSC_VER
+#define bk_inline __inline
+#else
+#define bk_inline inline
+#endif
+#endif /* bk_inline */
+
+
+#ifndef bk_unused
+#if (defined __clang__ && __clang_major__ >= 3) || (defined __GNUC__ && __GNUC__ >= 3)
+#define bk_unused __attribute__ ((__unused__))
+#else
+#define bk_unused
+#endif
+#endif /* bk_unused */
+
+
 typedef unsigned int RP;        // relative pointer
-typedef unsigned int bsym;      // 4 billion symbols
-typedef unsigned short benum;   // 65k enumns
+typedef unsigned int u32;
+typedef unsigned short u16;
 #define BTYPE_TYPE unsigned int // currently ls 18 bits for 256k types
 
 

@@ -83,13 +83,15 @@ struct BTTuple {
     BTypeList types;                // 4 + n * 4
 };
 
+typedef int bsym;
+
 struct BTStruct {
-    bsym *names;                  // 8
+    bsym *names;                    // 8
     BTypeList types;                // 4 + n * 4
 };
 
 struct BTRec {
-    bsym *names;                  // 8
+    bsym *names;                    // 8
     BTypeList types;                // 4 + n * 4
 };
 

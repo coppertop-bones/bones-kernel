@@ -3,7 +3,7 @@
 
 
 #include "_jones.h"
-#include "../other/khash.h"
+#include "../bk/ht_impl.h"
 #include "../../include/bk/bk.h"
 #include "../../include/bk/os.h"
 
@@ -17,9 +17,9 @@
 
 
 
-pvt kh_inline khint_t __ac_X31_hash_fred(const char *s) {
-    khint_t h = (khint_t)*s;
-    if (h) for (++s ; *s; ++s) h = (h << 5) - h + (khint_t)*s;
+pvt kh_inline u32 __ac_X31_hash_fred(const char *s) {
+    u32 h = (u32)*s;
+    if (h) for (++s ; *s; ++s) h = (h << 5) - h + (u32)*s;
     return h;
 }
 
@@ -36,24 +36,22 @@ pvt int fredcmp (const char *p1, const char *p2) {
     return c1 - c2;
 }
 
-#define kh_fred_hash_func(key) __ac_X31_hash_fred(key)
-#define kh_fred_hash_equal(a, b) (fredcmp(a, b) == 0)
+#define kh_fred_hash_func(h, key) __ac_X31_hash_fred(key)
+#define kh_fred_hash_equal(h, a, b) (fredcmp(a, b) == 0)
 
-#define KHASH_MAP_INIT_INT32(name, khval_t)								\
-	KHASH_INIT(name, khint32_t, khval_t, 1, kh_int_hash_func, kh_int_hash_equal)
+struct hm_u32_u8 {
 
-#define KHASH_MAP_INIT_INT64(name, khval_t)								\
-	KHASH_INIT(name, khint64_t, khval_t, 1, kh_int64_hash_func, kh_int64_hash_equal)
+};
 
-#define KHASH_MAP_INIT_TXT(name, khval_t)								\
-	KHASH_INIT(name, kh_cstr_t, khval_t, 1, kh_str_hash_func, kh_str_hash_equal)
+KHASH_MAP_STRUCT(hm_u32_u8, khint32_t, unsigned char)
+KHASH_IMPL(hm_u32_u8, khint32_t, unsigned char, KHASH_MAP, kh_int_hash_func, kh_int_hash_equal)
 
-#define KHASH_MAP_INIT_U16_ARRAY(name, khval_t)								\
-	KHASH_INIT(name, char, khval_t, 1, kh_fred_hash_func, kh_fred_hash_equal)
+KHASH_MAP_STRUCT(hm_txt_u32, kh_cstr_t, unsigned int)
+KHASH_IMPL(hm_txt_u32, kh_cstr_t, unsigned int, KHASH_MAP, kh_str_hash_func, kh_str_hash_equal)
 
-KHASH_MAP_INIT_INT32(hm_u32_u8, unsigned char)
-KHASH_MAP_INIT_TXT(hm_txt_u32, unsigned int)
-KHASH_MAP_INIT_TXT(hm_txt_typenum, unsigned short)
+KHASH_MAP_STRUCT(hm_txt_typenum, kh_cstr_t, unsigned short)
+KHASH_IMPL(hm_txt_typenum, kh_cstr_t, unsigned short, KHASH_MAP, kh_fred_hash_func, kh_fred_hash_equal)
+
 
 
 struct PyFred {
@@ -71,7 +69,7 @@ struct PyToy {
     PyObject *first;                // first name
     PyObject *last;                 // last name
     int number;
-    khash_t(hm_u32_u8) *h;          // (u32**u8)&hashmap
+    kh_struct(hm_u32_u8) *hm;         // (u32**u8)&hashmap
 };
 
 
@@ -123,7 +121,7 @@ pvt PyObject * _execShell(PyObject *mod, PyObject *args) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 static void PyToy_dealloc(struct PyToy *self) {
-    kh_destroy(hm_u32_u8, self->h);       // deallocate the hash table
+    kh_trash(hm_u32_u8, self->hm);
     Py_XDECREF(self->first);
     Py_XDECREF(self->last);
     Py_TYPE(self)->tp_free((PyObject *) self);
@@ -145,7 +143,7 @@ static PyObject * PyToy_new(PyTypeObject *type, PyObject *args, PyObject *kwds) 
             return 0;
         }
         self->number = 0;
-        self->h = kh_init(hm_u32_u8);     // allocate the hash table
+        self->hm = kh_create(hm_u32_u8);
     }
     return (PyObject *) self;
 }
@@ -195,41 +193,41 @@ static PyObject * PyToy_name(struct PyToy *self, PyObject *Py_UNUSED(ignored)) {
 
 
 static PyObject * PyToy_has(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
-    khint_t it;  int exists;  int k;
+    kh_iter_t it;  int exists;  int k;
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
-    if (!PyLong_Check(args[0])) return 0;        // TODO raise a type error
+    if (!PyLong_Check(args[0])) return 0;       // TODO raise a type error
     k = (int) PyLong_AsLong(args[0]);
 //    if (!PyArg_ParseTuple(args, "I", &key)) return 0;
-    it = kh_get(hm_u32_u8, self->h, k);                 // find key or end
-    exists = (it != kh_end(self->h));
+    it = kh_get_it(hm_u32_u8, self->hm, k);        // find key or end
+    exists = (it != kh_it_end(self->hm));
     return PyBool_FromLong(exists);
 }
 
 
 static PyObject * PyToy_atIfNone(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
-    khint_t it;  int k;
+    kh_iter_t it;  int k;
     if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
-    if (!PyLong_Check(args[0])) return 0;        // TODO raise a type error
+    if (!PyLong_Check(args[0])) return 0;       // TODO raise a type error
     k = (int) PyLong_AsLong(args[0]);
-    it = kh_get(hm_u32_u8, self->h, k);                  // find key or end
-    if (it == kh_end(self->h))
+    it = kh_get_it(hm_u32_u8, self->hm, k);        // find key or end
+    if (it == kh_it_end(self->hm))
         return args[1];
     else
-        return PyLong_FromLong(kh_value(self->h, it));
+        return PyLong_FromLong(kh_value(self->hm, it));
 }
 
 
 static PyObject * PyToy_atPut(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
-    khint_t it;  int ret;  int k;  int v;
+    kh_iter_t it;  int ret;  int k;  int v;
     if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;        // TODO raise a type error
     if (!PyLong_Check(args[1])) return 0;        // TODO raise a type error
     k = (int) PyLong_AsLong(args[0]);
     v = (int) PyLong_AsLong(args[1]);
 
-    it = kh_put(hm_u32_u8, self->h, k, &ret);            // find key or insert
+    it = kh_put_it(hm_u32_u8, self->hm, k, &ret);  // find key or insert
     if (ret == -1) return 0;
-    kh_value(self->h, it) = v;                      // set the value
+    kh_value(self->hm, it) = v;                 // set the value
 
     Py_INCREF(self);
     return (PyObject *) self;
@@ -237,14 +235,14 @@ static PyObject * PyToy_atPut(struct PyToy *self, PyObject *const *args, Py_ssiz
 
 
 static PyObject * PyToy_drop(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
-    khint_t it;  int k;
+    kh_iter_t it;  int k;
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
-    if (!PyLong_Check(args[0])) return 0;            // TODO raise a type error
+    if (!PyLong_Check(args[0])) return 0;           // TODO raise a type error
     k = (int) PyLong_AsLong(args[0]);
 
-    it = kh_get(hm_u32_u8, self->h, k);                 // find key or end
-    if (it != kh_end(self->h))
-        kh_del(hm_u32_u8, self->h, it);                 // TODO raise error if absent?
+    it = kh_get_it(hm_u32_u8, self->hm, k);         // find key or end
+    if (it != kh_it_end(self->hm))
+        kh_del(hm_u32_u8, self->hm, it);            // TODO raise error if absent?
 
     // https://docs.python.org/3/extending/extending.html#ownership-rules
     // "The object reference returned from a C function that is called from Python must be an owned reference"
@@ -255,13 +253,13 @@ static PyObject * PyToy_drop(struct PyToy *self, PyObject *const *args, Py_ssize
 
 static PyObject * PyToy_count(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 0) return _raiseWrongNumberOfArgs(__FUNCTION__, 0, nargs);
-    return PyLong_FromLong(kh_size(self->h));
+    return PyLong_FromLong(kh_size(self->hm));
 }
 
 
 static PyObject * PyToy_numBuckets(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 0) return _raiseWrongNumberOfArgs(__FUNCTION__, 0, nargs);
-    return PyLong_FromLong(kh_n_buckets(self->h));
+    return PyLong_FromLong(kh_n_buckets(self->hm));
 }
 
 
@@ -278,17 +276,17 @@ static PyMethodDef PyToy_methods[] = {
 
 
 static PyTypeObject PyToyCls = {
-        PyVarObject_HEAD_INIT(0, 0)
-                .tp_name = "jones.Toy",
-        .tp_doc = PyDoc_STR("a Toy to play with"),
-        .tp_basicsize = sizeof(struct PyToy),
-        .tp_itemsize = 0,
-        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-        .tp_new = PyToy_new,                                      // was PyType_GenericNew
-        .tp_init = (initproc) PyToy_init,
-        .tp_dealloc = (destructor) PyToy_dealloc,
-        .tp_members = PyToy_members,
-        .tp_methods = PyToy_methods,
+    PyVarObject_HEAD_INIT(0, 0)
+    .tp_name = "jones.Toy",
+    .tp_doc = PyDoc_STR("a Toy to play with"),
+    .tp_basicsize = sizeof(struct PyToy),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyToy_new,                                      // was PyType_GenericNew
+    .tp_init = (initproc) PyToy_init,
+    .tp_dealloc = (destructor) PyToy_dealloc,
+    .tp_members = PyToy_members,
+    .tp_methods = PyToy_methods,
 };
 
 

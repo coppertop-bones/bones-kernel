@@ -19,6 +19,18 @@ class tvfloat(float):
         self._t_ = t
         return self
 
+def test_sm():
+    sm = sys,_k.sm
+    id1 = sm.id("hello")
+    id2 = sm.id("hello")
+    rp1 = sm.rp("hello")
+    rp2 = sm.rp("hello")
+    assert id1 == id2
+    assert rp1 == rp2
+    assert sm.id2str(id1) == sm.rp2str(rp1)
+
+def test_em():
+    1/0
 
 def test_intersection():
     k = sys._k
@@ -41,6 +53,8 @@ def test_intersection():
 
 
 def main():
+    test_sm()
+    test_em()
     test_intersection()
 
 
