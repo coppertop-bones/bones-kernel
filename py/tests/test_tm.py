@@ -20,14 +20,28 @@ class tvfloat(float):
         return self
 
 def test_sm():
-    sm = sys,_k.sm
-    id1 = sm.id("hello")
-    id2 = sm.id("hello")
-    rp1 = sm.rp("hello")
-    rp2 = sm.rp("hello")
-    assert id1 == id2
-    assert rp1 == rp2
-    assert sm.id2str(id1) == sm.rp2str(rp1)
+    sm = jones.SM()
+    # sm = sys._k.sm
+    id1 = sm.sym("joe")
+    id2 = sm.sym("fred")
+    id3 = sm.sym("fred")
+    assert id2 == id3
+    assert sm.name(id2) == "fred"
+    assert sm.sym("a") > id3
+    assert sm.sym("b") > id3
+    assert sm.sym("c") > id3
+    assert sm.sym("d") > id3
+    assert sm.sym("e") > id3
+    assert sm.sym("f") > id3
+    assert sm.sym("g") > id3
+    assert sm.sym("h") > id3
+    assert sm.sym("i") > id3
+    assert sm.sym("j") > id3
+    assert sm.sym("k") == 13
+
+    assert sm.le(id2, id1) == True
+    assert sm.le(id2, id2) == False
+    assert sm.le(id1, id2) == False
 
 def test_em():
     1/0

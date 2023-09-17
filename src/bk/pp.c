@@ -59,4 +59,13 @@ pvt void bug(char *msg, ...) {
     va_end(args);
 }
 
+pvt void check(bool truth, char *msg, ...) {
+    if (! truth) {
+        va_list args;
+        va_start(args, msg);
+        die_("", msg, args);
+        va_end(args);
+    }
+}
+
 #endif  // __BK_PP_C

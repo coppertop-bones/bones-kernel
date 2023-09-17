@@ -1,28 +1,18 @@
 #ifndef JONES_KERNEL_C
 #define JONES_KERNEL_C "jones/kernel.c"
 
-#include "python.h"
+#include "Python.h"
 #include "_jones.h"
 #include "../bk/sm.c"
 #include "../bk/em.c"
 #include "../bk/tm.c"
 #include "../bk/kernel.c"
+#include "_utils.c"
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // PySM
 // ---------------------------------------------------------------------------------------------------------------------
-
-pvt PyMemberDef PySM_members[] = {
-//    {"id", T_UINT, offsetof(struct PySM, btid), 0, "id (u32)"},
-        {0}
-};
-
-
-pvt PyMethodDef PySM_methods[] = {
-        {0}
-};
-
 
 pvt PyObject * PySM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     struct PySM *self = (struct PySM *) type->tp_alloc(type, 0);
@@ -30,12 +20,44 @@ pvt PyObject * PySM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     return (PyObject *) self;
 }
 
-
 pvt void PySM_trash(struct PySM *self) {
-    // tear down kernel and release all os memory!
     sm_trash(self->pSm);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
+
+pvt PyObject * PySM_sym(struct PySM *self, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
+        PyErr_SetString(PyExc_TypeError, "name must be utf8");
+        return 0;
+    }
+    const char *key = (const char *) PyUnicode_1BYTE_DATA(args[0]);
+    return PyLong_FromLong(sm_id(self->pSm, key));
+}
+
+pvt PyObject * PySM_name(struct PySM *self, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (!PyLong_Check(args[0])) {
+        PyErr_SetString(PyExc_TypeError, "symid must be int");
+        return 0;
+    }
+    int symid = PyLong_AsLong(args[0]);
+    return PyUnicode_FromString(sm_name(self->pSm, symid));
+}
+
+
+
+//pvt PyObject * _execShell(PyObject *mod, PyObject *args) {
+//    const char *command;  int ret;
+//    if (!PyArg_ParseTuple(args, "s", &command)) return 0;
+//    ret = system(command);
+//    if (ret < 0) {
+//        PyErr_SetString(PyJonesError, "System command failed");
+//        return 0;
+//    }
+//    return PyLong_FromLong(ret);
+//}
+
 
 
 //pvt int PySM_init(struct PySM *self, PyObject *args, PyObject *kwds) {
@@ -46,10 +68,39 @@ pvt void PySM_trash(struct PySM *self) {
 //    return 0;
 //}
 
+pvt PyMemberDef PySM_members[] = {
+//        {"id", T_UINT, offsetof(struct PyBType, btype), 0, "id (u32)"},
+//        {"name", T_OBJECT, offsetof(struct Fn, name), READONLY, "function name"},
+//        {"num_tbc", T_UBYTE, offsetof(struct Partial, num_tbc), READONLY, "number of argument to be confirmed"},
+//        {"num_args", T_UBYTE, offsetof(PyVarObject, ob_size), READONLY, "total number of arguments"},
+    {0}
+};
+
+pvt PyMethodDef PySM_methods[] = {
+//    {"__array_ufunc__", (PyCFunction) _Common__array_ufunc__, METH_VARARGS | METH_KEYWORDS, "__array_ufunc__"},
+        {"sym", (PyCFunction) PySM_sym, METH_FASTCALL, "sym(name)\n\nanswers the symid for name"},
+        {"name", (PyCFunction) PySM_name, METH_FASTCALL, "name(symid)\n\nanswers the name for symid"},
+//    {"name", (PyCFunction) PyPlay_name, METH_NOARGS, "Return the name, combining the first and last name"},
+    {0}
+};
+
+
+
+pvt PyGetSetDef PySM_get_set[] = {
+//    {"o_tbc", (getter) Partial_o_tbc, 0, "offsets of missing arguments", 0},
+//    {"args", (getter) Partial_args, 0, "arguments thus far", 0},
+    {0}
+};
+
+//pvt PyNumberMethods PySM_number_methods = {
+//    .nb_rshift = (binaryfunc) _nullary_nb_rshift,
+//};
+
 
 pvt PyTypeObject PySMCls = {
     PyVarObject_HEAD_INIT(0, 0)
-    .tp_name = "jones.Kernel",
+//    .tp_base = &PFnCls,
+    .tp_name = "jones.SM",
     .tp_doc = PyDoc_STR("TBC"),
     .tp_basicsize = sizeof(struct PySM),
     .tp_itemsize = 0,
@@ -59,6 +110,9 @@ pvt PyTypeObject PySMCls = {
     .tp_dealloc = (destructor) PySM_trash,
     .tp_members = PySM_members,
     .tp_methods = PySM_methods,
+//    .tp_getset = PySM_get_set,
+//    .tp_call = (ternaryfunc) _Partial__call__,
+//    .tp_as_number = (PyNumberMethods*) &PySM_number_methods,
 };
 
 

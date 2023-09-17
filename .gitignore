@@ -2,4 +2,4 @@
 *.so
 *.o
 __pycache__/
-/pytests/build/
+/py/build/

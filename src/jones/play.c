@@ -6,6 +6,7 @@
 #include "../bk/ht_impl.h"
 #include "../../include/bk/bk.h"
 #include "../../include/bk/os.h"
+#include "../other/khash.h"
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -17,7 +18,7 @@
 
 
 
-pvt kh_inline u32 __ac_X31_hash_fred(const char *s) {
+pvt bk_inline u32 _X31_hash_fred(const char *s) {
     u32 h = (u32)*s;
     if (h) for (++s ; *s; ++s) h = (h << 5) - h + (u32)*s;
     return h;
@@ -36,7 +37,7 @@ pvt int fredcmp (const char *p1, const char *p2) {
     return c1 - c2;
 }
 
-#define kh_fred_hash_func(h, key) __ac_X31_hash_fred(key)
+#define kh_fred_hash_func(h, key) _X31_hash_fred(key)
 #define kh_fred_hash_equal(h, a, b) (fredcmp(a, b) == 0)
 
 struct hm_u32_u8 {
@@ -64,7 +65,7 @@ struct PyJoe {
 };
 
 
-struct PyToy {
+struct PyPlay {
     PyObject_HEAD                   // ob_refcnt:Py_ssize_t, *ob_type:PyTypeObject
     PyObject *first;                // first name
     PyObject *last;                 // last name
@@ -88,7 +89,7 @@ struct Chunk {
 };
 
 
-pvt PyTypeObject PyToyCls;
+pvt PyTypeObject PyPlayCls;
 pvt struct VA *g_va;
 
 
@@ -117,10 +118,10 @@ pvt PyObject * _execShell(PyObject *mod, PyObject *args) {
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// PyToy
+// PyPlay
 // ---------------------------------------------------------------------------------------------------------------------
 
-static void PyToy_dealloc(struct PyToy *self) {
+pvt void PyPlay_dealloc(struct PyPlay *self) {
     kh_trash(hm_u32_u8, self->hm);
     Py_XDECREF(self->first);
     Py_XDECREF(self->last);
@@ -128,9 +129,9 @@ static void PyToy_dealloc(struct PyToy *self) {
 }
 
 
-static PyObject * PyToy_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    struct PyToy *self;
-    self = (struct PyToy *) type->tp_alloc(type, 0);
+pvt PyObject * PyPlay_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+    struct PyPlay *self;
+    self = (struct PyPlay *) type->tp_alloc(type, 0);
     if (self != 0) {
         self->first = PyUnicode_FromString("");         // ref count will be 1
         if (self->first == 0) {
@@ -149,7 +150,7 @@ static PyObject * PyToy_new(PyTypeObject *type, PyObject *args, PyObject *kwds) 
 }
 
 
-static int PyToy_init(struct PyToy *self, PyObject *args, PyObject *kwds) {
+pvt int PyPlay_init(struct PyPlay *self, PyObject *args, PyObject *kwds) {
     static char *kwlist[] = {"first", "last", "number", 0};
     PyObject *first = 0, *last = 0, *old;
 
@@ -171,15 +172,15 @@ static int PyToy_init(struct PyToy *self, PyObject *args, PyObject *kwds) {
 }
 
 
-static PyMemberDef PyToy_members[] = {
-        {"first", T_OBJECT_EX, offsetof(struct PyToy, first), 0, "first name"},
-        {"last", T_OBJECT_EX, offsetof(struct PyToy, last), 0, "last name"},
-        {"number", T_INT, offsetof(struct PyToy, number), 0, "custom number"},
+pvt PyMemberDef PyPlay_members[] = {
+        {"first", T_OBJECT_EX, offsetof(struct PyPlay, first), 0, "first name"},
+        {"last", T_OBJECT_EX, offsetof(struct PyPlay, last), 0, "last name"},
+        {"number", T_INT, offsetof(struct PyPlay, number), 0, "custom number"},
         {0}
 };
 
 
-static PyObject * PyToy_name(struct PyToy *self, PyObject *Py_UNUSED(ignored)) {
+pvt PyObject * PyPlay_name(struct PyPlay *self, PyObject *Py_UNUSED(ignored)) {
     if (self->first == 0) {
         PyErr_SetString(PyExc_AttributeError, "first");
         return 0;
@@ -192,7 +193,7 @@ static PyObject * PyToy_name(struct PyToy *self, PyObject *Py_UNUSED(ignored)) {
 }
 
 
-static PyObject * PyToy_has(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_has(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
     kh_iter_t it;  int exists;  int k;
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     if (!PyLong_Check(args[0])) return 0;       // TODO raise a type error
@@ -204,7 +205,7 @@ static PyObject * PyToy_has(struct PyToy *self, PyObject *const *args, Py_ssize_
 }
 
 
-static PyObject * PyToy_atIfNone(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_atIfNone(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
     kh_iter_t it;  int k;
     if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;       // TODO raise a type error
@@ -217,7 +218,7 @@ static PyObject * PyToy_atIfNone(struct PyToy *self, PyObject *const *args, Py_s
 }
 
 
-static PyObject * PyToy_atPut(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_atPut(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
     kh_iter_t it;  int ret;  int k;  int v;
     if (nargs != 2) return _raiseWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;        // TODO raise a type error
@@ -234,7 +235,7 @@ static PyObject * PyToy_atPut(struct PyToy *self, PyObject *const *args, Py_ssiz
 }
 
 
-static PyObject * PyToy_drop(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_drop(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
     kh_iter_t it;  int k;
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     if (!PyLong_Check(args[0])) return 0;           // TODO raise a type error
@@ -251,42 +252,42 @@ static PyObject * PyToy_drop(struct PyToy *self, PyObject *const *args, Py_ssize
 }
 
 
-static PyObject * PyToy_count(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_count(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 0) return _raiseWrongNumberOfArgs(__FUNCTION__, 0, nargs);
     return PyLong_FromLong(kh_size(self->hm));
 }
 
 
-static PyObject * PyToy_numBuckets(struct PyToy *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_numBuckets(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 0) return _raiseWrongNumberOfArgs(__FUNCTION__, 0, nargs);
     return PyLong_FromLong(kh_n_buckets(self->hm));
 }
 
 
-static PyMethodDef PyToy_methods[] = {
-        {"has", (PyCFunction) PyToy_has, METH_FASTCALL, "has(key)\n\nanswer if has key"},
-        {"atPut", (PyCFunction) PyToy_atPut, METH_FASTCALL, "atPut(key, value)\n\nat key put value, answer self"},
-        {"atIfNone", (PyCFunction) PyToy_atIfNone, METH_FASTCALL, "atIfNone(key, value, alt)\n\nanswer the value at key or alt if the key is absent"},
-        {"drop", (PyCFunction) PyToy_drop, METH_FASTCALL, "drop(key)\n\ndrop value at key, answer self"},
-        {"count", (PyCFunction) PyToy_count, METH_FASTCALL, "count()\n\nanswer the number of elements"},
-        {"numBuckets", (PyCFunction) PyToy_numBuckets, METH_FASTCALL, "numBuckets()\n\nanswer the number of buckets"},
-        {"name", (PyCFunction) PyToy_name, METH_NOARGS, "Return the name, combining the first and last name"},
+pvt PyMethodDef PyPlay_methods[] = {
+        {"has", (PyCFunction) PyPlay_has, METH_FASTCALL, "has(key)\n\nanswer if has key"},
+        {"atPut", (PyCFunction) PyPlay_atPut, METH_FASTCALL, "atPut(key, value)\n\nat key put value, answer self"},
+        {"atIfNone", (PyCFunction) PyPlay_atIfNone, METH_FASTCALL, "atIfNone(key, value, alt)\n\nanswer the value at key or alt if the key is absent"},
+        {"drop", (PyCFunction) PyPlay_drop, METH_FASTCALL, "drop(key)\n\ndrop value at key, answer self"},
+        {"count", (PyCFunction) PyPlay_count, METH_FASTCALL, "count()\n\nanswer the number of elements"},
+        {"numBuckets", (PyCFunction) PyPlay_numBuckets, METH_FASTCALL, "numBuckets()\n\nanswer the number of buckets"},
+        {"name", (PyCFunction) PyPlay_name, METH_NOARGS, "Return the name, combining the first and last name"},
         {0}
 };
 
 
-static PyTypeObject PyToyCls = {
+pvt PyTypeObject PyPlayCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_name = "jones.Toy",
     .tp_doc = PyDoc_STR("a Toy to play with"),
-    .tp_basicsize = sizeof(struct PyToy),
+    .tp_basicsize = sizeof(struct PyPlay),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_new = PyToy_new,                                      // was PyType_GenericNew
-    .tp_init = (initproc) PyToy_init,
-    .tp_dealloc = (destructor) PyToy_dealloc,
-    .tp_members = PyToy_members,
-    .tp_methods = PyToy_methods,
+    .tp_new = PyPlay_new,                                      // was PyType_GenericNew
+    .tp_init = (initproc) PyPlay_init,
+    .tp_dealloc = (destructor) PyPlay_dealloc,
+    .tp_members = PyPlay_members,
+    .tp_methods = PyPlay_methods,
 };
 
 

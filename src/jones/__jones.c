@@ -118,6 +118,30 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
         return 0;
     }
 
+    // PySMCls
+    if (PyType_Ready(&PySMCls) < 0) return 0;
+    if (PyModule_AddObject(m, "SM", (PyObject *) &PySMCls) < 0) {
+        Py_DECREF(&PySMCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    // PyEMCls
+    if (PyType_Ready(&PyEMCls) < 0) return 0;
+    if (PyModule_AddObject(m, "EM", (PyObject *) &PyEMCls) < 0) {
+        Py_DECREF(&PyEMCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    // PyTMCls
+    if (PyType_Ready(&PyTMCls) < 0) return 0;
+    if (PyModule_AddObject(m, "TM", (PyObject *) &PyTMCls) < 0) {
+        Py_DECREF(&PyTMCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
 
     // add function classes
     if (PyType_Ready(&FnCls) < 0) return 0;
@@ -191,17 +215,17 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
     }
 
 
-    #ifndef EXCLUDE_PLAY
+//    #ifndef EXCLUDE_PLAY
 
-    // add PyToyCls
-    if (PyType_Ready(&PyToyCls) < 0) return 0;
-    if (PyModule_AddObject(m, "Toy", (PyObject *) &PyToyCls) < 0) {
-        Py_DECREF(&PyToyCls);
+    // add PyPlayCls
+    if (PyType_Ready(&PyPlayCls) < 0) return 0;
+    if (PyModule_AddObject(m, "Play", (PyObject *) &PyPlayCls) < 0) {
+        Py_DECREF(&PyPlayCls);
         Py_DECREF(m);
         return 0;
     }
 
-    #endif
+//    #endif
 
     return m;
 }

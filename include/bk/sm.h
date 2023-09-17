@@ -10,12 +10,13 @@ struct sym {
 };
 
 
-// HT_STRUCT2(name, object_t, extravars)
+// HT_STRUCT2(name, slot_t, extravars)
 HT_STRUCT2(symIdByName, u32, struct SM* sm;)
 
 
 #define NA_SYM 0
-#define SM_MAX_SYM_STORAGE 0x10000  /* 64k */
+#define SM_MAX_NAME_LEN 0xFF        /* 256 chars */
+#define SM_MAX_NAME_STORAGE 0xFFFF  /* 64k */
 
 
 struct SM {
@@ -32,7 +33,7 @@ struct SM {
 pub struct SM * sm_create();
 pub void sm_trash(struct SM *);
 pub u32 sm_id(struct SM *, char const * const);
-pub char * sm_buf(struct SM *, RP);
+pub char * sm_name(struct SM *, RP);
 pub bool sm_id_le(struct SM *, u32 a, u32 b);
 pub inline RP sm_id_2_RP(struct SM *sm, u32 id);
 
