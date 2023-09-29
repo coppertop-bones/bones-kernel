@@ -38,6 +38,15 @@ pvt void PP(int level, char *msg, ...) {
     }
 }
 
+pvt int onOomDie(void *p, char *msg, ...) {
+    if (p == 0) {
+        va_list args;
+        va_start(args, msg);
+        die_("", msg, args);
+        va_end(args);
+    }
+}
+
 pvt void die(char *msg, ...) {
     va_list args;
     va_start(args, msg);
