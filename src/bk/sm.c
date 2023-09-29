@@ -2,6 +2,7 @@
 #define __BK_SM_C "bk/sm.c"
 
 #include "../../include/bk/sm.h"
+#include "../../include/bk/os.h"
 #include "ht_impl.h"
 
 
@@ -19,10 +20,13 @@ HT_IMPL(symIdByName, u32, char const *, ht_str_hash, nameFound, nameFromEntry)
 
 pub struct SM * sm_create() {
     struct SM *sm = (struct SM *) malloc(sizeof(struct SM));
-    // TODO reserve a bunch (4GB) of virtual memory, protect, unprotect in pages
-    // must be on a page boundary but could be chosen in an attempt to contend at cache set level
-    sm->names = malloc(SM_MAX_NAME_STORAGE);
-    sm->nameRpByIdSize = 1024;
+    sm->names = os_vm_reserve(0, SM_MAX_NAME_STORAGE);
+    // make first page read / write + advise as randomly accessed
+    sm->max_rp = os_page_size();
+    os_mprotect(sm->names, sm->max_rp, PROT_READ | PROT_WRITE);
+    os_madvise(sm->names, sm->max_rp, MADV_RANDOM);
+
+    sm->nameRpByIdSize = 0x4000;    // 16k syms for the mo
     sm->next_sym_id = 1;
     sm->next_name_rp = 2;
     sm->nameRpById = malloc(sm->nameRpByIdSize * sizeof(u32));
@@ -33,7 +37,7 @@ pub struct SM * sm_create() {
 }
 
 pub void sm_trash(struct SM *sm) {
-    free(sm->names);
+    os_vm_unreserve(sm->names, SM_MAX_NAME_STORAGE);
     free(sm->nameRpById);
     free(sm->sortOrderById);
     ht_trash(symIdByName, sm->symIdByName);
@@ -41,7 +45,7 @@ pub void sm_trash(struct SM *sm) {
 }
 
 pub u32 sm_id(struct SM *sm, char const * const name) {
-    int res;
+    int res, pageSize;
     u32 idx = ht_put_idx(symIdByName, sm->symIdByName, name, &res);
     if (res == HT_EXISTS) return sm->symIdByName->slots[idx];
 
@@ -52,7 +56,13 @@ pub u32 sm_id(struct SM *sm, char const * const name) {
         // we've run out of storage space
         return NA_SYM;
     }
-    // OPEN: if using VM unlock the next page if necessary
+    bool needsAnotherPage = (sm->next_name_rp + l + 2 >= sm->max_rp);
+    if (needsAnotherPage) {
+        // make next page r/w and mark as random access
+        pageSize = os_page_size();
+        os_mprotect(sm->names + sm->max_rp, pageSize, PROT_READ | PROT_WRITE);
+        os_madvise(sm->names + sm->max_rp, pageSize, MADV_RANDOM);
+    }
     if (sm->next_sym_id > sm->nameRpByIdSize) {
         // OPEN: grow the nameRpById and sortOrderById arrays
         return NA_SYM;
@@ -67,7 +77,11 @@ pub u32 sm_id(struct SM *sm, char const * const name) {
 
     if (res == HT_EMPTY) ht_replace_empty(symIdByName, sm->symIdByName, idx, id);
     else if (res == HT_TOMBSTONE) ht_replace_tombstone(symIdByName, sm->symIdByName, idx, id);
-
+    if (needsAnotherPage) {
+        // make the prior last page read only
+        os_mprotect(sm->names + sm->max_rp, pageSize, PROT_READ);
+        sm->max_rp += pageSize;
+    }
     return id;
 }
 

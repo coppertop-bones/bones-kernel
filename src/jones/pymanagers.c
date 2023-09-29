@@ -31,8 +31,8 @@ pvt PyObject * PySM_sym(struct PySM *self, PyObject *const *args, Py_ssize_t nar
         PyErr_SetString(PyExc_TypeError, "name must be utf8");
         return 0;
     }
-    const char *key = (const char *) PyUnicode_1BYTE_DATA(args[0]);
-    return PyLong_FromLong(sm_id(self->pSm, key));
+    const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
+    return PyLong_FromLong(sm_id(self->pSm, name));
 }
 
 pvt PyObject * PySM_name(struct PySM *self, PyObject *const *args, Py_ssize_t nargs) {
@@ -41,8 +41,12 @@ pvt PyObject * PySM_name(struct PySM *self, PyObject *const *args, Py_ssize_t na
         PyErr_SetString(PyExc_TypeError, "symid must be int");
         return 0;
     }
-    int symid = PyLong_AsLong(args[0]);
-    return PyUnicode_FromString(sm_name(self->pSm, symid));
+    uint id = PyLong_AsLong(args[0]);
+    if (id < 1 || id >= self->pSm->next_sym_id) {
+        PyErr_SetString(PyExc_ValueError, "symid out of range");
+        return 0;
+    }
+    return PyUnicode_FromString(sm_name(self->pSm, id));
 }
 
 

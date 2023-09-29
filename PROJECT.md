@@ -1,5 +1,4 @@
 NEXT
-- raise error if symid is out of bounds
 - nominal types (aka Atoms)
 - research fastest algo for merging small sorted list into larger sorted list (e.g. sort new syms first) better than:
   - if can realloc
@@ -32,3 +31,9 @@ MID
 
 DREAMLAND
 - implement other probes for hashtable
+
+
+
+
+DONE
+- raise error if symid is out of bounds in Python

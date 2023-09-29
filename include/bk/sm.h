@@ -15,8 +15,8 @@ HT_STRUCT2(symIdByName, u32, struct SM* sm;)
 
 
 #define NA_SYM 0
-#define SM_MAX_NAME_LEN 0xFF        /* 256 chars */
-#define SM_MAX_NAME_STORAGE 0xFFFF  /* 64k */
+#define SM_MAX_NAME_LEN 0xFF            /* 256 chars */
+#define SM_MAX_NAME_STORAGE 0xFFFFFFFF  /* 4GB */
 
 
 struct SM {
@@ -27,6 +27,7 @@ struct SM {
     unsigned int nameRpByIdSize;            // 4
     u32 next_sym_id;                        // 4
     RP next_name_rp;                        // 4
+    RP max_rp;                              // 4
 };
 
 

@@ -39,6 +39,19 @@ def test_sm():
     assert sm.sym("j") > id3
     assert sm.sym("k") == 13
 
+    try:
+        sm.name(0)
+        raise RuntimeError("shouldn't get here")
+    except ValueError:
+        pass
+
+    try:
+        sm.name(14)
+        raise RuntimeError("shouldn't get here")
+    except ValueError:
+        pass
+
+
     assert sm.le(id2, id1) == True
     assert sm.le(id2, id2) == False
     assert sm.le(id1, id2) == False

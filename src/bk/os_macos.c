@@ -1,11 +1,6 @@
 // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/MemoryAlloc.html
 // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/AboutMemory.html
 
-// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpagesize.3.html
-// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mmap.2.html
-// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mprotect.2.html
-// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/madvise.2.html
-// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/munmap.2.html
 // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/msync.2.html
 // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/sysconf.3.html
 // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/sysctl.3.html
@@ -33,7 +28,6 @@
 // https://lemire.me/blog/2020/01/20/filling-large-arrays-with-zeroes-quickly-in-c/
 
 
-
 #ifndef __BK_OS_MACOS_C
 #define __BK_OS_MACOS_C "bk/os_macos.c"
 
@@ -43,6 +37,19 @@
 #include <sys/sysctl.h>
 #include <libc.h>
 
+
+//#define PROT_READ       0x1                /* Page can be read.  */
+//#define PROT_WRITE      0x2                /* Page can be written.  */
+//#define PROT_EXEC       0x4                /* Page can be executed.  */
+//#define PROT_NONE       0x0                /* Page can not be accessed.  */
+
+//MADV_SEQUENTIAL
+//MADV_RANDOM
+//MADV_WILLNEED
+//MADV_DONTNEED
+//MADV_FREE
+
+
 pub int os_cache_line_size() {
     size_t lineSize = 0;
     size_t sizeOfLineSize = sizeof(lineSize);
@@ -51,28 +58,49 @@ pub int os_cache_line_size() {
 }
 
 pub int os_page_size() {
+    // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpagesize.3.html
     return getpagesize();
 }
 
-pub void * jvmreserve(void *start, size_t size) {
-    // reserves virtual address space - marked as PROT_NONE
-    return (void *) 0;
+pub void * os_vm_reserve(void *addr, size_t len) {
+    // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mmap.2.html
+    void *p = mmap(addr, len, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    return p;
 }
 
-pub int jvmrelease() {
-    // tidying up before shutdown?
-    return 1;
+pub int os_vm_unreserve(void *addr, size_t len) {
+    // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/munmap.2.html
+    int ret = munmap(addr, len);
+    return ret;
 }
 
-pub int jmprotect(void *start, size_t size, int prot) {
-    // check start is page aligned and size is whole number of pages
-    return 1;
+pub int os_mprotect(void *addr, size_t len, int prot) {
+    // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mprotect.2.html
+    // OPEN: check start is page aligned and size is whole number of pages>
+    int ret = mprotect(addr, len, prot);
+    switch (ret) {
+        case EACCES:
+            PP(info, "The requested protection conflicts with the access permissions of the process on the specified "
+                     "address range."
+            );
+        case EINVAL:
+            PP(info, "addr is not a multiple of the page size.");
+        case ENOTSUP:
+            PP(info, "The combination of accesses requested in prot is not supported.");
+    }
+    return ret;
 }
 
-pub int jmrelease(void *start, size_t size) {
-    // tell os the range is no longer needed via madvise
-    // mark as PROT_NONE via mprotect
-    return 1;
+pub int os_madvise(void *addr, size_t len, int advice) {
+    // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/madvise.2.html
+    int ret = madvise(addr, len, advice);
+    return ret;
+}
+
+pub int os_mfree(void *addr, size_t len) {
+    int ret = os_mprotect(addr, len, PROT_NONE);
+    ret = madvise(addr, len, MADV_FREE);
+    return ret;
 }
 
 
