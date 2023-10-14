@@ -35,24 +35,27 @@ struct PyBType {
     btype btype;
 };
 
-struct PyKernel {
-    PyObject_HEAD;
-    struct K *pKernel;
-};
-
 struct PySM {
     PyObject_HEAD;
-    struct SM *pSm;
+    struct SM *sm;
 };
 
 struct PyEM {
     PyObject_HEAD;
-    struct EM *pEm;
+    struct EM *em;
 };
 
 struct PyTM {
     PyObject_HEAD;
-    struct TM *pTm;
+    struct TM *tm;
+};
+
+struct PyKernel {
+    PyObject_HEAD;
+    struct K *kernel;
+    PyObject *pySM;
+    PyObject *pyEM;
+    PyObject *pyTM;
 };
 
 

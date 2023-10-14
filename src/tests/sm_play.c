@@ -9,7 +9,7 @@ pvt void die_(char *preamble, char *msg, va_list args) {
 
 int main() {
     int id;
-    struct SM *sm = sm_create();
+    struct SM *sm = SM_create();
     PP(info, "sm created");
 
     id = sm_id(sm, "fred");
@@ -21,7 +21,7 @@ int main() {
     id = sm_id(sm, "joe");
     check(id == 2, "id == %i (should be 2)", id);
 
-    sm_trash(sm);
+    SM_trash(sm);
     PP(info, "passed");
     return 0;
 }

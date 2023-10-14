@@ -3,6 +3,7 @@
 
 #include "Python.h"
 #include "_jones.h"
+#include "../bk/mm.c"
 #include "../bk/sm.c"
 #include "../bk/em.c"
 #include "../bk/tm.c"
@@ -14,16 +15,17 @@
 // PySM
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyObject * PySM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    struct PySM *self = (struct PySM *) type->tp_alloc(type, 0);
-    self->pSm = sm_create();
-    return (PyObject *) self;
-}
+//pvt PyObject * PySM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+//    struct PySM *self = (struct PySM *) type->tp_alloc(type, 0);
+//    struct MM *mm = MM_create();
+//    self->sm = SM_create(mm);
+//    return (PyObject *) self;
+//}
 
-pvt void PySM_trash(struct PySM *self) {
-    sm_trash(self->pSm);
-    Py_TYPE(self)->tp_free((PyObject *) self);
-}
+//pvt void PySM_trash(struct PySM *self) {
+//    SM_trash(self->sm);
+//    Py_TYPE(self)->tp_free((PyObject *) self);
+//}
 
 pvt PyObject * PySM_sym(struct PySM *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
@@ -32,7 +34,7 @@ pvt PyObject * PySM_sym(struct PySM *self, PyObject *const *args, Py_ssize_t nar
         return 0;
     }
     const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
-    return PyLong_FromLong(sm_id(self->pSm, name));
+    return PyLong_FromLong(sm_id(self->sm, name));
 }
 
 pvt PyObject * PySM_name(struct PySM *self, PyObject *const *args, Py_ssize_t nargs) {
@@ -42,11 +44,11 @@ pvt PyObject * PySM_name(struct PySM *self, PyObject *const *args, Py_ssize_t na
         return 0;
     }
     uint id = PyLong_AsLong(args[0]);
-    if (id < 1 || id >= self->pSm->next_sym_id) {
+    if (id < 1 || id >= self->sm->next_sym_id) {
         PyErr_SetString(PyExc_ValueError, "symid out of range");
         return 0;
     }
-    return PyUnicode_FromString(sm_name(self->pSm, id));
+    return PyUnicode_FromString(sm_name(self->sm, id));
 }
 
 
@@ -109,9 +111,9 @@ pvt PyTypeObject PySMCls = {
     .tp_basicsize = sizeof(struct PySM),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_new = PySM_create,
+//    .tp_new = PySM_create,
 //    .tp_init = (initproc) PySM_init,
-    .tp_dealloc = (destructor) PySM_trash,
+//    .tp_dealloc = (destructor) PySM_trash,
     .tp_members = PySM_members,
     .tp_methods = PySM_methods,
 //    .tp_getset = PySM_get_set,
@@ -135,18 +137,18 @@ pvt PyMethodDef PyEM_methods[] = {
 };
 
 
-pvt PyObject * PyEM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    struct PyEM *self = (struct PyEM *) type->tp_alloc(type, 0);
-    self->pEm = em_create();
-    return (PyObject *) self;
-}
-
-
-pvt void PyEM_trash(struct PyEM *self) {
-    // tear down kernel and release all os memory!
-    em_trash(self->pEm);
-    Py_TYPE(self)->tp_free((PyObject *) self);
-}
+//pvt PyObject * PyEM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+//    struct PyEM *self = (struct PyEM *) type->tp_alloc(type, 0);
+//    self->em = EM_create(mm);
+//    return (PyObject *) self;
+//}
+//
+//
+//pvt void PyEM_trash(struct PyEM *self) {
+//    // tear down kernel and release all os memory!
+//    EM_trash(self->em);
+//    Py_TYPE(self)->tp_free((PyObject *) self);
+//}
 
 
 //pvt int PyEM_init(struct PyEM *self, PyObject *args, PyObject *kwds) {
@@ -165,9 +167,9 @@ pvt PyTypeObject PyEMCls = {
         .tp_basicsize = sizeof(struct PyEM),
         .tp_itemsize = 0,
         .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-        .tp_new = PyEM_create,
+//        .tp_new = PyEM_create,
 //    .tp_init = (initproc) PyEM_init,
-        .tp_dealloc = (destructor) PyEM_trash,
+//        .tp_dealloc = (destructor) PyEM_trash,
         .tp_members = PyEM_members,
         .tp_methods = PyEM_methods,
 };
@@ -188,18 +190,18 @@ pvt PyMethodDef PyTM_methods[] = {
 };
 
 
-pvt PyObject * PyTM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    struct PyTM *self = (struct PyTM *) type->tp_alloc(type, 0);
-    self->pTm = tm_create();
-    return (PyObject *) self;
-}
-
-
-pvt void PyTM_trash(struct PyTM *self) {
-    // tear down kernel and release all os memory!
-    tm_trash(self->pTm);
-    Py_TYPE(self)->tp_free((PyObject *) self);
-}
+//pvt PyObject * PyTM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+//    struct PyTM *self = (struct PyTM *) type->tp_alloc(type, 0);
+//    self->tm = TM_create();
+//    return (PyObject *) self;
+//}
+//
+//
+//pvt void PyTM_trash(struct PyTM *self) {
+//    // tear down kernel and release all os memory!
+//    TM_trash(self->tm);
+//    Py_TYPE(self)->tp_free((PyObject *) self);
+//}
 
 
 //pvt int PyTM_init(struct PyTM *self, PyObject *args, PyObject *kwds) {
@@ -218,9 +220,9 @@ pvt PyTypeObject PyTMCls = {
     .tp_basicsize = sizeof(struct PyTM),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_new = PyTM_create,
+//    .tp_new = PyTM_create,
 //    .tp_init = (initproc) PyTM_init,
-    .tp_dealloc = (destructor) PyTM_trash,
+//    .tp_dealloc = (destructor) PyTM_trash,
     .tp_members = PyTM_members,
     .tp_methods = PyTM_methods,
 };
@@ -232,10 +234,11 @@ pvt PyTypeObject PyTMCls = {
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyMemberDef PyKernel_members[] = {
-//    {"id", T_UINT, offsetof(struct PyKernel, btid), 0, "id (u32)"},
+    {"sm", T_OBJECT, offsetof(struct PyKernel, pySM), READONLY, "symbol manager"},
+    {"em", T_OBJECT, offsetof(struct PyKernel, pyEM), READONLY, "enum manager"},
+    {"tm", T_OBJECT, offsetof(struct PyKernel, pyTM), READONLY, "type manager"},
     {0}
 };
-
 
 pvt PyMethodDef PyKernel_methods[] = {
     {0}
@@ -243,16 +246,24 @@ pvt PyMethodDef PyKernel_methods[] = {
 
 
 pvt PyObject * PyKernel_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+    // OPEN: assert no args or kwargs are passed
     struct PyKernel *self = (struct PyKernel *) type->tp_alloc(type, 0);
-    struct K *k = (struct K *) malloc(sizeof(struct K));
-    int res = K_init(k);
+    struct MM *mm = MM_create();
+    self->kernel = K_create(mm);
+    self->pySM = (struct PySM *) ((&PySMCls)->tp_alloc(&PySMCls, 0));
+    ((struct PySM *) self->pySM)->sm = self->kernel->sm;
+    self->pyEM = (struct PyEM *) ((&PyEMCls)->tp_alloc(&PyEMCls, 0));
+    ((struct PyEM *) self->pyEM)->em = self->kernel->em;
+    self->pyTM = (struct PyTM *) ((&PyTMCls)->tp_alloc(&PyTMCls, 0));
+    ((struct PyTM *) self->pyTM)->tm = self->kernel->em;
     return (PyObject *) self;
 }
 
 
 pvt void PyKernel_trash(struct PyKernel *self) {
-    // tear down kernel and release all os memory!
-    int res = K_trash(self->pKernel);
+    struct MM *mm = self->kernel->mm;
+    int res = K_trash(self->kernel);
+    res = MM_trash(mm);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 

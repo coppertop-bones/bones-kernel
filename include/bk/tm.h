@@ -258,31 +258,33 @@ enum managedmode : char {
 
 
 struct TM {
+    struct MM *mm;
     struct SM *sm;
-    char **txt_bySymId;                 // kept in string Buckets
-    struct map *symid_byName;           // keys are pointers into symtxts Buckets
-    unsigned int *order_bySymId;
-    char **name_byBTypeId;              // names are pointers into symtxts Buckets
-    struct map *bTypeId_byName;         // keys are pointers into symtxts Buckets
-
-    struct BType *bType_byBTypeId;      // for the mo all these can be malloc'd with fixed size
-    struct stype *stype_byBTypeId;
-    struct BTIntersection *inters;
-    struct BTUnion *unions;
-    struct BTTuple *tuples;
-    struct BTStruct *structs;
-    struct BTRec *records;
-    struct BTSeq *btseq_byDescId;
-    struct BTMap *btmap_byDescId;
-    struct BTFunc *btfnc_byDescId;
-
-    Buckets intists;                    // null terminated lists of types and syms
-    Buckets strings;                    // null terminated char* (utf8)
-    enum bexclusioncat *bexclusioncat_byBTypeId;    // this could also be done as a list of types per category which makes adding CCY etc easier
+    unsigned int nextTypeId;
+//    char **txt_bySymId;                 // kept in string Buckets
+//    struct map *symid_byName;           // keys are pointers into symtxts Buckets
+//    unsigned int *order_bySymId;
+//    char **name_byBTypeId;              // names are pointers into symtxts Buckets
+//    struct map *bTypeId_byName;         // keys are pointers into symtxts Buckets
+//
+//    struct BType *bType_byBTypeId;      // for the mo all these can be malloc'd with fixed size
+//    struct stype *stype_byBTypeId;
+//    struct BTIntersection *inters;
+//    struct BTUnion *unions;
+//    struct BTTuple *tuples;
+//    struct BTStruct *structs;
+//    struct BTRec *records;
+//    struct BTSeq *btseq_byDescId;
+//    struct BTMap *btmap_byDescId;
+//    struct BTFunc *btfnc_byDescId;
+//
+//    Buckets intists;                    // null terminated lists of types and syms
+//    Buckets strings;                    // null terminated char* (utf8)
+//    enum bexclusioncat *bexclusioncat_byBTypeId;    // this could also be done as a list of types per category which makes adding CCY etc easier
 };
 
-pub struct TM * tm_create();
-pub void tm_trash(struct TM *);
+pub struct TM * TM_create(struct MM *, struct SM *);
+pub int TM_trash(struct TM *);
 
 
 #endif // __BK_BM_H

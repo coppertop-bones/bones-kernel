@@ -3,12 +3,13 @@
 
 #include "bk.h"
 #include "buckets.h"
+#include "mm.h"
 
 struct OM {
     int something;
 };
 
-pub struct OM * om_create();
-pub void om_trash(struct OM *);
+pub struct OM * OM_create(struct MM *);
+pub void OM_trash(struct OM *);
 
 #endif // __BK_OM_H

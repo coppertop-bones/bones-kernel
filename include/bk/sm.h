@@ -35,6 +35,7 @@ struct SM {
     RP *nameRpById;                         // 8 - array of name RP indexed by id
     u32 *sortOrderById;                     // 8 - array of sort_order indexed by id - slot0 is 1 if sorted, 0 if not sorted
     ht_struct(symIdByName) *symIdByName;    // 8 - hash table for name lookup
+    struct MM *mm;                          // 8 - memory manager to use
     unsigned int nameRpByIdSize;            // 4
     SM_SYM_ID_T next_sym_id;                // 4
     RP next_name_rp;                        // 4
@@ -42,8 +43,8 @@ struct SM {
 };
 
 
-pub struct SM * sm_create();
-pub void sm_trash(struct SM *);
+pub struct SM * SM_create(struct MM*);
+pub int SM_trash(struct SM *);
 pub u32 sm_id(struct SM *, char const * const);
 pub char * sm_name(struct SM *, RP);
 pub bool sm_id_le(struct SM *, SM_SYM_ID_T a, SM_SYM_ID_T b);

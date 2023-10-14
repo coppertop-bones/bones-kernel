@@ -21,6 +21,7 @@
 #ifndef __BK_SM_C
 #define __BK_SM_C "bk/sm.c"
 
+#include "../../include/bk/mm.h"
 #include "../../include/bk/sm.h"
 #include "../../include/bk/os.h"
 #include "ht_impl.h"
@@ -39,8 +40,9 @@ pvt bool inline nameFound(ht_struct(symIdByName) const * const h, SM_SYM_ID_T en
 HT_IMPL(symIdByName, SM_SYM_ID_T, char const *, ht_str_hash, nameFound, nameFromEntry)
 
 
-pub struct SM * sm_create() {
-    struct SM *sm = (struct SM *) malloc(sizeof(struct SM));
+pub struct SM * SM_create(struct MM *mm) {
+    struct SM *sm = (struct SM *) mm->malloc(sizeof(struct SM));
+    sm->mm = mm;
     sm->names = os_vm_reserve(0, SM_MAX_NAME_STORAGE);
 
     sm->max_rp = os_page_size();
@@ -50,21 +52,22 @@ pub struct SM * sm_create() {
     sm->nameRpByIdSize = SM_ID_ARRAY_INC_SIZE;
     sm->next_sym_id = SM_NA_SYM + 1;
     sm->next_name_rp = 2;
-    sm->nameRpById = malloc(sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
+    sm->nameRpById = mm->malloc(sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
     onOomDie(sm->nameRpById, "in %s malloc #1 failed", __FUNCTION__);
-    sm->sortOrderById = malloc(sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
+    sm->sortOrderById = mm->malloc(sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
     onOomDie(sm->sortOrderById, "in %s malloc #2 failed", __FUNCTION__);
     sm->symIdByName = ht_create(symIdByName);
     sm->symIdByName->sm = sm;
     return sm;
 }
 
-pub void sm_trash(struct SM *sm) {
+pub int SM_trash(struct SM *sm) {
     os_vm_unreserve(sm->names, SM_MAX_NAME_STORAGE);
-    free(sm->nameRpById);
-    free(sm->sortOrderById);
+    sm->mm->free(sm->nameRpById);
+    sm->mm->free(sm->sortOrderById);
     ht_trash(symIdByName, sm->symIdByName);
-    free(sm);
+    sm->mm->free(sm);
+    return 0;
 }
 
 pub SM_SYM_ID_T sm_id(struct SM *sm, char const * const name) {
@@ -87,9 +90,9 @@ pub SM_SYM_ID_T sm_id(struct SM *sm, char const * const name) {
     }
     if (sm->next_sym_id > sm->nameRpByIdSize) {
         sm->nameRpByIdSize += SM_ID_ARRAY_INC_SIZE;
-        sm->nameRpById = realloc(sm->nameRpById, sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
+        sm->nameRpById = sm->mm->realloc(sm->nameRpById, sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
         onOomDie(sm->sortOrderById, "in %s realloc #1 failed", __FUNCTION__);
-        sm->sortOrderById = realloc(sm->sortOrderById, sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
+        sm->sortOrderById = sm->mm->realloc(sm->sortOrderById, sm->nameRpByIdSize * sizeof(SM_SYM_ID_T));
         onOomDie(sm->sortOrderById, "in %s realloc #2 failed", __FUNCTION__);
     }
     SM_SYM_ID_T id = sm->next_sym_id;

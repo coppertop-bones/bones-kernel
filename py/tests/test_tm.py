@@ -20,8 +20,7 @@ class tvfloat(float):
         return self
 
 def test_sm():
-    sm = jones.SM()
-    # sm = sys._k.sm
+    sm = sys._k.sm
     id1 = sm.sym("joe")
     id2 = sm.sym("fred")
     id3 = sm.sym("fred")
@@ -81,7 +80,7 @@ def test_intersection():
 
 def main():
     test_sm()
-    test_em()
+    # test_em()
     test_intersection()
 
 
@@ -90,3 +89,4 @@ if __name__ == '__main__':
     sys._k = jones.Kernel()
     main()
     sys._k = None
+

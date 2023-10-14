@@ -4,6 +4,7 @@
 
 #include "../../include/all.cfg"
 #include "buckets.c"
+#include "../../include/bk/mm.h"
 #include "../../include/bk/tm.h"
 
 
@@ -21,9 +22,11 @@ tdd int tm_setNominal(char *name, btype bt, struct TM *tm) {
 }
 
 
-pub struct TM * tm_create() {
-    struct TM *tm = (struct TM *) malloc(sizeof(struct TM));
-    tm->bType_byBTypeId = (struct BType *) malloc(1001 * sizeof(struct BType));
+pub struct TM * TM_create(struct MM *mm, struct SM *sm) {
+    struct TM *tm = (struct TM *) mm->malloc(sizeof(struct TM));
+    tm->mm = mm;
+    tm->sm = sm;
+//    tm->bType_byBTypeId = (struct BType *) malloc(1001 * sizeof(struct BType));
 
     tm_setNominal("nat", _nat, tm);
     tm_setNominal("m8", _m8, tm);
@@ -37,7 +40,9 @@ pub struct TM * tm_create() {
     return tm;
 }
 
-pub void tm_trash(struct TM *tm) {
+pub int TM_trash(struct TM *tm) {
+    tm->mm->free(tm);
+    return 0;
 }
 
 
