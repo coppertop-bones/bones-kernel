@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // DESCRIPTION: Bones uses symbols (a q/kdb term for strings that have been interned) extensively. Symbols are not
 //              intended for general strings usage, and it is probably performant to create less rather than more
-//              symbols. Symbols are used as type names and in enums and are presorted for fast sorting.
+//              symbols. Symbols are used as type names and in enums and are dictionary presorted for fast sorting.
 //
 //              struct SM is effectively a hash map that maps a char *name to an id, and vice versa. Symbols exist
 //              for the duration of the kernel, so the memory holding the names is grow-only (we allocate a large

@@ -46,14 +46,14 @@ pub BTYPE_ID_T tm_nominal(struct TM *tm, char const * const name) {
     if (res == HT_EXISTS) {
         // check if it is a nominal
         btypeId = ht_entry(tm->btypeId_ht, idx);
-        return (tm->detailByBTypeId[btypeId].mt == btnom) ? btypeId : 0;
+        return (tm->sumByBTypeId[btypeId].mt == btnom) ? btypeId : 0;
     }
     else {
         // create a new nominal
         btypeId = tm->nextBTypeId++;
         tm->symIdByBTypeId[btypeId] = symId;
-        tm->detailByBTypeId[btypeId].mt = btnom;
-        tm->detailByBTypeId[btypeId].nomId = 1;
+        tm->sumByBTypeId[btypeId].mt = btnom;
+        tm->sumByBTypeId[btypeId].nomId = 1;
         ht_replace_empty(TM_BTYPE_ID_HT, tm->btypeId_ht, idx, btypeId);
         return btypeId;
     }
@@ -71,7 +71,7 @@ pub struct TM * TM_create(struct MM *mm, struct SM *sm) {
     tm->sm = sm;
     tm->symIdByBTypeIdSize = 0x10000;     // 64k btypes
     tm->symIdByBTypeId = (BTYPE_ID_T *) mm->malloc(tm->symIdByBTypeIdSize * sizeof(BTYPE_ID_T));
-    tm->detailByBTypeId = (struct btdetails *) mm->malloc(tm->symIdByBTypeIdSize * sizeof(struct btdetails));
+    tm->sumByBTypeId = (struct btsummary *) mm->malloc(tm->symIdByBTypeIdSize * sizeof(struct btsummary));
     tm->btypeId_ht = ht_create(TM_BTYPE_ID_HT);
     tm->btypeId_ht->tm = tm;
     tm->nextBTypeId = 1;

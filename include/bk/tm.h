@@ -16,19 +16,16 @@
 //
 // addressOf and deref - may create new types
 //
-// first do intersections - need to be able to do hash map of btyp *, null terminated just like strings - use the one
-//      I found last year
 // need exclusions for M8, M16, M32, M64 -> i8: m8 & i8_ or poss i8: m8_ & i & signed, etc
-// second syms and nominals
 // ptr1, const1, ptr2, const2, ptr3, const3, extern, the basic c types
-// also need a test framework - python?
-// need counting sort too
-
+// counting sort - for enums
+// dictionary sort for sym names
+// general sort for type lists
 
 
 
 typedef enum : BTYPE_ID_T {
-    _nat = 0,           // not a type - i.e. an error code
+    _nat = 0,           // not-a-type - i.e. an error code
     _m8 = 1,
     _m16 = 2,
     _m32 = 3,
@@ -36,9 +33,11 @@ typedef enum : BTYPE_ID_T {
     _p64 = 5,
     _i32 = 6,
     _litint = 7,
-    _null = 8,          // empty set
+    _null = 8,          // empty set - not the same as not-a-type
 } btype;
 
+
+#define TM_TL_ID_T unsigned int
 
 enum bmetatype : unsigned char {
     btnom = 1,  // nominal - atomic type with a given name
@@ -56,10 +55,11 @@ enum bmetatype : unsigned char {
         // schemas
     btsvr = 10,  // schema variable
 };
-// typedef enum bmetatype : unsigned char Tristate;
+
 
 // OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
-struct btdetails {
+// also will store recursion, exclusiveId
+struct btsummary {
     enum bmetatype mt;
     unsigned char unused1;
     unsigned char unused2;
@@ -226,7 +226,7 @@ enum managedmode : char {
 //        void *p;
 //    };
 //};                      // 16
-//
+
 //struct box4 {
 //    btype btype;        // type is held in upper 4 bytes to match heap organisation
 //    union {
@@ -281,37 +281,31 @@ enum managedmode : char {
 
 // HT_STRUCT2(name, slot_t, extravars)
 HT_STRUCT2(TM_BTYPE_ID_HT, BTYPE_ID_T, struct TM* tm;)
+HT_STRUCT2(TM_TL_ID_HT, TM_TL_ID_T, struct TM* tm;)
 
 struct TM {
     struct MM *mm;
     struct SM *sm;
-    struct btdetails *detailByBTypeId;      // array of struct btdetails indexed by btypeId
+    struct btsummary *sumByBTypeId;         // array of struct btsummary indexed by btypeId
     SM_SYM_ID_T *symIdByBTypeId;            // array of symId indexed by btypeId
     ht_struct(TM_BTYPE_ID_HT) *btypeId_ht;  // hash table of btypeId
+    TM_TL_ID_T *tls;                        // VM buffer of length prefixed ordered list of btypeIds
+    RP *tlRpById;                           // array of type list RP indexed by typeListId
+    ht_struct(TM_TL_ID_T) *symIdByName;     // 8 - hash table for type list lookup
+    RP next_tl_rp;
+    RP max_tl_rp;                           // 4GB of VM
+    unsigned int nextTlId;
     unsigned int symIdByBTypeIdSize;
     unsigned int nextBTypeId;
-    unsigned int nextNomId;
-
-//    char **txt_bySymId;                 // kept in string Buckets
-//    struct map *symid_byName;           // keys are pointers into symtxts Buckets
-//    unsigned int *order_bySymId;
-//    char **name_byBTypeId;              // names are pointers into symtxts Buckets
-//    struct map *bTypeId_byName;         // keys are pointers into symtxts Buckets
-//
-//    struct BType *bType_byBTypeId;      // for the mo all these can be malloc'd with fixed size
-//    struct stype *stype_byBTypeId;
-//    struct BTIntersection *inters;
-//    struct BTUnion *unions;
-//    struct BTTuple *tuples;
-//    struct BTStruct *structs;
-//    struct BTRec *records;
-//    struct BTSeq *btseq_byDescId;
-//    struct BTMap *btmap_byDescId;
-//    struct BTFunc *btfnc_byDescId;
-//
-//    Buckets intists;                    // null terminated lists of types and syms
-//    Buckets strings;                    // null terminated char* (utf8)
-//    enum bexclusioncat *bexclusioncat_byBTypeId;    // this could also be done as a list of types per category which makes adding CCY etc easier
+    unsigned int nextIntId;
+    unsigned int nextUniId;
+    unsigned int nextTupId;
+    unsigned int nextStrId;
+    unsigned int nextRecId;
+    unsigned int nextSeqId;
+    unsigned int nextMapId;
+    unsigned int nextFncId;
+    unsigned int nextSvrId;
 };
 
 pub struct TM * TM_create(struct MM *, struct SM *);
