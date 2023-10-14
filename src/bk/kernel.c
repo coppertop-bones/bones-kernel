@@ -2,6 +2,10 @@
 #define __BK_KERNEL_C "bk/kernel.c"
 
 #include "../../include/bk/kernel.h"
+#include "mm.c"
+#include "sm.c"
+#include "em.c"
+#include "tm.c"
 
 
 pub struct K * K_create(struct MM *mm) {

@@ -38,7 +38,7 @@ pvt void PP(int level, char *msg, ...) {
     }
 }
 
-pvt int onOomDie(void *p, char *msg, ...) {
+pvt void onOomDie(void *p, char *msg, ...) {
     if (p == 0) {
         va_list args;
         va_start(args, msg);

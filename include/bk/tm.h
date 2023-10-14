@@ -3,6 +3,7 @@
 
 #include "bk.h"
 #include "sm.h"
+#include "ht.h"
 #include "buckets.h"
 
 
@@ -26,7 +27,7 @@
 
 
 
-typedef enum : BTYPE_TYPE {
+typedef enum : BTYPE_ID_T {
     _nat = 0,           // not a type - i.e. an error code
     _m8 = 1,
     _m16 = 2,
@@ -57,6 +58,28 @@ enum bmetatype : unsigned char {
 };
 // typedef enum bmetatype : unsigned char Tristate;
 
+// OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
+struct btdetails {
+    enum bmetatype mt;
+    unsigned char unused1;
+    unsigned char unused2;
+    unsigned char unused3;
+    union {
+        BTYPE_ID_T nomId;
+        BTYPE_ID_T intId;
+        BTYPE_ID_T uniId;
+        BTYPE_ID_T tupId;
+        BTYPE_ID_T strId;
+        BTYPE_ID_T recId;
+        BTYPE_ID_T seqId;
+        BTYPE_ID_T mapId;
+        BTYPE_ID_T fncId;
+        BTYPE_ID_T svrId;
+    };
+};
+
+
+
 
 #define DESC_ID unsigned int
 
@@ -67,7 +90,7 @@ struct BType {
 };
 
 typedef struct {
-    BTYPE_TYPE n;                   // 4
+    BTYPE_ID_T n;                   // 4
     btype ts[];                     // n * 4
 } BTypeList;
 
@@ -256,11 +279,19 @@ enum managedmode : char {
 // double b    <- *b
 // -----------------
 
+// HT_STRUCT2(name, slot_t, extravars)
+HT_STRUCT2(TM_BTYPE_ID_HT, BTYPE_ID_T, struct TM* tm;)
 
 struct TM {
     struct MM *mm;
     struct SM *sm;
-    unsigned int nextTypeId;
+    struct btdetails *detailByBTypeId;      // array of struct btdetails indexed by btypeId
+    SM_SYM_ID_T *symIdByBTypeId;            // array of symId indexed by btypeId
+    ht_struct(TM_BTYPE_ID_HT) *btypeId_ht;  // hash table of btypeId
+    unsigned int symIdByBTypeIdSize;
+    unsigned int nextBTypeId;
+    unsigned int nextNomId;
+
 //    char **txt_bySymId;                 // kept in string Buckets
 //    struct map *symid_byName;           // keys are pointers into symtxts Buckets
 //    unsigned int *order_bySymId;
@@ -285,6 +316,8 @@ struct TM {
 
 pub struct TM * TM_create(struct MM *, struct SM *);
 pub int TM_trash(struct TM *);
-
+pub BTYPE_ID_T tm_id(struct TM *, char const * const);
+pub char * tm_name(struct TM *, BTYPE_ID_T);
+pub BTYPE_ID_T tm_nominal(struct TM *, char const * const);
 
 #endif // __BK_BM_H

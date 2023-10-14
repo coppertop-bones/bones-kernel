@@ -1,5 +1,5 @@
 #include "../bk/pp.c"
-#include "../bk/sm.c"
+#include "../bk/kernel.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {
     fprintf(stderr, "%s", preamble);
@@ -9,19 +9,27 @@ pvt void die_(char *preamble, char *msg, va_list args) {
 
 int main() {
     int id;
-    struct SM *sm = SM_create();
-    PP(info, "sm created");
+    struct MM *mm = MM_create();
+    struct K *k = K_create(mm);
+    PP(info, "kernel created");
 
-    id = sm_id(sm, "fred");
+    id = sm_id(k->sm, "fred");
     check(id == 1, "id == %i (should be 1)", id);
 
-    id = sm_id(sm, "fred");
+    id = sm_id(k->sm, "fred");
     check(id == 1, "id == %i (should be 1)", id);
 
-    id = sm_id(sm, "joe");
+    id = sm_id(k->sm, "joe");
     check(id == 2, "id == %i (should be 2)", id);
 
-    SM_trash(sm);
+    id = tm_id(k->tm, "joe");
+    check(id == 0, "id == %i (should be 0)", id);
+
+    id = tm_id(k->tm, "sally");
+    check(id == 0, "id == %i (should be 0)", id);
+
+
+    K_trash(k);
     PP(info, "passed");
     return 0;
 }

@@ -19,6 +19,7 @@ class tvfloat(float):
         self._t_ = t
         return self
 
+
 def test_sm():
     sm = sys._k.sm
     id1 = sm.sym("joe")
@@ -40,46 +41,58 @@ def test_sm():
 
     try:
         sm.name(0)
-        raise RuntimeError("shouldn't get here")
+        raise AssertionError("shouldn't get here")
     except ValueError:
         pass
 
     try:
         sm.name(14)
-        raise RuntimeError("shouldn't get here")
+        raise AssertionError("shouldn't get here")
     except ValueError:
         pass
 
 
+def test_sm_sort_order():
+    sm = sys._k.sm
+    id1 = sm.sym("joe")
+    id2 = sm.sym("fred")
     assert sm.le(id2, id1) == True
     assert sm.le(id2, id2) == False
     assert sm.le(id1, id2) == False
 
+
 def test_em():
     1/0
 
-def test_intersection():
-    k = sys._k
-    assert k.tm.btype('GBP') is None
-    assert k.tm.btype('_GBP') is None
-    assert k.tm.btype('ccy') is None
-    assert k.tm.exists('ccy') is False
 
-    tCcy = k.tm.atom('ccy')
-    res = k.tm.setExplicit(tCcy)
+def test_intersection():
+    tm = sys._k.tm
+
+    assert not tm.exists('GBP')
+    try:
+        tm.btype('GBP')
+        raise AssertionError("shouldn't get here")
+    except TypeError:                   # OPEN: make this a BTypeError
+        pass
+
+    tCcy = tm.nominal('ccy')
+    assert tm.exists('ccy')
+
+    tag = tm.nominal(f'_GBP')
+    assert tm.exists('_GBP')
+
+    res = tm.setExplicit(tCcy)
     assert res
 
-    name = "GBP"
-    tag = k.tm.atom(f'_{name}')         # checks that there is no name conflict
-
-    GBP = k.tm.intersection(tCcy, tag)
-    assert k.tm.name(GBP) is None
-    res = k.tm.nameAs(GBP, name)
+    GBP = tm.intersection(tCcy, tag)
+    assert tm.name(GBP) is None
+    res = tm.nameAs(GBP, 'GBP')
     assert res
 
 
 def main():
-    test_sm()
+    test_sm()  #;   print('test_sm passed')
+    # test_sm_sort_order()
     # test_em()
     test_intersection()
 

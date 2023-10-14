@@ -44,7 +44,7 @@
 typedef unsigned int RP;        // relative pointer
 typedef unsigned int u32;
 typedef unsigned short u16;
-#define BTYPE_TYPE unsigned int // currently ls 18 bits for 256k types
+#define BTYPE_ID_T unsigned int // currently ls 18 bits for 256k types
 
 
 typedef char* err;

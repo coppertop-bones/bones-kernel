@@ -11,21 +11,10 @@
 #include "_utils.c"
 
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // PySM
 // ---------------------------------------------------------------------------------------------------------------------
-
-//pvt PyObject * PySM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-//    struct PySM *self = (struct PySM *) type->tp_alloc(type, 0);
-//    struct MM *mm = MM_create();
-//    self->sm = SM_create(mm);
-//    return (PyObject *) self;
-//}
-
-//pvt void PySM_trash(struct PySM *self) {
-//    SM_trash(self->sm);
-//    Py_TYPE(self)->tp_free((PyObject *) self);
-//}
 
 pvt PyObject * PySM_sym(struct PySM *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
@@ -51,45 +40,11 @@ pvt PyObject * PySM_name(struct PySM *self, PyObject *const *args, Py_ssize_t na
     return PyUnicode_FromString(sm_name(self->sm, id));
 }
 
-
-
-//pvt PyObject * _execShell(PyObject *mod, PyObject *args) {
-//    const char *command;  int ret;
-//    if (!PyArg_ParseTuple(args, "s", &command)) return 0;
-//    ret = system(command);
-//    if (ret < 0) {
-//        PyErr_SetString(PyJonesError, "System command failed");
-//        return 0;
-//    }
-//    return PyLong_FromLong(ret);
-//}
-
-
-
-//pvt int PySM_init(struct PySM *self, PyObject *args, PyObject *kwds) {
-//    static char *kwlist[] = {"id", 0};
-//    int btid;
-//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &btid)) return -1;
-//    self->btid = btid;
-//    return 0;
-//}
-
-pvt PyMemberDef PySM_members[] = {
-//        {"id", T_UINT, offsetof(struct PyBType, btype), 0, "id (u32)"},
-//        {"name", T_OBJECT, offsetof(struct Fn, name), READONLY, "function name"},
-//        {"num_tbc", T_UBYTE, offsetof(struct Partial, num_tbc), READONLY, "number of argument to be confirmed"},
-//        {"num_args", T_UBYTE, offsetof(PyVarObject, ob_size), READONLY, "total number of arguments"},
-    {0}
-};
-
 pvt PyMethodDef PySM_methods[] = {
-//    {"__array_ufunc__", (PyCFunction) _Common__array_ufunc__, METH_VARARGS | METH_KEYWORDS, "__array_ufunc__"},
-        {"sym", (PyCFunction) PySM_sym, METH_FASTCALL, "sym(name)\n\nanswers the symid for name"},
-        {"name", (PyCFunction) PySM_name, METH_FASTCALL, "name(symid)\n\nanswers the name for symid"},
-//    {"name", (PyCFunction) PyPlay_name, METH_NOARGS, "Return the name, combining the first and last name"},
+    {"sym", (PyCFunction) PySM_sym, METH_FASTCALL, "sym(name)\n\nanswers the symid for name"},
+    {"name", (PyCFunction) PySM_name, METH_FASTCALL, "name(symid)\n\nanswers the name for symid"},
     {0}
 };
-
 
 
 pvt PyGetSetDef PySM_get_set[] = {
@@ -97,11 +52,6 @@ pvt PyGetSetDef PySM_get_set[] = {
 //    {"args", (getter) Partial_args, 0, "arguments thus far", 0},
     {0}
 };
-
-//pvt PyNumberMethods PySM_number_methods = {
-//    .nb_rshift = (binaryfunc) _nullary_nb_rshift,
-//};
-
 
 pvt PyTypeObject PySMCls = {
     PyVarObject_HEAD_INIT(0, 0)
@@ -111,10 +61,6 @@ pvt PyTypeObject PySMCls = {
     .tp_basicsize = sizeof(struct PySM),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-//    .tp_new = PySM_create,
-//    .tp_init = (initproc) PySM_init,
-//    .tp_dealloc = (destructor) PySM_trash,
-    .tp_members = PySM_members,
     .tp_methods = PySM_methods,
 //    .tp_getset = PySM_get_set,
 //    .tp_call = (ternaryfunc) _Partial__call__,
@@ -122,108 +68,152 @@ pvt PyTypeObject PySMCls = {
 };
 
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // PyEM
 // ---------------------------------------------------------------------------------------------------------------------
-
-pvt PyMemberDef PyEM_members[] = {
-//    {"id", T_UINT, offsetof(struct PyEM, btid), 0, "id (u32)"},
-    {0}
-};
-
 
 pvt PyMethodDef PyEM_methods[] = {
     {0}
 };
 
-
-//pvt PyObject * PyEM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-//    struct PyEM *self = (struct PyEM *) type->tp_alloc(type, 0);
-//    self->em = EM_create(mm);
-//    return (PyObject *) self;
-//}
-//
-//
-//pvt void PyEM_trash(struct PyEM *self) {
-//    // tear down kernel and release all os memory!
-//    EM_trash(self->em);
-//    Py_TYPE(self)->tp_free((PyObject *) self);
-//}
-
-
-//pvt int PyEM_init(struct PyEM *self, PyObject *args, PyObject *kwds) {
-//    static char *kwlist[] = {"id", 0};
-//    int btid;
-//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &btid)) return -1;
-//    self->btid = btid;
-//    return 0;
-//}
-
-
 pvt PyTypeObject PyEMCls = {
-        PyVarObject_HEAD_INIT(0, 0)
-        .tp_name = "jones.Kernel",
-        .tp_doc = PyDoc_STR("TBC"),
-        .tp_basicsize = sizeof(struct PyEM),
-        .tp_itemsize = 0,
-        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-//        .tp_new = PyEM_create,
-//    .tp_init = (initproc) PyEM_init,
-//        .tp_dealloc = (destructor) PyEM_trash,
-        .tp_members = PyEM_members,
-        .tp_methods = PyEM_methods,
+    PyVarObject_HEAD_INIT(0, 0)
+    .tp_name = "jones.EM",
+    .tp_doc = PyDoc_STR("TBC"),
+    .tp_basicsize = sizeof(struct PyEM),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_methods = PyEM_methods,
 };
+
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // PyTM
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyMemberDef PyTM_members[] = {
-//    {"id", T_UINT, offsetof(struct PyTM, btid), 0, "id (u32)"},
-    {0}
-};
+// btype: (name:str) -> btype + exception
+pvt PyObject * PyTM_btype(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
+        PyErr_SetString(PyExc_TypeError, "name must be utf8");
+        return 0;
+    }
+    const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
+    BTYPE_ID_T btype = tm_id(self->tm, name);
+    if (btype) {
+        struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+        answer->btype = btype;
+        return (PyObject *) answer;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "name is not a btype");  // OPEN: better error
+        return 0;
+    }
+}
+
+// exists: (name:str) -> boolean
+pvt PyObject * PyTM_exists(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
+        PyErr_SetString(PyExc_TypeError, "name must be utf8");
+        return 0;
+    }
+    const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
+    return PyBool_FromLong(tm_id(self->tm, name));
+}
+
+// intersection: (btype1, btype2, ...) -> btype + exception
+pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    Py_RETURN_NONE;
+}
+
+// name: (btype) -> str + exception
+pvt PyObject * PyTM_name(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    Py_RETURN_NONE;
+}
+
+// nameAs: (btype, str) -> btype + exception
+pvt PyObject * PyTM_nameAs(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    Py_RETURN_NONE;
+}
+
+// nominal: (str) -> btype + exception
+pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs != 1) return _raiseWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
+        PyErr_SetString(PyExc_TypeError, "name must be utf8");
+        return 0;
+    }
+    const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
+    BTYPE_ID_T btype = tm_nominal(self->tm, name);
+    if (btype) {
+        struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+        answer->btype = btype;
+        return (PyObject *) answer;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "name is taken by another type");  // OPEN: better error
+        return 0;
+    }
+}
+
+// setExplicit: (btype) -> res
+pvt PyObject * PyTM_setExplicit(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    Py_RETURN_NONE;
+}
+
+// struct: (str, btype1, str, btype2...) -> btype + exception
+pvt PyObject * PyTM_struct(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    Py_RETURN_NONE;
+}
+
+// tuple: (btype1, btype2, ...) -> btype + exception
+pvt PyObject * PyTM_tuple(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    Py_RETURN_NONE;
+}
+
+// union: (btype1, btype2, ...) -> btype + exception
+pvt PyObject * PyTM_union(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
+    Py_RETURN_NONE;
+}
+
 
 
 pvt PyMethodDef PyTM_methods[] = {
+    {"btype", (PyCFunction) PyTM_btype, METH_FASTCALL, "btype(name)\n\nanswers the type called 'name' or None"},
+    {"exists", (PyCFunction) PyTM_exists, METH_FASTCALL,
+        "exists(name)\n\n"
+        "answers if name exists or not"
+    },
+    {"intersection", (PyCFunction) PyTM_intersection, METH_FASTCALL,
+        "intersection(t1, t2, ...)\n\n"
+        "answers the intersection of t1, t2, ..."
+    },
+    {"name", (PyCFunction) PyTM_name, METH_FASTCALL,
+        "name(t)\n\n"
+        "answers the name of the type if it exists else throws an error"
+    },
+    {"nameAs", (PyCFunction) PyTM_nameAs, METH_FASTCALL,
+        "nameAs(t, name)\n\n"
+        "Names a type, raising an error if the name is already taken"},
+    {"nominal", (PyCFunction) PyTM_nominal, METH_FASTCALL,
+        "nominal(name)\n\n"
+        "answers the nominal called 'name', creating it if it doesn't exist, or raises an error if the "
+        "name is used by another type"
+    },
+    {"setExplicit", (PyCFunction) PyTM_setExplicit, METH_FASTCALL, "setExplicit(t)\n\nTBD"},
     {0}
 };
-
-
-//pvt PyObject * PyTM_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-//    struct PyTM *self = (struct PyTM *) type->tp_alloc(type, 0);
-//    self->tm = TM_create();
-//    return (PyObject *) self;
-//}
-//
-//
-//pvt void PyTM_trash(struct PyTM *self) {
-//    // tear down kernel and release all os memory!
-//    TM_trash(self->tm);
-//    Py_TYPE(self)->tp_free((PyObject *) self);
-//}
-
-
-//pvt int PyTM_init(struct PyTM *self, PyObject *args, PyObject *kwds) {
-//    static char *kwlist[] = {"id", 0};
-//    int btid;
-//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &btid)) return -1;
-//    self->btid = btid;
-//    return 0;
-//}
 
 
 pvt PyTypeObject PyTMCls = {
     PyVarObject_HEAD_INIT(0, 0)
-    .tp_name = "jones.Kernel",
+    .tp_name = "jones.TM",
     .tp_doc = PyDoc_STR("TBC"),
     .tp_basicsize = sizeof(struct PyTM),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-//    .tp_new = PyTM_create,
-//    .tp_init = (initproc) PyTM_init,
-//    .tp_dealloc = (destructor) PyTM_trash,
-    .tp_members = PyTM_members,
     .tp_methods = PyTM_methods,
 };
 
@@ -232,6 +222,27 @@ pvt PyTypeObject PyTMCls = {
 // ---------------------------------------------------------------------------------------------------------------------
 // PyKernel
 // ---------------------------------------------------------------------------------------------------------------------
+
+pvt PyObject * PyKernel_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+    // OPEN: assert no args or kwargs are passed
+    struct PyKernel *self = (struct PyKernel *) type->tp_alloc(type, 0);
+    struct MM *mm = MM_create();
+    self->kernel = K_create(mm);
+    self->pySM = (PyObject *) ((&PySMCls)->tp_alloc(&PySMCls, 0));
+    ((struct PySM *) self->pySM)->sm = self->kernel->sm;
+    self->pyEM = (PyObject *) ((&PyEMCls)->tp_alloc(&PyEMCls, 0));
+    ((struct PyEM *) self->pyEM)->em = self->kernel->em;
+    self->pyTM = (PyObject *) ((&PyTMCls)->tp_alloc(&PyTMCls, 0));
+    ((struct PyTM *) self->pyTM)->tm = self->kernel->tm;
+    return (PyObject *) self;
+}
+
+pvt void PyKernel_trash(struct PyKernel *self) {
+    struct MM *mm = self->kernel->mm;
+    int res = K_trash(self->kernel);
+    res = MM_trash(mm);
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
 
 pvt PyMemberDef PyKernel_members[] = {
     {"sm", T_OBJECT, offsetof(struct PyKernel, pySM), READONLY, "symbol manager"},
@@ -244,39 +255,6 @@ pvt PyMethodDef PyKernel_methods[] = {
     {0}
 };
 
-
-pvt PyObject * PyKernel_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    // OPEN: assert no args or kwargs are passed
-    struct PyKernel *self = (struct PyKernel *) type->tp_alloc(type, 0);
-    struct MM *mm = MM_create();
-    self->kernel = K_create(mm);
-    self->pySM = (struct PySM *) ((&PySMCls)->tp_alloc(&PySMCls, 0));
-    ((struct PySM *) self->pySM)->sm = self->kernel->sm;
-    self->pyEM = (struct PyEM *) ((&PyEMCls)->tp_alloc(&PyEMCls, 0));
-    ((struct PyEM *) self->pyEM)->em = self->kernel->em;
-    self->pyTM = (struct PyTM *) ((&PyTMCls)->tp_alloc(&PyTMCls, 0));
-    ((struct PyTM *) self->pyTM)->tm = self->kernel->em;
-    return (PyObject *) self;
-}
-
-
-pvt void PyKernel_trash(struct PyKernel *self) {
-    struct MM *mm = self->kernel->mm;
-    int res = K_trash(self->kernel);
-    res = MM_trash(mm);
-    Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-
-//pvt int PyKernel_init(struct PyKernel *self, PyObject *args, PyObject *kwds) {
-//    static char *kwlist[] = {"id", 0};
-//    int btid;
-//    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &btid)) return -1;
-//    self->btid = btid;
-//    return 0;
-//}
-
-
 pvt PyTypeObject PyKernelCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_name = "jones.Kernel",
@@ -285,11 +263,11 @@ pvt PyTypeObject PyKernelCls = {
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_new = PyKernel_create,
-//    .tp_init = (initproc) PyKernel_init,
     .tp_dealloc = (destructor) PyKernel_trash,
     .tp_members = PyKernel_members,
     .tp_methods = PyKernel_methods,
 };
+
 
 
 #endif  // JONES_KERNEL_C

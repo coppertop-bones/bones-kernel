@@ -45,9 +45,9 @@ struct SM {
 
 pub struct SM * SM_create(struct MM*);
 pub int SM_trash(struct SM *);
-pub u32 sm_id(struct SM *, char const * const);
+pub SM_SYM_ID_T sm_id(struct SM *, char const * const);
 pub char * sm_name(struct SM *, RP);
 pub bool sm_id_le(struct SM *, SM_SYM_ID_T a, SM_SYM_ID_T b);
-pub inline RP sm_id_2_RP(struct SM *sm, SM_SYM_ID_T id);
+pub inline RP sm_id_2_RP(struct SM *, SM_SYM_ID_T);
 
 #endif // __BK_SM_H

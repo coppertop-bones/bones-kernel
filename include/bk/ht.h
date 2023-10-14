@@ -147,7 +147,7 @@
 #define ht_exist(h, idx) (__ht_is_occupied((h)->flags, (idx)))
 
 /*! @function
-  @abstract     Get key given an idx
+  @abstract     Get entry given an idx
   @param  h     Pointer to the hash table [ht_struct(name)*]
   @param  idx   Idx to the bucket [u32]
   @return       Entry [slot_t]

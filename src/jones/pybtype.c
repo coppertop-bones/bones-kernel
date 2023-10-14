@@ -8,22 +8,22 @@
 
 
 pvt PyMemberDef PyBType_members[] = {
-        {"id", T_UINT, offsetof(struct PyBType, btype), 0, "id (u32)"},
-        {0}
+    {"id", T_UINT, offsetof(struct PyBType, btype), 0, "bones type id"},
+    {0}
 };
 
 
 pvt PyMethodDef PyBType_methods[] = {
-        {0}
+    {0}
 };
 
 
-pvt void PyBType_dealloc(struct PyBType *self) {
+pvt void PyBType_trash(struct PyBType *self) {
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 
-pvt PyObject * PyBType_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+pvt PyObject * PyBType_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     struct PyBType *self = (struct PyBType *) type->tp_alloc(type, 0);
     return (PyObject *) self;
 }
@@ -39,17 +39,16 @@ pvt PyObject * PyBType_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
 
 pvt PyTypeObject PyBTypeCls = {
-        PyVarObject_HEAD_INIT(0, 0)
-        .tp_name = "jones.BType",
-        .tp_doc = PyDoc_STR("TBC"),
-        .tp_basicsize = sizeof(struct PyBType),
-        .tp_itemsize = 0,
-        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-        .tp_new = PyBType_new,
-//        .tp_init = (initproc) PyBType_init,
-        .tp_dealloc = (destructor) PyBType_dealloc,
-        .tp_members = PyBType_members,
-        .tp_methods = PyBType_methods,
+    PyVarObject_HEAD_INIT(0, 0)
+    .tp_name = "jones.BType",
+    .tp_doc = PyDoc_STR("A bones type"),
+    .tp_basicsize = sizeof(struct PyBType),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyBType_create,
+    .tp_dealloc = (destructor) PyBType_trash,
+    .tp_members = PyBType_members,
+    .tp_methods = PyBType_methods,
 };
 
 
