@@ -1,11 +1,9 @@
-#ifndef JONES_PIPE_OPS_C
-#define JONES_PIPE_OPS_C "jones/pipe_ops.c"
+#ifndef JONES_PYFNS_C
+#define JONES_PYFNS_C "jones/pipe_ops.c"
 
-
-#include "Python.h"
-#include "structmember.h"       // https://github.com/python/cpython/blob/main/Include/structmember.h
 #include "_jones.h"
 
+#include BK_PYTHON_H
 
 // we could use 0 as a sentinel instead of _? - nice idea but we still need to detect if an object represents the missing object
 // bmod should be a dispatcher attribute? we would use it in error messages and repr, the python module is really
@@ -77,8 +75,9 @@ pvt PyObject * _pternary_nb_rshift(PyObject *, PyObject *);
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // nullary pipe dispatch
-
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _nullary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
@@ -111,15 +110,17 @@ pvt PyObject * _pnullary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
 
 
-// important check lhs first to catch errors
-
+// ---------------------------------------------------------------------------------------------------------------------
 // unary pipe dispatch
 //
 // 1) _unary >> argN        - syntax error
 // 2) _punary >> argN       - syntax error
 // 3) pipe1 >> _unary       - dispatch, arg1 cannot be a class from this module as it would already have been piped
 // 4) pipe1 >> _punary      - dispatch, arg1 cannot be a class from this module as it would already have been piped
-
+//
+// important check lhs first to catch errors
+//
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _unary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
@@ -190,13 +191,14 @@ pvt PyObject * _punary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // binary pipe dispatch
 //
 // 1. _binary >> arg2      - syntax error
 // 2. _pbinary >> arg2     - dispatch
 // 3. arg1 >> _binary      - create a partial that can pipe one more argument
 // 4. arg1 >> _pbinary     - check this is the first arg, then create a partial that can pipe one more argument
-
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _binary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
@@ -301,13 +303,14 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // ternary pipe dispatch
 //
 // 1. _ternary >> arg       - syntax error
 // 2. _pternary >> arg2Or3  - if 2 is missing then keep it else it must be 3 so dispatch
 // 3. arg1 >> _ternary      - create a partial that can pipe two more arguments
 // 4. arg1 >> _pternary     - check this is the first arg, then create a partial that can pipe two more arguments
-
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _ternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
@@ -430,7 +433,9 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // Fn(...)
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _Fn__call__(struct Fn *fn, PyObject *args, PyObject *kwds) {
     int num_tbc = 0;  Py_ssize_t num_args = PyTuple_GET_SIZE(args);
@@ -476,7 +481,9 @@ pvt PyObject * _Fn__call__(struct Fn *fn, PyObject *args, PyObject *kwds) {
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // Partial(...)
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _Partial__call__(struct Partial *partial, PyObject *args, PyObject *kwds) {
     int new_missing = 0;  Py_ssize_t num_args = PyTuple_GET_SIZE(args);  PyObject * TBC = partial->Fn.TBCSentinel;
@@ -528,7 +535,9 @@ pvt PyObject * _Partial__call__(struct Partial *partial, PyObject *args, PyObjec
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // Partial misc
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * Partial_o_tbc(struct Partial *partial, void* closure) {
     Py_ssize_t full_size = Py_SIZE(partial);  PyObject **args = partial->args;  PyObject * TBC = partial->Fn.TBCSentinel;
@@ -564,7 +573,9 @@ pvt PyObject * Partial_args(struct Partial *partial, void* closure) {
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // __array_ufunc__ to work nicely with numpy
+// ---------------------------------------------------------------------------------------------------------------------
 
 // https://numpy.org/doc/stable/reference/c-api/ufunc.html#c.PyUFunc_RegisterLoopForType
 // https://numpy.org/devdocs/reference/c-api/ufunc.html#c.PyUFunc_ReplaceLoopBySignature
@@ -608,7 +619,9 @@ pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *args, PyObject *k
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // Fn lifecycle
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt void Fn_dealloc(struct Fn *self) {
     Py_DECREF(self->name);
@@ -640,7 +653,9 @@ pvt int Fn_init(struct Fn *self, PyObject *args, PyObject *kwds) {
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // Partial lifecycle
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt void Partial_dealloc(struct Partial *self) {
     Py_DECREF(self->Fn.name);
@@ -689,7 +704,9 @@ pvt int Partial_initFromFn(
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // members, get/setter, methods
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * Fn_get_doc(struct Fn *self, void *closure) {
     return PyUnicode_FromString("Fn...");
@@ -717,8 +734,8 @@ pvt PyGetSetDef Fn_getsetters[] = {
 };
 
 pvt PyMemberDef Fn_members[] = {
-    {"name", T_OBJECT, offsetof(struct Fn, name), READONLY, "function name"},
-    {"bmod", T_OBJECT, offsetof(struct Fn, bmod), READONLY, "bones module name"},
+    {"name", Py_T_OBJECT_EX, offsetof(struct Fn, name), Py_READONLY, "function name"},
+    {"bmod", Py_T_OBJECT_EX, offsetof(struct Fn, bmod), Py_READONLY, "bones module name"},
     {0}
 };
 
@@ -734,13 +751,13 @@ pvt PyGetSetDef Partial_getsetters[] = {
 };
 
 pvt PyMemberDef Partial_members[] = {
-    {"name", T_OBJECT, offsetof(struct Partial, Fn.name), READONLY, "function name"},
-    {"bmod", T_OBJECT, offsetof(struct Partial, Fn.bmod), READONLY, "bones module name"},
-    {"d", T_OBJECT, offsetof(struct Partial, Fn.d), READONLY, "dispatcher"},
-    {"num_tbc", T_UBYTE, offsetof(struct Partial, num_tbc), READONLY, "number of argument to be confirmed"},
-    {"num_args", T_UBYTE, offsetof(PyVarObject, ob_size), READONLY, "total number of arguments"},
-    {"pipe1", T_OBJECT, offsetof(struct Partial, pipe1), READONLY, "first piped arg"},
-    {"pipe2", T_OBJECT, offsetof(struct Partial, pipe2), READONLY, "second piped arg"},
+    {"name", Py_T_OBJECT_EX, offsetof(struct Partial, Fn.name), Py_READONLY, "function name"},
+    {"bmod", Py_T_OBJECT_EX, offsetof(struct Partial, Fn.bmod), Py_READONLY, "bones module name"},
+    {"d", Py_T_OBJECT_EX, offsetof(struct Partial, Fn.d), Py_READONLY, "dispatcher"},
+    {"num_tbc", Py_T_UBYTE, offsetof(struct Partial, num_tbc), Py_READONLY, "number of argument to be confirmed"},
+    {"num_args", Py_T_UBYTE, offsetof(PyVarObject, ob_size), Py_READONLY, "total number of arguments"},
+    {"pipe1", Py_T_OBJECT_EX, offsetof(struct Partial, pipe1), Py_READONLY, "first piped arg"},
+    {"pipe2", Py_T_OBJECT_EX, offsetof(struct Partial, pipe2), Py_READONLY, "second piped arg"},
     {0}
 };
 
@@ -764,7 +781,9 @@ pvt PyNumberMethods _pternary_tp_as_number = {.nb_rshift = (binaryfunc) _pternar
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
 // Python classes
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyTypeObject FnCls = {
     PyVarObject_HEAD_INIT(0, 0)
@@ -923,4 +942,4 @@ pvt PyTypeObject PyPTernaryCls = {
 
 
 
-#endif  // JONES_PIPE_OPS_C
+#endif  // JONES_PYFNS_C

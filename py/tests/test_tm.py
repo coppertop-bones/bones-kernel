@@ -1,5 +1,17 @@
+from coppertop.pipe import *
+from dm.core.types import pylist
+from dm.testing import check, raises, equals, gt, different
 from bones import jones
+
 import sys
+
+@coppertop(style=binary)
+def apply_(fn, arg):
+    return lambda : fn(arg)
+
+@coppertop(style=binary)
+def apply_(fn, arg:pylist):
+    return lambda : fn(*arg)
 
 
 class tvfloat(float):
@@ -22,43 +34,25 @@ class tvfloat(float):
 
 def test_sm():
     sm = sys._k.sm
-    id1 = sm.sym("joe")
-    id2 = sm.sym("fred")
-    id3 = sm.sym("fred")
-    assert id2 == id3
-    assert sm.name(id2) == "fred"
-    assert sm.sym("a") > id3
-    assert sm.sym("b") > id3
-    assert sm.sym("c") > id3
-    assert sm.sym("d") > id3
-    assert sm.sym("e") > id3
-    assert sm.sym("f") > id3
-    assert sm.sym("g") > id3
-    assert sm.sym("h") > id3
-    assert sm.sym("i") > id3
-    assert sm.sym("j") > id3
-    assert sm.sym("k") == 13
+    id1 = sm.symid("joe")
+    id2 = sm.symid("fred")
+    id3 = sm.symid("fred")
+    id2 >> check >> equals >> id3
+    sm.name(id2) >> check >> equals >> "fred"
+    sm.symid("a") >> check >> gt >> id3
+    sm.symid("b") >> check >> gt >> id3
 
-    try:
-        sm.name(0)
-        raise AssertionError("shouldn't get here")
-    except ValueError:
-        pass
-
-    try:
-        sm.name(14)
-        raise AssertionError("shouldn't get here")
-    except ValueError:
-        pass
+    sm.name >> apply_ >> 0 >> check >> raises >> ValueError
+    sm.name >> apply_ >> 100000 >> check >> raises >> ValueError
 
 
 def test_sm_sort_order():
     sm = sys._k.sm
-    id1 = sm.sym("joe")
-    id2 = sm.sym("fred")
-    assert sm.le(id2, id1) == True
-    assert sm.le(id2, id2) == False
-    assert sm.le(id1, id2) == False
+    id1 = sm.symid("joe")
+    id2 = sm.symid("fred")
+    sm.le(id2, id1) >> check >> equals >> True
+    sm.le(id2, id2) >> check >> equals >> False
+    sm.le(id1, id2) >> check >> equals >> False
 
 
 def test_em():
@@ -68,26 +62,20 @@ def test_em():
 def test_intersection():
     tm = sys._k.tm
 
-    assert not tm.exists('GBP')
-    try:
-        tm.btype('GBP')
-        raise AssertionError("shouldn't get here")
-    except TypeError:                   # OPEN: make this a BTypeError
-        pass
+    tm.exists('GBP') >> check >> equals >> False
+    tm.btype >> apply_ >> ['GBP'] >> check >> raises >> TypeError  # OPEN: make this a BTypeError
 
-    tCcy = tm.nominal('ccy')
-    assert tm.exists('ccy')
+    tCcy = tm.exclusiveNominal('ccy', 2)
+    tm.exists('ccy') >> check >> equals >> True
 
     tag = tm.nominal(f'_GBP')
-    assert tm.exists('_GBP')
-
-    res = tm.setExplicit(tCcy)
-    assert res
+    tm.exists('_GBP') >> check >> equals >> True
 
     GBP = tm.intersection(tCcy, tag)
-    assert tm.name(GBP) is None
-    res = tm.nameAs(GBP, 'GBP')
-    assert res
+    tm.name(GBP)  >> check >> different >> 'GBP'
+    t = tm.nameAs(GBP, 'GBP')
+    GBP.id >> check >> equals >> t.id
+    tm.name(GBP) >> check >> equals >> 'GBP'
 
 
 def main():

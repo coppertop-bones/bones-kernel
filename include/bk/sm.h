@@ -5,8 +5,8 @@
 #include "ht.h"
 
 
-// this is more for documentation than usage to make clear that a sym is length prefixed
-struct sym {
+// this is more for documentation than usage to make clear that a symname is length prefixed
+struct symname {
     unsigned short n;
     char buf[];             // <<<< RP points here
 };
@@ -31,7 +31,7 @@ HT_STRUCT2(symIdByName, u32, struct SM* sm;)
 
 
 struct SM {
-    char *names;                            // 8 - VM buffer of u16 length prefixed, null terminated utf8 strings for type name and sym interning
+    char *symnames;                         // 8 - VM buffer of u16 length prefixed, null terminated utf8 strings for type name and sym interning
     RP *nameRpById;                         // 8 - array of name RP indexed by id
     u32 *sortOrderById;                     // 8 - array of sort_order indexed by id - slot0 is 1 if sorted, 0 if not sorted
     ht_struct(symIdByName) *symIdByName;    // 8 - hash table for name lookup

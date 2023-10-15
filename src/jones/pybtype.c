@@ -1,7 +1,6 @@
 #ifndef JONES_PY_BTYPE_C
 #define JONES_PY_BTYPE_C "jones/py_btype.c"
 
-#include "Python.h"
 #include "_jones.h"
 #include "../../include/bk/tm.h"
 
@@ -18,7 +17,7 @@ pvt void PyBType_trash(struct PyBType *self) {
 }
 
 pvt PyMemberDef PyBType_members[] = {
-    {"id", T_UINT, offsetof(struct PyBType, btype), 0, "bones type id"},
+    {"id", Py_T_UINT, offsetof(struct PyBType, btypeId), 0, "bones type id"},
     {0}
 };
 

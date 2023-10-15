@@ -2,7 +2,7 @@
 #define __JONES___JONES_C "jones/__jones.c"
 
 
-#include "../../include/all.cfg"
+#include "_jones.h"
 #include "pyfns.c"
 #include "../bk/os.c"
 #include "../bk/buckets.c"
@@ -11,7 +11,7 @@
 #include "fs.c"
 #include "mod.c"
 
-#ifndef EXCLUDE_PLAY
+#ifdef INCLUDE_JONES_PLAY
 #include "play.c"
 #endif
 
@@ -48,14 +48,9 @@ pvt PyMethodDef free_fns[] = {
     {"sc_test_numSlots", (PyCFunction)          _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
     {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _fs_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
 
-//    {"type_new",                                Shifter_type_new, METH_VARARGS | METH_KEYWORDS, ""},
-
     // play
     {"execShell",                               _execShell, METH_VARARGS, "Execute a shell command."},
     {"sizeofFredJoe", (PyCFunction)             _sizeofFredJoe, METH_FASTCALL, "tuple with sizeOf Fred and Joe in it"},
-    {"reserve", (PyCFunction)                   _reserve, METH_FASTCALL, "reserve(pVA, numPages)"},
-//    {"unreserve", (PyCFunction)                 _unreserve, METH_FASTCALL, ""},
-    {"getVaPtr", (PyCFunction)                  _getVaPtr, METH_FASTCALL, "getVaPtr()"},
 
     {0, 0, 0, 0}
 };
@@ -70,16 +65,10 @@ pvt PyModuleDef jones_module = {
 };
 
 
-//    {"bmodule", T_OBJECT, offsetof(struct Fn, bmodule), READONLY, "bones module name"},
+//    {"bmodule", Py_T_OBJECT_EX, offsetof(struct Fn, bmodule), Py_READONLY, "bones module name"},
 
 pyapi PyMODINIT_FUNC PyInit_jones(void) {
     PyObject *m;
-
-// TODO make cross platform
-//    unsigned int num_pages = _1GB / db_os_page_size();
-//    VA *va = init_va(num_pages);
-//    if (va == 0) return 0;
-//    g_va = va;
 
     m = PyModule_Create(&jones_module);
     if (m == 0) return 0;
@@ -215,7 +204,7 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
     }
 
 
-//    #ifndef EXCLUDE_PLAY
+    #ifdef INCLUDE_JONES_PLAY
 
     // add PyPlayCls
     if (PyType_Ready(&PyPlayCls) < 0) return 0;
@@ -225,7 +214,7 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
         return 0;
     }
 
-//    #endif
+    #endif
 
     return m;
 }

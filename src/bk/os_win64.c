@@ -101,5 +101,19 @@ pvt int asprintf(char **str, const char *fmt, ...) {
     return ret;
 }
 
+// https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
+// https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-discardvirtualmemory
+// https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-offervirtualmemory
+// https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-reclaimvirtualmemory
+// https://learn.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
+// https://learn.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-setlasterror
+// https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualprotect
+// https://learn.microsoft.com/en-us/windows/win32/Memory/memory-protection-constants
+
+// VirtualAlloc - MEM_RESERVE, MEM_COMMIT, MEM_RESET
+// VirtualProtect - PAGE_EXECUTE, PAGE_EXECUTE_READ, PAGE_EXECUTE_READWRITE, PAGE_EXECUTE_WRITECOPY, PAGE_READWRITE, PAGE_READONLY, PAGE_NOACCESS, PAGE_GUARD
+// VirtualFree - MEM_DECOMMIT, MEM_RELEASE
+
+// https://github.com/Kevin-Jin/mmap/issues/21
 
 #endif  // __BK_OS_WIN64_C

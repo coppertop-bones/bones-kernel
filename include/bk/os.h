@@ -5,8 +5,19 @@
 #include "../all.cfg"
 #include "bk.h"
 
-#include <sys/mman.h>
-#include <sys/errno.h>
+#define BK_M_NONE       0x0
+#define BK_M_READ       0x1
+#define BK_M_WRITE      0x2
+#define BK_M_EXEC       0x4
+
+
+#define BK_AD_NORMAL            0
+#define BK_AD_RANDOM            1
+#define BK_AD_SEQUENTIAL        2
+#define BK_AD_WILLNEED          3
+#define BK_AD_DONTNEED          4
+#define BK_AD_FREE              5
+
 
 pub int os_cache_line_size();
 pub int os_page_size();

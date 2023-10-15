@@ -28,26 +28,26 @@
 // https://lemire.me/blog/2020/01/20/filling-large-arrays-with-zeroes-quickly-in-c/
 
 
+// /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/mman.h
+
+//#define MADV_ZERO_WIRED_PAGES   6       /* zero the wired pages that have not been unwired before the entry is deleted */
+//#define MADV_FREE_REUSABLE      7       /* pages can be reused (by anyone) */
+//#define MADV_FREE_REUSE         8       /* caller wants to reuse those pages */
+//#define MADV_CAN_REUSE          9
+//#define MADV_PAGEOUT            10      /* page out now (internal only) */
+
+
 #ifndef __BK_OS_MACOS_C
 #define __BK_OS_MACOS_C "bk/os_macos.c"
 
 
 #include "../../include/bk/bk.h"
+//#include "../../include/bk/os.h"
 #include "pp.c"
 #include <sys/sysctl.h>
 #include <libc.h>
-
-
-//#define PROT_READ       0x1                /* Page can be read.  */
-//#define PROT_WRITE      0x2                /* Page can be written.  */
-//#define PROT_EXEC       0x4                /* Page can be executed.  */
-//#define PROT_NONE       0x0                /* Page can not be accessed.  */
-
-//MADV_SEQUENTIAL
-//MADV_RANDOM
-//MADV_WILLNEED
-//MADV_DONTNEED
-//MADV_FREE
+#include <sys/mman.h>
+#include <sys/errno.h>
 
 
 pub int os_cache_line_size() {
@@ -93,6 +93,7 @@ pub int os_mprotect(void *addr, size_t len, int prot) {
 
 pub int os_madvise(void *addr, size_t len, int advice) {
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/madvise.2.html
+    // https://man.freebsd.org/cgi/man.cgi?query=madvise&sektion=2&format=html
     int ret = madvise(addr, len, advice);
     return ret;
 }

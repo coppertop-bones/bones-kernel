@@ -29,11 +29,11 @@
 
 
 pvt inline char const * const nameFromEntry(ht_struct(symIdByName) *h, SM_SYM_ID_T entry) {
-    return h->sm->names + h->sm->nameRpById[entry];
+    return h->sm->symnames + h->sm->nameRpById[entry];
 }
 
 pvt bool inline nameFound(ht_struct(symIdByName) const * const h, SM_SYM_ID_T entry, char const * const key) {
-    return strcmp(h->sm->names + h->sm->nameRpById[entry], key) == 0;
+    return strcmp(h->sm->symnames + h->sm->nameRpById[entry], key) == 0;
 }
 
 // HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
@@ -43,11 +43,11 @@ HT_IMPL(symIdByName, SM_SYM_ID_T, char const *, ht_str_hash, nameFound, nameFrom
 pub struct SM * SM_create(struct MM *mm) {
     struct SM *sm = (struct SM *) mm->malloc(sizeof(struct SM));
     sm->mm = mm;
-    sm->names = os_vm_reserve(0, SM_MAX_NAME_STORAGE);
+    sm->symnames = os_vm_reserve(0, SM_MAX_NAME_STORAGE);
 
     sm->max_rp = os_page_size();
-    os_mprotect(sm->names, sm->max_rp, PROT_READ | PROT_WRITE);     // make first page of name storage R/W
-    os_madvise(sm->names, sm->max_rp, MADV_RANDOM);                 // and advise as randomly accessed
+    os_mprotect(sm->symnames, sm->max_rp, BK_M_READ | BK_M_WRITE);  // make first page of name storage R/W
+    os_madvise(sm->symnames, sm->max_rp, BK_AD_RANDOM);              // and advise as randomly accessed
 
     sm->nameRpByIdSize = SM_ID_ARRAY_INC_SIZE;
     sm->next_sym_id = SM_NA_SYM + 1;
@@ -62,7 +62,7 @@ pub struct SM * SM_create(struct MM *mm) {
 }
 
 pub int SM_trash(struct SM *sm) {
-    os_vm_unreserve(sm->names, SM_MAX_NAME_STORAGE);
+    os_vm_unreserve(sm->symnames, SM_MAX_NAME_STORAGE);
     sm->mm->free(sm->nameRpById);
     sm->mm->free(sm->sortOrderById);
     ht_trash(symIdByName, sm->symIdByName);
@@ -85,8 +85,8 @@ pub SM_SYM_ID_T sm_id(struct SM *sm, char const * const name) {
     if (needsAnotherPage) {
         // make next page r/w and mark as random access
         pageSize = os_page_size();
-        os_mprotect(sm->names + sm->max_rp, pageSize, PROT_READ | PROT_WRITE);
-        os_madvise(sm->names + sm->max_rp, pageSize, MADV_RANDOM);
+        os_mprotect(sm->symnames + sm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(sm->symnames + sm->max_rp, pageSize, BK_AD_RANDOM);
     }
     if (sm->next_sym_id > sm->nameRpByIdSize) {
         sm->nameRpByIdSize += SM_ID_ARRAY_INC_SIZE;
@@ -100,20 +100,20 @@ pub SM_SYM_ID_T sm_id(struct SM *sm, char const * const name) {
     sm->sortOrderById[0] = SM_SYMS_NOT_SORTED;      // OPEN: check if the new syms makes the syms unsorted
     sm->next_sym_id++;
     // OPEN: prefix with length
-    strcpy(sm->names + (sm->next_name_rp), name);
+    strcpy(sm->symnames + (sm->next_name_rp), name);
     sm->next_name_rp = sm->next_name_rp + 2 + l + 1;
 
     if (res == HT_EMPTY) ht_replace_empty(symIdByName, sm->symIdByName, idx, id);
     else if (res == HT_TOMBSTONE) ht_replace_tombstone(symIdByName, sm->symIdByName, idx, id);  // OPEN: can never be a HT_TOMBSTONE!
     if (needsAnotherPage) {
-        os_mprotect(sm->names + sm->max_rp - pageSize, pageSize, PROT_READ);    // make the prior last page read only
+        os_mprotect(sm->symnames + sm->max_rp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
         sm->max_rp += pageSize;
     }
     return id;
 }
 
 pub char * sm_name(struct SM *sm, SM_SYM_ID_T id) {
-    return &sm->names[sm->nameRpById[id]];
+    return &sm->symnames[sm->nameRpById[id]];
 }
 
 pvt void _sm_sort_syms(struct SM *sm) {
