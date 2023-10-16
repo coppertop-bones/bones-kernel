@@ -3,3 +3,7 @@
 *.o
 __pycache__/
 /py/build/
+
+.DS_Store
+
+bk.xcodeproj/

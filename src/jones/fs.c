@@ -8,7 +8,7 @@
 #include "_jones.h"
 #include "../../include/bk/bk.h"
 #include "../bk/fs.c"
-#include "_utils.c"
+#include "../lib/pyutils.c"
 #include "pybtype.c"
 
 
@@ -99,7 +99,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject *const
     bool hasValue = false;
     Py_ssize_t o_slot = 1;
 
-    for (fu8 o = 0; o < num_args; o++) {
+    for (uint_fast8_t o = 0; o < num_args; o++) {
         PyObject *arg = PyTuple_GET_ITEM(args, o);
         PyTypeObject *argCls = Py_TYPE(arg);
 
@@ -219,7 +219,7 @@ pvt PyObject * _fs_tArgs_from_query(PyObject *mod, PyObject *const *params, Py_s
     PyObject *PyBTypeById = params[1];
     if (!PyList_Check(PyBTypeById)) return 0;
 
-    fu8 num_args = NUM_ARGS_FROM_SLOT_WIDTH(fs->slot_width);
+    uint_fast8_t num_args = NUM_ARGS_FROM_SLOT_WIDTH(fs->slot_width);
     PyObject *answer = PyTuple_New(num_args);
     if (answer == 0) return 0;
 
@@ -266,7 +266,7 @@ pvt PyObject * _fs_atArrayPut(PyObject *mod, PyObject *const *args, Py_ssize_t n
     if (!PyLong_Check(args[3])) return 0;
 
     struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
-    fu8 index = (fu8) PyLong_AsLong(args[1]);
+    uint_fast8_t index = (uint_fast8_t) PyLong_AsLong(args[1]);
     PY_ASSERT_INT_WITHIN_CLOSED(index, "index", 1, fs->num_slots);
     unsigned short *sig = PyLong_AsVoidPtr(args[2]);
     unsigned long v = PyLong_AsLong(args[3]);
@@ -366,7 +366,7 @@ pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
     query = P_QUERY(fs);
     array = P_SIG_ARRAY(fs);
 
-    for (fu8 o = 0; o < num_args; o++) {
+    for (uint_fast8_t o = 0; o < num_args; o++) {
         // get the id from each tArg
         struct PyBType *tArg = (struct PyBType *) PyTuple_GetItem(tArgs, o);
         if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(PyJonesError, "Arg is not a BType");

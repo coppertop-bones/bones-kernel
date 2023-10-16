@@ -5,7 +5,7 @@
 #include "../../include/all.cfg"
 #include <stdlib.h>
 #include "../../include/bk/buckets.h"
-#include "os.c"
+#include "../lib/os.c"
 #include "pp.c"
 
 pvt unsigned int PAGE_SIZE = 0;

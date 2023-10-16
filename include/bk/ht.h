@@ -32,7 +32,7 @@
     extern struct ht_##name *ht_create_##name(void);                                                                    \
     extern void ht_trash_##name(struct ht_##name *);                                                                    \
     extern void ht_clear_##name(struct ht_##name *);                                                                    \
-    extern u32 ht_get_idx_##name(const struct ht_##name *, key_t);                                                      \
+    extern u32 ht_get_idx_##name(struct ht_##name const *, key_t);                                                      \
     extern int ht_resize_##name(struct ht_##name *, u32 num_slots);                                                     \
     extern u32 ht_put_idx_##name(struct ht_##name *, key_t, int *ret);                                                  \
     extern void ht_replace_empty_##name(struct ht_##name *, u32 idx, slot_t);                                           \
@@ -188,12 +188,13 @@
   @param  kvar  Variable to which key will be assigned
   @param  code  Block of code to execute
  */
-#define ht_foreach(h, entryvar, code) { u32 __i;                                                                          \
-    for (__i = ht_start(h); __i != ht_eot(h); ++__i) {                                                                  \
-        if (!ht_exist(h, __i)) continue;                                                                                \
-        (entryvar) = ht_entry(h, __i);                                                                                   \
-        code;                                                                                                           \
-    } }
+#define ht_foreach(h, entryvar, code) { u32 __i;                                                                        \
+        for (__i = ht_start(h); __i != ht_eot(h); ++__i) {                                                              \
+            if (!ht_exist(h, __i)) continue;                                                                            \
+            (entryvar) = ht_entry(h, __i);                                                                              \
+            code;                                                                                                       \
+        }                                                                                                               \
+    }
 
 
 #endif // __BK_HT_H

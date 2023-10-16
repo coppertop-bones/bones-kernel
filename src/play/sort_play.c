@@ -1,5 +1,5 @@
 #include "../bk/pp.c"
-#include "../other/ksort.h"
+#include "../lib/radix.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {
     fprintf(stderr, "%s", preamble);
@@ -7,7 +7,7 @@ pvt void die_(char *preamble, char *msg, va_list args) {
     exit(1);
 }
 
-KSORT_INIT_GENERIC(int)
+//KSORT_INIT_GENERIC(int)
 KRADIX_SORT_INIT(u32, unsigned int, , sizeof(unsigned int))
 
 void counting_sort(int src[], int out[], int N, unsigned int tally[], int tallyN) {
@@ -20,45 +20,45 @@ void counting_sort(int src[], int out[], int N, unsigned int tally[], int tallyN
     }
 }
 
+
 int main() {
     int N, i;
-    unsigned int xs[] = {10,9,8,7,6,5,4,3,2,1};
-    N = 10;
-    ks_combsort(int, N, xs);
-    for (i=0; i < N; i++) PP(info, "%i", xs[i]);
+//    unsigned int xs[] = {10,9,8,7,6,5,4,3,2,1};
+//    N = 10;
+//    ks_combsort(int, N, xs);
+//    for (i=0; i < N; i++) PP(info, "%i", xs[i]);
+//
+//    unsigned int ys[] = {10,9,8,7,6,5,4,3,2,1};
+//    N = 10;
+//    ks_introsort(int, N, ys);
+//    for (i=0; i < N; i++) PP(info, "%i", ys[i]);
+//
+//    unsigned int zs[] = {10,9,8,7,6,5,4,3,2,1};
+//    N = 10;
+//    ks_combsort(int, N, zs);
+//    for (i=0; i < N; i++) PP(info, "%i", zs[i]);
 
-    unsigned int ys[] = {10,9,8,7,6,5,4,3,2,1};
+    unsigned int as[] = {9,9,8,7,6,5,4,3,2,1};
+    unsigned int *p = &as[0];
     N = 10;
-    ks_introsort(int, N, ys);
-    for (i=0; i < N; i++) PP(info, "%i", ys[i]);
-
-    unsigned int zs[] = {10,9,8,7,6,5,4,3,2,1};
-    N = 10;
-    ks_combsort(int, N, zs);
-    for (i=0; i < N; i++) PP(info, "%i", zs[i]);
-
-    unsigned int as[] = {10,9,8,7,6,5,4,3,2,1};
-    N = 10;
-    ks_radix_sort(u32, &as[0], &as[10]);
+    ks_radix_sort(u32, p + 1, p[0]);
     for (i=0; i < N; i++) PP(info, "%i", as[i]);
 
-    unsigned int bs[] = {10,9,8,7,6,5,4,3,2,1};
-    N = 10;
+//    // COUNTING SORT
+//    int a[] = {0,1,5,0,12,43,22,13,32};
+//    N = sizeof(a)/sizeof(int) - 1; // 9
+//    int nTally = 44;
+//
+//    // allocate zeroed tally array
+//    unsigned int *tally = (unsigned int*) malloc(sizeof(unsigned int) * nTally);        // calloc
+//    for(i = 0; i < nTally; i++) tally[i] = 0;                                           // use memset instead
+//
+//    int *dest = (int*) malloc(sizeof(int) * N);
+//
+//    counting_sort(a, dest, N, tally, nTally);
+//    for (i=0; i < N; i++) PP(info, "%i", dest[i]);
 
-    int a[] = {0,1,5,0,12,43,22,13,32};
-    N = sizeof(a)/sizeof(int) - 1; // 9
-    int nTally = 44;
-
-    // allocate zeroed tally array
-    unsigned int *tally = (unsigned int*) malloc(sizeof(unsigned int) * nTally);        // calloc
-    for(i = 0; i < nTally; i++) tally[i] = 0;                                           // use memset instead
-
-    int *dest = (int*) malloc(sizeof(int) * N);
-
-    counting_sort(a, dest, N, tally, nTally);
-    for (i=0; i < N; i++) PP(info, "%i", dest[i]);
-
-    // fast median
+    // FAST MEDIAN
     // https://attractivechaos.wordpress.com/2008/09/13/calculating-median/
     // http://ndevilla.free.fr/median/median/src/quickselect.c
 

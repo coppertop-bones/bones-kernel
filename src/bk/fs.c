@@ -7,7 +7,8 @@
 
 #include "../../include/all.cfg"
 #include "../../include/bk/bk.h"
-#include "utils.c"
+#include "bk.c"
+#include "../lib/txt.c"
 
 
 typedef unsigned short PAYLOAD;

@@ -53,7 +53,7 @@ static const double __ht_HASH_UPPER = 0.77;
         }                                                                                                               \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE u32 ht_get_idx_##name(struct ht_##name const * const h, key_t key) {                                          \
+    SCOPE u32 ht_get_idx_##name(struct ht_##name const * h, key_t key) {                                                \
         u32 k, idx, last, mask, step = 0;                                                                               \
         if (!h->n_slots) return 0;                                                                                      \
         mask = h->n_slots - 1;                                                                                          \
@@ -188,7 +188,7 @@ static const double __ht_HASH_UPPER = 0.77;
 /*! @function
   @abstract     Integer hash function
   @param  key   The integer [u32 or i32]
-  @return       The hash value [u32 or i32]
+  @return       The hash value [u32]
  */
 #define ht_int32_hash(key) (u32)(key)
 

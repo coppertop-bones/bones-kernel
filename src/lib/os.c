@@ -18,7 +18,7 @@
 
 #include "../../include/bk/bk.h"
 #include "../../include/bk/os.h"
-#include "pp.c"
+#include "../bk/pp.c"
 #include <sys/sysctl.h>
 #include <libc.h>
 

@@ -2,6 +2,8 @@ from coppertop.pipe import *
 from dm.core.types import pylist
 from dm.testing import check, raises, equals, gt, different
 from bones import jones
+import dm.pp
+from groot import PP
 
 import sys
 
@@ -72,9 +74,11 @@ def test_intersection():
     tm.exists('_GBP') >> check >> equals >> True
 
     GBP = tm.intersection(tCcy, tag)
-    tm.name(GBP)  >> check >> different >> 'GBP'
+    GBP.id >> check >> equals >> tm.intersection(tCcy, tag).id
+    tm.name(GBP) >> check >> equals >> None
+
     t = tm.nameAs(GBP, 'GBP')
-    GBP.id >> check >> equals >> t.id
+    GBP.id >> PP >> check >> equals >> t.id
     tm.name(GBP) >> check >> equals >> 'GBP'
 
 
@@ -89,5 +93,6 @@ def main():
 if __name__ == '__main__':
     sys._k = jones.Kernel()
     main()
+    'passed' >> PP
     sys._k = None
 

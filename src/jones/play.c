@@ -3,11 +3,11 @@
 
 
 #include "_jones.h"
-#include "_utils.c"
-#include "../bk/ht_impl.h"
+#include "../lib/pyutils.c"
+#include "../lib/ht_impl.c"
 #include "../../include/bk/bk.h"
 #include "../../include/bk/os.h"
-#include "../other/khash.h"
+#include "../play/khash.h"
 
 #include <unistd.h>
 #include <sys/mman.h>

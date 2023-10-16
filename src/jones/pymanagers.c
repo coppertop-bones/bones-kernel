@@ -8,7 +8,7 @@
 #include "../bk/em.c"
 #include "../bk/tm.c"
 #include "../bk/kernel.c"
-#include "_utils.c"
+#include "../lib/pyutils.c"
 
 
 
@@ -31,7 +31,7 @@ pvt PyObject * PySM_name(struct PySM *self, PyObject *const *args, Py_ssize_t na
         return PyErr_Format(PyExc_TypeError, "symid must be int");
     }
     long id = PyLong_AsLong(args[0]);
-    if (id == SM_NA_SYM || id >= self->sm->next_sym_id) {
+    if (id == SM_NA_SYM || id >= self->sm->next_symid) {
         return PyErr_Format(PyExc_ValueError, "symid out of range");
     }
     return PyUnicode_FromString(sm_name(self->sm, id));
@@ -99,7 +99,7 @@ pvt PyObject * PyTM_btype(struct PyTM *self, PyObject *const *args, Py_ssize_t n
         return PyErr_Format(PyExc_TypeError, "name must be utf8");
     }
     const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
-    BTYPE_ID_T btypeId = tm_id(self->tm, name);
+    BTYPE_ID_T btypeId = tm_btypeid(self->tm, name);
     if (!btypeId) {
         return PyErr_Format(PyExc_TypeError, "'%s' is not a btype", name);
     }
@@ -117,7 +117,7 @@ pvt PyObject * PyTM_exists(struct PyTM *self, PyObject *const *args, Py_ssize_t 
         return PyErr_Format(PyExc_TypeError, "name must be utf8");
     }
     const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
-    return PyBool_FromLong(tm_id(self->tm, name));
+    return PyBool_FromLong(tm_btypeid(self->tm, name));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

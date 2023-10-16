@@ -4,24 +4,14 @@
 #include "bk.h"
 #include "sm.h"
 #include "ht.h"
-#include "buckets.h"
+//#include "buckets.h"
 
 
-// NTS
-//
-// OPEN: add aliases so can do - typedef can automatically add aliased
-//<:Symb> lval(<:Node&ptr> n) {
-//<:Symb> lval(<:pNode> n) {
-// could we do <:unsigned int>
-//
-// addressOf and deref - may create new types
-//
-// need exclusions for M8, M16, M32, M64 -> i8: m8 & i8_ or poss i8: m8_ & i & signed, etc
-// ptr1, const1, ptr2, const2, ptr3, const3, extern, the basic c types
+// typelist is length prefixed array of btypeId, i.e. a BTYPE_ID_T *
+typedef unsigned int TM_TLID_T;
+typedef unsigned int TM_XXXID_T;
+#define TM_RP_BY_TLID_INC_SIZE (0x4000 / sizeof(RP))        /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
 
-
-#define bsymlist SM_SYM_ID_T
-#define btypelist BTYPE_ID_T
 
 typedef enum : BTYPE_ID_T {
     _nat = 0,           // not-a-type - i.e. an error code
@@ -36,25 +26,28 @@ typedef enum : BTYPE_ID_T {
 } btypeId;
 
 
-#define TM_TL_ID_T unsigned int
-
-enum bmetatype : unsigned char {
+enum bmetatypeid : unsigned char {
     bterr = 0,
     btnom = 1,  // nominal - atomic type with a given name
-        // set ops
+
+                // set relations
     btint = 2,  // intersection - sorted list of other types
     btuni = 3,  // union - sorted list of other types
-        // product types (statically known size)
+
+                // product types (statically known size)
     bttup = 4,  // tuple - ordered list of other types
     btstr = 5,  // struct - ordered and named list of other types
     btrec = 6,  // record - sorted named list of other types
-        // exponentials (variable size, elements all the same size)
+
+                // arrows - aka exponentials - variable size, elements all the same size
     btseq = 7,  // sequence - tElement
     btmap = 8,  // map / dictionary - tKey, tValue
     btfnc = 9,  // function - argnames, tArgs, tRet, tFunc, num args
-        // schemas
-    btsvr = 10,  // schema variable
+
+                // schemas
+    btsvr = 10, // schema variable
 };
+
 
 // allow up to 8 categories of exclusion so can AND these together to detail conflict - OPEN: is that enough categories
 // actually since exclusion is detected on union creation speed is not that important - so we can have intersections of
@@ -71,13 +64,14 @@ enum btexclusioncat : unsigned char {
     btuser7 = 128,
 };
 
+
 // OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
-// also will store recursion, exclusiveId
+// also will store recursion, exclusivecat
 struct btsummary {
-    enum bmetatype mt;
-    enum btexclusioncat excl;
-    unsigned char unused2;
-    unsigned char unused3;
+    enum bmetatypeid bmtid;     // 1
+    enum btexclusioncat excl;   // 1
+    unsigned char unused2;      // 1
+    unsigned char unused3;      // 1
     union {
         BTYPE_ID_T nomId;
         BTYPE_ID_T intId;
@@ -89,9 +83,111 @@ struct btsummary {
         BTYPE_ID_T mapId;
         BTYPE_ID_T fncId;
         BTYPE_ID_T svrId;
-    };
+    };                          // 4
 };
 
+
+#define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by SYM_ID_T and vm space is cheap */
+#define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
+#define TM_MAX_BTYPE_ID_INC_SIZE (0x4000 / sizeof(BTYPE_ID_T))  /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
+#define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macos M1, 1 page on windows intel */
+
+// HT_STRUCT2(name, slot_t, extravars)
+HT_STRUCT2(TM_BTYPEID_BY_SYMIDHASH, BTYPE_ID_T, struct TM *tm;)
+HT_STRUCT2(TM_TLID_BY_TLHASH, TM_TLID_T, struct TM *tm;)
+HT_STRUCT2(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
+
+struct TM {
+    struct MM *mm;
+    struct SM *sm;
+
+    // type summaries
+    struct btsummary *summary_by_btypeid;        
+    BTYPE_ID_T max_btypeId;
+    BTYPE_ID_T next_btypeId;
+    
+    // type names - colder than type summaries
+    SYM_ID_T *symid_by_btypeid;                 
+    ht_struct(TM_BTYPEID_BY_SYMIDHASH) *btypeid_by_symidhash; 
+
+    // type lists
+    BTYPE_ID_T *typelist_buf;                           // VM buffer of btypeId (typelist) indexed by RP
+    RP max_rp;
+    RP next_rp;
+    RP *rp_by_tlid;  
+    TM_TLID_T max_tlid;
+    TM_TLID_T next_tlid;
+    ht_struct(TM_TLID_BY_TLHASH) *tlid_by_tlhash;   
+
+    // intersections
+    TM_XXXID_T max_intid;
+    TM_XXXID_T next_intid;
+    ht_struct(TM_XXXID_BY_TLIDHASH) *intid_by_tlidhash;
+    TM_TLID_T *tlid_by_intid;
+    BTYPE_ID_T *btypid_by_intid;
+
+    // unions
+    TM_XXXID_T max_uniid;
+    TM_XXXID_T next_uniid;
+    
+    // tuples
+    TM_XXXID_T max_tupid;
+    TM_XXXID_T next_tupid;
+    
+    // structs
+    TM_XXXID_T max_strid;
+    TM_XXXID_T next_strid;
+    
+    // records
+    TM_XXXID_T max_recid;
+    TM_XXXID_T next_recid;
+    
+    // sequences
+    TM_XXXID_T max_seqid;
+    TM_XXXID_T next_seqid;
+    
+    // maps
+    TM_XXXID_T max_mapid;
+    TM_XXXID_T next_mapid;
+    
+    // functions
+    TM_XXXID_T max_fncid;
+    TM_XXXID_T next_fncid;
+    
+    // schema variables
+    TM_XXXID_T max_svrid;
+    TM_XXXID_T next_svrid;
+};
+
+pub struct TM * TM_create(struct MM *, struct SM *);
+pub int TM_trash(struct TM *);
+
+pub BTYPE_ID_T tm_exclnominal(struct TM *, char const *, enum btexclusioncat);
+pub BTYPE_ID_T tm_btypeid(struct TM *, char const *);
+pub BTYPE_ID_T tm_inter(struct TM *, BTYPE_ID_T *);
+pub char * tm_name(struct TM *, BTYPE_ID_T);
+pub BTYPE_ID_T tm_nominal(struct TM *, char const *);
+
+
+#endif // __BK_BM_H
+
+
+
+
+
+
+
+// NTS
+//
+// OPEN: add aliases so can do - typedef can automatically add aliased
+//<:Symb> lval(<:Node&ptr> n) {
+//<:Symb> lval(<:pNode> n) {
+// could we do <:unsigned int>
+//
+// addressOf and deref - may create new types
+//
+// need exclusions for M8, M16, M32, M64 -> i8: m8 & i8_ or poss i8: m8_ & i & signed, etc
+// ptr1, const1, ptr2, const2, ptr3, const3, extern, the basic c types
 
 
 
@@ -99,7 +195,7 @@ struct btsummary {
 
 
 //struct BType {
-//    enum bmetatype meta;            // 1 + 3 pad OPEN: could do 4 bits + 28 bits (250k) for type
+//    enum bmetatypeid meta;            // 1 + 3 pad OPEN: could do 4 bits + 28 bits (250k) for type
 //    DESC_ID descId;                 // 4
 //};
 //
@@ -287,44 +383,3 @@ struct btsummary {
 // m32 btype
 // double b    <- *b
 // -----------------
-
-// HT_STRUCT2(name, slot_t, extravars)
-HT_STRUCT2(TM_BTYPE_ID_HT, BTYPE_ID_T, struct TM* tm;)
-HT_STRUCT2(TM_TL_ID_HT, TM_TL_ID_T, struct TM* tm;)
-
-struct TM {
-    struct MM *mm;
-    struct SM *sm;
-    struct btsummary *sumByBTypeId;         // array of struct btsummary indexed by btypeId
-    SM_SYM_ID_T *symIdByBTypeId;            // array of symId indexed by btypeId
-    ht_struct(TM_BTYPE_ID_HT) *btypeId_ht;  // hash table of btypeId
-    TM_TL_ID_T *tls;                        // VM buffer of length prefixed ordered list of btypeIds
-    RP *tlRpById;                           // array of type list RP indexed by typeListId
-    ht_struct(TM_TL_ID_T) *symIdByName;     // 8 - hash table for type list lookup
-    RP next_tl_rp;
-    RP max_tl_rp;                           // 4GB of VM
-    unsigned int nextTlId;
-    unsigned int symIdByBTypeIdSize;
-    unsigned int nextBTypeId;
-    unsigned int nextIntId;
-    unsigned int nextUniId;
-    unsigned int nextTupId;
-    unsigned int nextStrId;
-    unsigned int nextRecId;
-    unsigned int nextSeqId;
-    unsigned int nextMapId;
-    unsigned int nextFncId;
-    unsigned int nextSvrId;
-};
-
-pub struct TM * TM_create(struct MM *, struct SM *);
-pub int TM_trash(struct TM *);
-
-pub BTYPE_ID_T tm_exclnominal(struct TM *, char const * const, enum btexclusioncat);
-pub BTYPE_ID_T tm_id(struct TM *, char const * const);
-pub BTYPE_ID_T tm_inter(struct TM *, BTYPE_ID_T const *);
-pub char * tm_name(struct TM *, BTYPE_ID_T);
-pub BTYPE_ID_T tm_nominal(struct TM *, char const * const);
-
-
-#endif // __BK_BM_H

@@ -1,9 +1,7 @@
 ## NEXT
-- typelists (uses sorting)
-- intersection types
+
 
 ## RADAR
-- cross platform VM lib
 - exclusions (do we need enums?)
 
 ## MID
@@ -14,6 +12,7 @@
 
 
 ## DREAMLAND
+- cross platform VM lib
 - le for syms
 - dictionary sort syms with fast merge
 - implement other probes for hashtable
@@ -37,3 +36,5 @@
   - else
     - alloc
     - starting at either end do a stream merge copying to new memory
+- typelists (uses sorting)
+- intersection types
