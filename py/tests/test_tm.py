@@ -1,5 +1,5 @@
 from coppertop.pipe import *
-from dm.core.types import pylist
+from dm.core.types import pylist, pytuple
 from dm.testing import check, raises, equals, gt, different
 from bones import jones
 import dm.pp
@@ -12,7 +12,7 @@ def apply_(fn, arg):
     return lambda : fn(arg)
 
 @coppertop(style=binary)
-def apply_(fn, arg:pylist):
+def apply_(fn, arg:pylist+pytuple):
     return lambda : fn(*arg)
 
 
@@ -34,8 +34,11 @@ class tvfloat(float):
         return self
 
 
+
 def test_sm():
+    sys._k = jones.Kernel()
     sm = sys._k.sm
+
     id1 = sm.symid("joe")
     id2 = sm.symid("fred")
     id3 = sm.symid("fred")
@@ -49,7 +52,9 @@ def test_sm():
 
 
 def test_sm_sort_order():
+    sys._k = jones.Kernel()
     sm = sys._k.sm
+
     id1 = sm.symid("joe")
     id2 = sm.symid("fred")
     sm.le(id2, id1) >> check >> equals >> True
@@ -58,35 +63,77 @@ def test_sm_sort_order():
 
 
 def test_em():
-    1/0
+    sys._k = jones.Kernel()
+    em = sys._k.em
+
+    e = em.enum('excl', 'mem')
+    e.id >> check >> equals >> 1
+    em.enum('excl', 'mem').id  >> check >> equals >> 1
+
+    e = em.setEnumTo('excl', 'ccy', 2)
+    e.id >> check >> equals >> 2
+    em.enum('excl', 'ccy').id  >> check >> equals >> 2
+
+    e = em.enum('fred', 'mem')
+    e.id >> check >> equals >> 1
+    em.enum('fred', 'mem').id >> check >> equals >> 1
+
+    em.setEnumTo(['fred', 'mem', 1]).id >> check >> equals >> 1
+    em.setEnumTo >> apply_ >> ('fred', 'mem', 2) >> check >> raises >> ValueError
+
+
+def test_nominal():
+    # OPEN: dangerous in Python - raise an error if the underlying tm has been trashed
+    # tm = jones.Kernel().tm()
+    # options:
+    # 1) keep as is - customer beware
+    # 2) weak refs?
+    # 3a) explicit deallocation - leak memory by not trashing when k = None
+    # 3b) kernel manager
+    # this is why gc is good for scripting languages - bones cleans up the mess so you don't have to :)
+
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    tm.exists('u32') >> check >> equals >> False
+    tm.btype >> apply_ >> ['u32'] >> check >> raises >> TypeError
+    t = tm.nominal(f'u32')
+    tm.exists('u32') >> check >> equals >> True
+    tm.btype('u32').id >> check >> equals >> t.id
+    # tm.btype('u32') >> check >> equals >> t
+    tm.name(t) >> check >> equals >> 'u32'
 
 
 def test_intersection():
+    sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    tm.exists('GBP') >> check >> equals >> False
-    tm.btype >> apply_ >> ['GBP'] >> check >> raises >> TypeError  # OPEN: make this a BTypeError
+    mem = 1
+    ccy = 2
 
-    tCcy = tm.exclusiveNominal('ccy', 2)
-    tm.exists('ccy') >> check >> equals >> True
-    tm.name(tCcy) >> check >> equals >> 'ccy'
-
+    tCcy = tm.exclusiveNominal('ccy', ccy)
     tag = tm.nominal(f'_GBP')
-    tm.exists('_GBP') >> check >> equals >> True
 
     GBP = tm.intersection(tCcy, tag)
-    GBP.id >> check >> equals >> tm.intersection(tCcy, tag).id
-    tm.name(GBP) >> check >> equals >> None
+    # GBP >> check >> equals >> tm.intersection(tCcy, tag)
 
+    # test nameAs
+    tm.name(GBP) >> check >> different >> 'GBP'
     t = tm.nameAs(GBP, 'GBP')
-    GBP.id >> check >> equals >> t.id
+    # GBP >> check >> equals >> t
     tm.name(GBP) >> check >> equals >> 'GBP'
+
+    # test exclusivity
+    u32 = tm.exclusiveNominal('u32', mem)
+    u64 = tm.exclusiveNominal('u64', mem)
+    tm.intersection >> apply_ >> (u32, u64) >> check >> raises >> TypeError
 
 
 def main():
-    test_sm()  #;   print('test_sm passed')
+    test_sm()
     # test_sm_sort_order()
     # test_em()
+    test_nominal()
     test_intersection()
 
 

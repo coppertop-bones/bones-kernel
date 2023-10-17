@@ -1,23 +1,35 @@
 ## NEXT
+- exclusions
+- answer same PyBType for same id
+- "t1", "t2" etc for unnamed types (dynamically generated for now)
+- expose setNominalTo and setEnumTo (and maybe setSymTo?)
+- add BTypeError - a subclass of TypeError. multidispatch means CantFindError rather than TypeError, which means BTypeError 
+  indicates an error constructing the btype. BTypeError is nicer than BMetaTypeError. 
+- add BEnumError
 
 
 ## RADAR
-- exclusions (do we need enums?)
+
 
 ## MID
 - unions, tuples, structs, seq, map, fn, overload, family, schemavars, recursion
 - make above work with Python fitsWithin
 - fitsWithin with cache in C
 - rework minc types to use bk instead
+- enums (e.g. useful for exclusions)
+- le for syms  / dictionary sort syms with fast merge
+- windows VM fns
 
 
 ## DREAMLAND
-- cross platform VM lib
-- le for syms
-- dictionary sort syms with fast merge
 - implement other probes for hashtable
 - use special values for tombstones rather than flags
 - create a no delete hash table for syms and enums (doesn't even need tombstones)
+
+
+# THINKING
+## enums
+- do we need temporary enums for groupby on an unclassified set of syms?
 
 
 ## DONE
@@ -38,3 +50,4 @@
     - starting at either end do a stream merge copying to new memory
 - typelists (uses sorting)
 - intersection types
+- revisit tdd tests

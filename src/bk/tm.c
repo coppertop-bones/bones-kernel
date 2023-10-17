@@ -262,7 +262,7 @@ pub BTYPEID_T tm_nominal(struct TM *tm, char const * name) {
     }
 }
 
-tdd int tm_setNominal(struct TM *tm, char *name, BTYPEID_T btypeid) {
+tdd int tm_setNominalTo(struct TM *tm, char *name, BTYPEID_T btypeid) {
      SYM_ID_T symid;  int res;  u32 idx;
     if (tm->summary_by_btypeid[btypeid].bmtid != bterr) return 0;
     symid = sm_id(tm->sm, name);
