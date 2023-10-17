@@ -27,7 +27,7 @@ int main() {
     id = tm_btypeid(k->tm, "joe");
     check(id == refid, "id == %i (should be %i)", id, refid);
     
-    BTYPE_ID_T *typelist = malloc(3 * sizeof(BTYPE_ID_T));
+    BTYPEID_T *typelist = malloc(3 * sizeof(BTYPEID_T));
     typelist[0] = 2;
     typelist[1] = 1;
     typelist[2] = 2;

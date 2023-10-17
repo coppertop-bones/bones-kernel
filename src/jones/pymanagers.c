@@ -99,12 +99,12 @@ pvt PyObject * PyTM_btype(struct PyTM *self, PyObject *const *args, Py_ssize_t n
         return PyErr_Format(PyExc_TypeError, "name must be utf8");
     }
     const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
-    BTYPE_ID_T btypeId = tm_btypeid(self->tm, name);
-    if (!btypeId) {
+    BTYPEID_T btypeid = tm_btypeid(self->tm, name);
+    if (!btypeid) {
         return PyErr_Format(PyExc_TypeError, "'%s' is not a btype", name);
     }
     struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-    answer->btypeId = btypeId;
+    answer->btypeid = btypeid;
     return (PyObject *) answer;
 }
 
@@ -140,10 +140,10 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject *const *args, P
         return 0;
     }
     const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
-    BTYPE_ID_T btypeId = tm_exclnominal(self->tm, name, excl);
-    if (btypeId) {
+    BTYPEID_T btypeid = tm_exclnominal(self->tm, name, excl);
+    if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeId = btypeId;
+        answer->btypeid = btypeid;
         return (PyObject *) answer;
     } else {
         return PyErr_Format(PyExc_TypeError, "The name '%s' is already is taken by another type", name);
@@ -159,23 +159,23 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject *const *args, Py_ss
         return args[0];
     }
     // create a type list of the correct length
-    BTYPE_ID_T *typelist = (BTYPE_ID_T *) malloc((1 + nargs) * sizeof(BTYPE_ID_T));
-    typelist[0] = (BTYPE_ID_T) nargs;
+    BTYPEID_T *typelist = (BTYPEID_T *) malloc((1 + nargs) * sizeof(BTYPEID_T));
+    typelist[0] = (BTYPEID_T) nargs;
     for (int i=0; i < nargs; i++) {
-        if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) {
+        if (!PyObject_IsInstance(args[i], (PyObject *) &PyBTypeCls)) {
             free(typelist);
             return PyErr_Format(PyExc_TypeError, "arg %i is not a BType", i + 1);
         }
-        typelist[i+1] = ((struct PyBType *) args[i])->btypeId;
+        typelist[i+1] = ((struct PyBType *) args[i])->btypeid;
     }
-    // call tm_intersection which will check it for exclusion conflict, sort it and return a btypeId (0 if conflicts)
-    BTYPE_ID_T btypeId = tm_inter(self->tm, typelist);
+    // call tm_intersection which will check it for exclusion conflict, sort it and return a btypeid (0 if conflicts)
+    BTYPEID_T btypeid = tm_inter(self->tm, typelist);
     // free the typelist
     free(typelist);
     // raise an error if 0
-    if (btypeId) {
+    if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeId = btypeId;
+        answer->btypeid = btypeid;
         return (PyObject *) answer;
     } else {
         return PyErr_Format(PyExc_TypeError, "There are exclusion conflicts");  // OPEN: say which types are in conflict
@@ -187,17 +187,25 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject *const *args, Py_ss
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_name(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     // OPEN: what to do if there is no name (use t123?) - 0 means invalid type?
-    Py_RETURN_NONE;
+    char const * name = tm_name(self->tm, ((struct PyBType *) args[0])->btypeid);
+    if (name ==0) Py_RETURN_NONE;
+    return PyUnicode_FromString(name);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // nameAs: (btype, str) -> btype + exception
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_nameAs(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
-    // arg1 is a btype, arg2 is string
-    // call tm_nameAs which returns 0 if there is an error else the btype (raise a Python error)
-    Py_RETURN_NONE;
+    if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
+    if (!PyUnicode_Check(args[1]) || (PyUnicode_KIND(args[1]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
+
+    struct PyBType *btype = (struct PyBType *) args[0];
+    const char *name = (const char *) PyUnicode_1BYTE_DATA(args[1]);
+    BTYPEID_T btypeid = tm_name_as(self->tm, btype->btypeid, name);
+    return btypeid ? args[0] : PyErr_Format(PyExc_ValueError, "Name already in use");
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -210,15 +218,13 @@ pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject *const *args, Py_ssize_t
         return 0;
     }
     const char *name = (const char *) PyUnicode_1BYTE_DATA(args[0]);
-    BTYPE_ID_T btypeId = tm_nominal(self->tm, name);
-    if (btypeId) {
+    BTYPEID_T btypeid = tm_nominal(self->tm, name);
+    if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeId = btypeId;
+        answer->btypeid = btypeid;
         return (PyObject *) answer;
-    } else {
-        PyErr_SetString(PyExc_TypeError, "name is taken by another type");  // OPEN: better error
-        return 0;
-    }
+    } else
+        return PyErr_Format(PyExc_TypeError, "name is taken by another type");  // OPEN: better error
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -226,7 +232,7 @@ pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject *const *args, Py_ssize_t
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_struct(struct PyTM *self, PyObject *const *args, Py_ssize_t nargs) {
     // create a typelist and symlist of the correct length
-    // call sm_struct which will return a btypeId
+    // call sm_struct which will return a btypeid
     // free the typelist and symlist
     // return btype
     Py_RETURN_NONE;
@@ -242,7 +248,7 @@ pvt PyObject * PyTM_tuple(struct PyTM *self, PyObject *const *args, Py_ssize_t n
     // 2) tuples can be indexed e.g. fn()[1]
 
     // create a type list of the correct length
-    // call sm_tuple which will return a btypeId
+    // call sm_tuple which will return a btypeid
     // free the typelist
     // return btype
     Py_RETURN_NONE;
@@ -256,7 +262,7 @@ pvt PyObject * PyTM_union(struct PyTM *self, PyObject *const *args, Py_ssize_t n
         // check it's a valid type and return it
     }
     // create a type list of the correct length
-    // call sm_union which will sort it and return a btypeId
+    // call sm_union which will sort it and return a btypeid
     // free the typelist
     // return btype
     Py_RETURN_NONE;

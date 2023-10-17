@@ -4,16 +4,15 @@
 #include "bk.h"
 #include "sm.h"
 #include "ht.h"
-//#include "buckets.h"
 
 
-// typelist is length prefixed array of btypeId, i.e. a BTYPE_ID_T *
+// typelist is length prefixed array of btypeid, i.e. a BTYPEID_T *
 typedef unsigned int TM_TLID_T;
 typedef unsigned int TM_XXXID_T;
 #define TM_RP_BY_TLID_INC_SIZE (0x4000 / sizeof(RP))        /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
 
 
-typedef enum : BTYPE_ID_T {
+typedef enum : BTYPEID_T {
     _nat = 0,           // not-a-type - i.e. an error code
     _m8 = 1,
     _m16 = 2,
@@ -23,7 +22,7 @@ typedef enum : BTYPE_ID_T {
     _i32 = 6,
     _litint = 7,
     _null = 8,          // empty set - not the same as not-a-type
-} btypeId;
+} btypeid;
 
 
 enum bmetatypeid : unsigned char {
@@ -73,27 +72,27 @@ struct btsummary {
     unsigned char unused2;      // 1
     unsigned char unused3;      // 1
     union {
-        BTYPE_ID_T nomId;
-        BTYPE_ID_T intId;
-        BTYPE_ID_T uniId;
-        BTYPE_ID_T tupId;
-        BTYPE_ID_T strId;
-        BTYPE_ID_T recId;
-        BTYPE_ID_T seqId;
-        BTYPE_ID_T mapId;
-        BTYPE_ID_T fncId;
-        BTYPE_ID_T svrId;
+        BTYPEID_T nomId;
+        BTYPEID_T intId;
+        BTYPEID_T uniId;
+        BTYPEID_T tupId;
+        BTYPEID_T strId;
+        BTYPEID_T recId;
+        BTYPEID_T seqId;
+        BTYPEID_T mapId;
+        BTYPEID_T fncId;
+        BTYPEID_T svrId;
     };                          // 4
 };
 
 
 #define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by SYM_ID_T and vm space is cheap */
 #define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
-#define TM_MAX_BTYPE_ID_INC_SIZE (0x4000 / sizeof(BTYPE_ID_T))  /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
+#define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(BTYPEID_T))  /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
 #define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macos M1, 1 page on windows intel */
 
 // HT_STRUCT2(name, slot_t, extravars)
-HT_STRUCT2(TM_BTYPEID_BY_SYMIDHASH, BTYPE_ID_T, struct TM *tm;)
+HT_STRUCT2(TM_BTYPEID_BY_SYMIDHASH, BTYPEID_T, struct TM *tm;)
 HT_STRUCT2(TM_TLID_BY_TLHASH, TM_TLID_T, struct TM *tm;)
 HT_STRUCT2(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
 
@@ -103,15 +102,15 @@ struct TM {
 
     // type summaries
     struct btsummary *summary_by_btypeid;        
-    BTYPE_ID_T max_btypeId;
-    BTYPE_ID_T next_btypeId;
+    BTYPEID_T max_btypeId;
+    BTYPEID_T next_btypeId;
     
     // type names - colder than type summaries
     SYM_ID_T *symid_by_btypeid;                 
     ht_struct(TM_BTYPEID_BY_SYMIDHASH) *btypeid_by_symidhash; 
 
     // type lists
-    BTYPE_ID_T *typelist_buf;                           // VM buffer of btypeId (typelist) indexed by RP
+    BTYPEID_T *typelist_buf;                           // VM buffer of btypeid (typelist) indexed by RP
     RP max_rp;
     RP next_rp;
     RP *rp_by_tlid;  
@@ -124,7 +123,7 @@ struct TM {
     TM_XXXID_T next_intid;
     ht_struct(TM_XXXID_BY_TLIDHASH) *intid_by_tlidhash;
     TM_TLID_T *tlid_by_intid;
-    BTYPE_ID_T *btypid_by_intid;
+    BTYPEID_T *btypid_by_intid;
 
     // unions
     TM_XXXID_T max_uniid;
@@ -162,11 +161,12 @@ struct TM {
 pub struct TM * TM_create(struct MM *, struct SM *);
 pub int TM_trash(struct TM *);
 
-pub BTYPE_ID_T tm_exclnominal(struct TM *, char const *, enum btexclusioncat);
-pub BTYPE_ID_T tm_btypeid(struct TM *, char const *);
-pub BTYPE_ID_T tm_inter(struct TM *, BTYPE_ID_T *);
-pub char * tm_name(struct TM *, BTYPE_ID_T);
-pub BTYPE_ID_T tm_nominal(struct TM *, char const *);
+pub BTYPEID_T tm_exclnominal(struct TM *, char const *, enum btexclusioncat);
+pub BTYPEID_T tm_btypeid(struct TM *, char const *);
+pub BTYPEID_T tm_inter(struct TM *, BTYPEID_T *);
+pub char * tm_name(struct TM *, BTYPEID_T);
+pub BTYPEID_T tm_name_as(struct TM *, BTYPEID_T, char const *);
+pub BTYPEID_T tm_nominal(struct TM *, char const *);
 
 
 #endif // __BK_BM_H
@@ -200,7 +200,7 @@ pub BTYPE_ID_T tm_nominal(struct TM *, char const *);
 //};
 //
 //typedef struct {
-//    BTYPE_ID_T n;                   // 4
+//    BTYPEID_T n;                   // 4
 //    btype ts[];                     // n * 4
 //} BTypeList;
 //
@@ -220,7 +220,7 @@ pub BTYPE_ID_T tm_nominal(struct TM *, char const *);
 //
 //struct BTStruct {
 //    bsymlist *names;                // 8
-//    btypelist typelist;             // length prefix array of btypeId
+//    btypelist typelist;             // length prefix array of btypeid
 //};
 //
 //struct BTRec {

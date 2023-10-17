@@ -48,7 +48,7 @@ struct Partial {
 
 struct PyBType {
     PyObject_HEAD;
-    btypeId btypeId;
+    btypeid btypeid;
 };
 
 struct PySM {

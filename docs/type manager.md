@@ -68,7 +68,7 @@ size prefixed list of product_size_type
 
 
 ### symlist - variable
-size prefixed list of symId
+size prefixed list of symid
 
 
 ### structDesc - 8 bytes

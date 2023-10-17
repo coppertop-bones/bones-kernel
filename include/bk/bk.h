@@ -49,8 +49,8 @@ typedef unsigned int u32;
 typedef unsigned long u64;
 
 
-#define BTYPE_ID_T unsigned int         /* currently ls 18 bits for 256k types */
-#define BMETATYPE_ID_T unsigned char    /* currently 4 bits for 16 metatypes */
+typedef unsigned int BTYPEID_T;        /* currently ls 18 bits for 256k types */
+typedef unsigned char BMETATYPE_ID_T;   /* currently 4 bits for 16 metatypes */
 
 #define NA_BTYPE 0
 #define SYM_ID_T unsigned int

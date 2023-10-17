@@ -69,6 +69,7 @@ def test_intersection():
 
     tCcy = tm.exclusiveNominal('ccy', 2)
     tm.exists('ccy') >> check >> equals >> True
+    tm.name(tCcy) >> check >> equals >> 'ccy'
 
     tag = tm.nominal(f'_GBP')
     tm.exists('_GBP') >> check >> equals >> True
@@ -78,7 +79,7 @@ def test_intersection():
     tm.name(GBP) >> check >> equals >> None
 
     t = tm.nameAs(GBP, 'GBP')
-    GBP.id >> PP >> check >> equals >> t.id
+    GBP.id >> check >> equals >> t.id
     tm.name(GBP) >> check >> equals >> 'GBP'
 
 

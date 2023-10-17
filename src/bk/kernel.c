@@ -14,6 +14,21 @@ pub struct K * K_create(struct MM *mm) {
     k->sm = SM_create(mm);
     k->em = EM_create(mm, k->sm);
     k->tm = TM_create(mm, k->sm);
+
+    int n = 0;
+    struct TM *tm = k->tm;
+    n += tm_setNominal(tm, "m8", _m8) == 0;
+    n += tm_setNominal(tm, "m16", _m16) == 0;
+    n += tm_setNominal(tm, "m32", _m32) == 0;
+    n += tm_setNominal(tm, "m64", _m64) == 0;
+    n += tm_setNominal(tm, "p64", _p64) == 0;
+    n += tm_setNominal(tm, "litint", _litint) == 0;
+    n += tm_setNominal(tm, "i32", _i32) == 0;
+
+    if (n) {
+        mm->free(tm);
+        die("%i conflicts in tm_setNominal\n", n);
+    }
     return k;
 }
 

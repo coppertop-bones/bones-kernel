@@ -17,7 +17,7 @@ pvt void PyBType_trash(struct PyBType *self) {
 }
 
 pvt PyMemberDef PyBType_members[] = {
-    {"id", Py_T_UINT, offsetof(struct PyBType, btypeId), 0, "bones type id"},
+    {"id", Py_T_UINT, offsetof(struct PyBType, btypeid), 0, "bones type id"},
     {0}
 };
 
