@@ -38,7 +38,7 @@ hasT - 1 bit
 unused - 1 bit
 bmt enum - 4 bits
 - btill = 0,  // illegal metatype
-- btnom = 1,  // nominal - atomic type with a given name
+- bmtnom = 1,  // nominal - atomic type with a given name
 - btint = 2,  // intersection - sorted list of other types
 - btuni = 3,  // union - sorted list of other types
 - bttup = 4,  // tuple - ordered list of other types

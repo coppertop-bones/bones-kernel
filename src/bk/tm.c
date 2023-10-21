@@ -89,40 +89,25 @@ pvt void _growTo(void **p, size_t size, struct MM *mm, char const *fnName) {
     *p = t;
 }
 
-tdd TM_TLID_T tm_add_typelist_at(struct TM *tm, BTYPEID_T const *typelist, u32 idx) {
-    bool needsAnotherPage;  int length, pageSize, i;  TM_TLID_T tlid;  RP rp;
-    length = typelist[0] + 1;
-    rp = tm->next_rp;
-
-    if ((needsAnotherPage = rp + length >= tm->max_rp)) {
-        if (rp + length >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", __FUNCTION__);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
-        // make next page r/w and mark as random access
-        pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
-    }
-
+tdd TM_TLID_T _commit_typelist_buf_at(struct TM *tm, TM_TLID_T numTypes, u32 idx) {
+    TM_TLID_T tlid;
     if ((tlid = tm->next_tlid++) >= tm->max_tlid) {
         tm->max_tlid += TM_RP_BY_TLID_INC_SIZE;
         _growTo((void **)&tm->rp_by_tlid, tm->max_tlid * sizeof(RP), tm->mm, __FUNCTION__);
         tm->intid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_intid;
     }
-
-    BTYPEID_T *s = tm->typelist_buf + rp;
-    for (i = 0; i < length; i++) s[i] = typelist[i];
-
-    tm->rp_by_tlid[tlid] = rp;
+    tm->rp_by_tlid[tlid] = tm->next_rp;
     ht_replace_empty(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, idx, tlid);
-
-    tm->next_rp += length;
-    if (needsAnotherPage) {
-        os_mprotect(tm->typelist_buf + tm->next_rp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
-        tm->max_rp += pageSize;
+    if (tm->next_rp + numTypes + 1 >= tm->max_rp) {
+        size_t pageSize = os_page_size();
+        os_mprotect(tm->typelist_buf + tm->max_rp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
+        tm->max_rp += pageSize / sizeof(TM_TLID_T);
     }
+    tm->next_rp += numTypes + 1;
     return tlid;
 }
 
-tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum btexclusioncat excl, u32 idx, SYM_ID_T symid) {
+tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum btexclusioncat excl, u32 idx, SYM_ID_T symid, BTYPEID_T id) {
     BTYPEID_T btypeid = tm->next_btypeId++;
     if (btypeid >= tm->max_btypeId) {
         tm->max_btypeId += TM_MAX_BTYPEID_INC_SIZE;
@@ -132,6 +117,7 @@ tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum bte
     tm->symid_by_btypeid[btypeid] = symid;
     tm->summary_by_btypeid[btypeid].bmtid = bmtid;
     tm->summary_by_btypeid[btypeid].excl = excl;
+    tm->summary_by_btypeid[btypeid].intId = id;
     ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
     return btypeid;
 }
@@ -158,29 +144,130 @@ pub BTYPEID_T tm_exclnominal(struct TM *tm, char const * name, enum btexclusionc
     if (res == HT_EXISTS) {
         btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
         struct btsummary summary = tm->summary_by_btypeid[btypeid];
-        if (summary.excl != excl || summary.bmtid != btnom) return 0;      // check it's a nominal with the same exclusion
+        if (summary.excl != excl || summary.bmtid != bmtnom) return 0;      // check it's a nominal with the same exclusion
         return btypeid;
     }
     else {
         // create a new nominal in an exclusive category
-        return _new_type_summary_at(tm, btnom, excl, idx, symid);
+        return _new_type_summary_at(tm, bmtnom, excl, idx, symid, 0);
     }
 }
 
-tdd bool _tm_is_valid_intersection(struct TM *tm, BTYPEID_T *typelist) {
-    // verify that the typelist is valid (no mutual exclusions)
-    // OPEN: IMPORTANT STUFF TO DO HERE
-    return true;
+
+void tm_pp(struct TM *tm, BTYPEID_T btypeid) {
+    struct btsummary *sum;  SYM_ID_T symid;  BTYPEID_T *tl;  int i;  char sep;
+    sum = tm->summary_by_btypeid + btypeid;
+    switch (sum->bmtid) {
+        case bmtnom:
+            if (symid = tm->symid_by_btypeid[btypeid]) {
+                fprintf(stderr, "%s", sm_name(tm->sm, symid));
+            }
+            else {
+                fprintf(stderr, "t%i", btypeid);
+            }
+            break;
+        case bmtint:
+            tl = tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
+            sep = 0;
+            for (i = 1; i <= tl[0]; i++) {
+                if (sep) fprintf(stderr, " & ");
+                sep = 1;
+                tm_pp(tm, tl[i]);
+            }
+            break;
+        default:
+            printf("???");
+    }
 }
 
+
+// set of values intersection ((1 2 3) + (4 5)) & ((1 2 3) + (6 7)) = (1 2 3 4 5) & (1 2 3 6 7) = (1 2 3)
+// (int + str) & (int + bool) => (int+int) & (int+bool) & (str+int) & (str+bool)
+// types only make sense in the context of fitsWithin a LHS might not behaviour as a RHS
+
+
 pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
-    int res, l;  TM_TLID_T tlid;  BTYPEID_T btypeid;  TM_XXXID_T intid;
-    if (!(l = typelist[0])) return 0;
-    for (int i=0; i<l; i++) if (typelist[i] == 0 || typelist[i] > tm->next_btypeId) return 0;
-    ks_radix_sort(BTYPEID_T, typelist + 1, typelist[0]);   // sort types into btypeid order, type list is length prefixed
+    int i, j, res, numTypes, hasUnions;  enum btexclusioncat excl = 0;  TM_TLID_T tlid;
+    BTYPEID_T btypeid, *interTl, *p1, *p2, *p3, *nextTypelist;
+    TM_XXXID_T intid;  struct btsummary *sum;
+    // (A&B) & (C&D)  = A & B & C & D
+    // (A&B) & (B&C)  = A & B & C
+    // (A+B) & (B+C)  = (A+B) & (B+C)  why not B? because we need to keep the detail when the program is causes intersections
+    //
+    // (A&B) + (B&C)  = B & (A + C)    - not the same for unions of intersections
+
+    // use tm->typelist_buf as scratch so don't have to allocate memory
+    // OPEN: potentially though messy we could do intersections without child intersections in place in typelist to keep a little cache locality
+
+    if (!(numTypes = typelist[0])) return 0;
+
+    // check typeid is in range, and figure total length (including possible duplicate from child intersections)
+    for (i = 1; i <= typelist[0]; i++) {
+        if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
+        sum = tm->summary_by_btypeid + typelist[i];
+        if (sum->bmtid == bmtint) {
+            tlid = tm->tlid_by_intid[sum->intId];
+            numTypes += (tm->typelist_buf + tm->rp_by_tlid[tlid])[0] - 1;
+        }
+    }
+
+    // grow tm->typelist_buf if necessary
+    if (tm->next_rp + numTypes >= tm->max_rp) {
+        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", __FUNCTION__);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+        size_t pageSize = os_page_size();
+        os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
+    }
+
+    nextTypelist = tm->typelist_buf + tm->next_rp;
+
+    // copy typelist into typelist_buf unpacking any intersections
+    p1 = nextTypelist;
+    *p1++ = numTypes;
+    for (i = 1; i <= typelist[0]; i++) {
+        sum = tm->summary_by_btypeid + typelist[i];
+        if (sum->bmtid == bmtint) {
+            // we have an intersection type - expand it
+            tlid = tm->tlid_by_intid[sum->intId];
+            interTl = (tm->typelist_buf + tm->rp_by_tlid[tlid]);
+            for (j = 1; j <= interTl[0]; j++) *p1++ = interTl[j];
+        }
+        else
+            *p1++ = typelist[i];
+    }
+
+    // sort types into btypeid order
+    ks_radix_sort(BTYPEID_T, nextTypelist + 1, numTypes);
+
+    // eliminate duplicates + check for unions
+    p1 = nextTypelist + 1;
+    p2 = p1 + 1;
+    p3 = p1 + numTypes;
+    hasUnions = (tm->summary_by_btypeid[*p1]).bmtid == bmtuni;
+    while (p2 < p3) {
+        if (*p1 != *p2)
+            *++p1 = *p2++;
+        else
+            while (*p1 == *p2 && p2 < p3) p2++;
+        hasUnions |= (tm->summary_by_btypeid[*p1]).bmtid == bmtuni;
+    }
+    numTypes = *nextTypelist = p1 - nextTypelist;
+
+    // handle intersections of unions?
+    if (hasUnions) {
+        return 0;
+    }
+
+    // check for exclusion conflicts
+    p1 = nextTypelist;
+    for (i = 1; i <= numTypes; i++) {
+        sum = tm->summary_by_btypeid + p1[i];
+        if (excl & sum->excl) return 0;
+        excl |= sum->excl;
+    }
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
-    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, typelist, &res);
+    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &res);
     switch (res) {
         default:
             die("%s: HT_TOMBSTONE1!", __FUNCTION__);
@@ -188,9 +275,8 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
             tlid = tm->tlid_by_tlhash->slots[idx];
             break;
         case HT_EMPTY:
-            if (!_tm_is_valid_intersection(tm, typelist)) return 0;
-            tlid = tm_add_typelist_at(tm, typelist, idx);
-            if (!tlid) return 0;            // an error occurred OPEN handle properly
+            tlid = _commit_typelist_buf_at(tm, numTypes, idx);
+            if (!tlid) return 0;       // an error occurred OPEN handle properly
     }
 
     // get the btypeid for the tlid
@@ -202,16 +288,15 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
             intid = tm->intid_by_tlidhash->slots[idx];
             return tm->btypid_by_intid[intid];
         case HT_EMPTY:
-            // missing so create a new intersection type
+            // missing so commit the intersection type for tlid
             intid = tm->next_intid++;
             if (intid >= tm->max_intid) {
                 tm->max_intid += TM_MAX_ID_INC_SIZE;
                 _growTo((void **)&tm->tlid_by_intid, tm->max_intid * sizeof(TM_TLID_T), tm->mm, __FUNCTION__);
                 _growTo((void **)&tm->btypid_by_intid, tm->max_intid * sizeof(BTYPEID_T), tm->mm, __FUNCTION__);
             }
-            enum btexclusioncat excl = 0;  // OPEN: compute exclusion
-            btypeid = _new_type_summary_at(tm, btint, excl, idx, 0);
             tm->tlid_by_intid[intid] = tlid;
+            btypeid = _new_type_summary_at(tm, bmtint, excl, idx, 0, intid);
             tm->btypid_by_intid[intid] = btypeid;
 
             ht_replace_empty(TM_XXXID_BY_TLIDHASH, tm->intid_by_tlidhash, idx, intid);
@@ -239,6 +324,7 @@ pub BTYPEID_T tm_name_as(struct TM *tm, BTYPEID_T btypeid, char const *name) {
         existingId = ht_entry(tm->btypeid_by_symidhash, idx);
         return (existingId == btypeid) ? btypeid : 0;
     } else {
+        ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
         tm->symid_by_btypeid[btypeid] = symid;
         return btypeid;
     }
@@ -250,26 +336,22 @@ pub BTYPEID_T tm_nominal(struct TM *tm, char const * name) {
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
     if (res == HT_EXISTS) {
         btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
-        return (tm->summary_by_btypeid[btypeid].bmtid == btnom) ? btypeid : 0;   // check it's a nominal
+        return (tm->summary_by_btypeid[btypeid].bmtid == bmtnom) ? btypeid : 0;   // check it's a nominal
     }
     else {
         // create a new nominal
-        btypeid = tm->next_btypeId++;
-        tm->symid_by_btypeid[btypeid] = symid;
-        tm->summary_by_btypeid[btypeid].bmtid = btnom;
-        ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
-        return btypeid;
+        return _new_type_summary_at(tm, bmtnom, 0, idx, symid, 0);
     }
 }
 
 tdd int tm_setNominalTo(struct TM *tm, char *name, BTYPEID_T btypeid) {
      SYM_ID_T symid;  int res;  u32 idx;
-    if (tm->summary_by_btypeid[btypeid].bmtid != bterr) return 0;
+    if (tm->summary_by_btypeid[btypeid].bmtid != bmterr) return 0;
     symid = sm_id(tm->sm, name);
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
     if (res == HT_EXISTS) return 0;
 
-    tm->summary_by_btypeid[btypeid].bmtid = btnom;
+    tm->summary_by_btypeid[btypeid].bmtid = bmtnom;
     tm->symid_by_btypeid[btypeid] = symid;
     ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
     if (btypeid >= tm->next_btypeId) tm->next_btypeId = btypeid + 1;
@@ -290,9 +372,9 @@ pub struct TM * TM_create(struct MM *mm, struct SM *sm) {
     tm->typelist_buf = os_vm_reserve(0, TM_MAX_TL_STORAGE);
 
     // typelists
-    tm->max_rp = os_page_size();
-    os_mprotect(tm->typelist_buf, tm->max_rp, BK_M_READ | BK_M_WRITE);      // make first page of typelist storage R/W
-    os_madvise(tm->typelist_buf, tm->max_rp, BK_AD_RANDOM);                 // and advise as randomly accessed
+    tm->max_rp = os_page_size() / sizeof(TM_TLID_T);
+    os_mprotect(tm->typelist_buf, tm->max_rp * sizeof(TM_TLID_T), BK_M_READ | BK_M_WRITE);      // make first page of typelist storage R/W
+    os_madvise(tm->typelist_buf, tm->max_rp * sizeof(TM_TLID_T), BK_AD_RANDOM);                 // and advise as randomly accessed
     tm->next_rp = 0;
 
     tm->max_tlid = TM_MAX_TLID_INC_SIZE;

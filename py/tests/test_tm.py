@@ -112,10 +112,10 @@ def test_intersection():
     ccy = 2
 
     tCcy = tm.exclusiveNominal('ccy', ccy)
-    tag = tm.nominal(f'_GBP')
 
-    GBP = tm.intersection(tCcy, tag)
-    # GBP >> check >> equals >> tm.intersection(tCcy, tag)
+    GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
+    # GBP >> check >> equals >> tm.intersection(tCcy, tm.nominal(f'_GBP'))
+    EUR = tm.intersection(tCcy, tm.nominal(f'_EUR'))
 
     # test nameAs
     tm.name(GBP) >> check >> different >> 'GBP'
@@ -127,6 +127,10 @@ def test_intersection():
     u32 = tm.exclusiveNominal('u32', mem)
     u64 = tm.exclusiveNominal('u64', mem)
     tm.intersection >> apply_ >> (u32, u64) >> check >> raises >> TypeError
+
+    t = tm.intersection(GBP, u32)
+    tm.intersection >> apply_ >> (t, u64) >> check >> raises >> TypeError
+    # tm.intersection >> apply_ >> (t, EUR) >> check >> raises >> TypeError
 
 
 def main():

@@ -26,25 +26,25 @@ typedef enum : BTYPEID_T {
 
 
 enum bmetatypeid : unsigned char {
-    bterr = 0,
-    btnom = 1,  // nominal - atomic type with a given name
+    bmterr = 0,
+    bmtnom = 1, // nominal - atomic type with a given name
 
                 // set relations
-    btint = 2,  // intersection - sorted list of other types
-    btuni = 3,  // union - sorted list of other types
+    bmtint = 2, // intersection - sorted list of other types
+    bmtuni = 3, // union - sorted list of other types
 
                 // product types (statically known size)
-    bttup = 4,  // tuple - ordered list of other types
-    btstr = 5,  // struct - ordered and named list of other types
-    btrec = 6,  // record - sorted named list of other types
+    bmttup = 4, // tuple - ordered list of other types
+    bmtstr = 5, // struct - ordered and named list of other types
+    bmtrec = 6, // record - sorted named list of other types
 
                 // arrows - aka exponentials - variable size, elements all the same size
-    btseq = 7,  // sequence - tElement
-    btmap = 8,  // map / dictionary - tKey, tValue
-    btfnc = 9,  // function - argnames, tArgs, tRet, tFunc, num args
+    bmtseq = 7, // sequence - tElement
+    bmtmap = 8, // map / dictionary - tKey, tValue
+    bmtfnc = 9, // function - argnames, tArgs, tRet, tFunc, num args
 
                 // schemas
-    btsvr = 10, // schema variable
+    bmtsvr = 10,// schema variable
 };
 
 
