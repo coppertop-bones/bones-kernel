@@ -24,7 +24,7 @@ pvt char * join_txts(int num_args, ...) {
     return res;
 }
 
-//char* concatMsg(const char* str1, const char* str2){
+//char * concatMsg(char *str1, char *str2){
 //    char* result;
 //    asprintf(&result, "%s%s", str1, str2);
 //    return result;

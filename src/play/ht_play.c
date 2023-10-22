@@ -9,7 +9,7 @@ pvt void die_(char *preamble, char *msg, va_list args) {
 
 HT_STRUCT(ht_i32, int)
 
-pvt bool matchesKey(ht_struct(ht_i32) const * h, int entry, int key) {
+pvt bool matchesKey(ht_struct(ht_i32) *h, int entry, int key) {
     return entry == key;
 }
 

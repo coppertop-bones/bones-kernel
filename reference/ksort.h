@@ -290,7 +290,7 @@ typedef struct {
 #define ks_lt_generic(a, b) ((a) < (b))
 #define ks_lt_str(a, b) (strcmp((a), (b)) < 0)
 
-typedef const char *ksstr_t;
+typedef char *ksstr_t;
 
 #define KSORT_INIT_GENERIC(type_t) KSORT_INIT(type_t, type_t, ks_lt_generic)
 #define KSORT_INIT_STR KSORT_INIT(str, ksstr_t, ks_lt_str)

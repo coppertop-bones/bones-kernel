@@ -27,14 +27,14 @@
 #define TRAP_PY(src) {                                                                                                  \
         char *retval = (src);                                                                                           \
         if (retval != 0) {                                                                                              \
-            PyObject *answer = PyErr_Format(PyJonesError, (const char *) retval);                                       \
+            PyObject *answer = PyErr_Format(PyJonesError, (char *) retval);                                       \
             free(retval);                                                                                               \
             return answer;                                                                                              \
         }                                                                                                               \
     }
 
 
-pvt PyObject * jErrWrongNumberOfArgs(const char * fName, int numExpected, Py_ssize_t numGiven) {
+pvt PyObject * jErrWrongNumberOfArgs(char * fName, int numExpected, Py_ssize_t numGiven) {
     // https://pythonextensionpatterns.readthedocs.io/en/latest/exceptions.html
     // https://docs.python.org/3/library/stdtypes.html#old-string-formatting
     // https://docs.python.org/3/c-api/exceptions.html#c.PyErr_Format

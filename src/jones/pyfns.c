@@ -598,7 +598,7 @@ pvt PyObject * Partial_args(struct Partial *partial, void* closure) {
 // fred.__array_ufunc__   args: (<ufunc 'right_shift'>, '__call__', array(5), fred)
 
 pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *args, PyObject *kwds) {
-//pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *const *args, Py_ssize_t num_args) {
+//pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject **args, Py_ssize_t num_args) {
     Py_ssize_t num_args = PyTuple_GET_SIZE(args);
     if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "fn %s.%s.__array_ufunc__ does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     if (num_args != 4) return PyErr_Format(PyExc_SyntaxError, "Wrong number of args to fn %s.%s.__array_ufunc__ - %l expected, %l given", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), 4, num_args);

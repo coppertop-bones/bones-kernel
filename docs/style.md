@@ -1,5 +1,14 @@
 
 
+https://nullprogram.com/blog/2023/10/08/
+
+
+
+
+
+
+
+
 - always use signed ints so differences can be taken, unsigned are only ever needed for debugging
 
 

@@ -42,11 +42,31 @@
 #endif /* bk_unused */
 
 
-typedef unsigned int RP;                // relative pointer
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long u64;
+typedef unsigned int    RP;                // relative pointer
+//typedef unsigned char   u8;
+typedef uint8_t         u8;
+typedef char            byte;
+typedef unsigned short  u16;
+//typedef char16_t      c16;
+//typedef unsigned int   u32;
+typedef uint32_t        u32;
+typedef int32_t         i32;
+typedef int32_t         b32;
+//typedef unsigned long   u64;
+typedef uint64_t        u64;
+typedef float           f32;
+typedef double          f64;
+typedef ptrdiff_t       size;
+typedef size_t          usize;
+//typedef uintptr_t       uptr;
+
+
+
+#define sizeof(x)    (size)sizeof(x)
+#define alignof(x)   (size)_Alignof(x)
+#define countof(a)   (sizeof(a) / sizeof(*(a)))
+#define lengthof(s)  (countof(s) - 1)
+
 
 
 typedef unsigned int BTYPEID_T;        /* currently ls 18 bits for 256k types */

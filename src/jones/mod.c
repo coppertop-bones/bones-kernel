@@ -16,22 +16,22 @@
 // memory manipulation
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyObject * _toAddress(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _toAddress(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     return PyTuple_Pack(2, PyLong_FromVoidPtr(args[0]), PyLong_FromSize_t(args[0] -> ob_refcnt));
 }
 
-pvt PyObject * _toPtr(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _toPtr(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     return PyLong_FromVoidPtr(args[0]);
 }
 
-pvt PyObject * _pageSize(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _pageSize(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 0) return jErrWrongNumberOfArgs(__FUNCTION__, 0, nargs);
     return PyLong_FromLong(os_page_size());
 }
 
-pvt PyObject * _getCacheLineSize(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _getCacheLineSize(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 0) return jErrWrongNumberOfArgs(__FUNCTION__, 0, nargs);
     return PyLong_FromLong((long) os_cache_line_size());
 }
@@ -51,7 +51,7 @@ pvt PyObject * _ob_refcnt(PyObject *mod, PyObject *args) {
     return PyLong_FromSize_t(object -> ob_refcnt);
 }
 
-pvt PyObject * _malloc(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _malloc(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;        // size_t
@@ -60,7 +60,7 @@ pvt PyObject * _malloc(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     return PyLong_FromVoidPtr(p);
 }
 
-pvt PyObject * _atU16(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _atU16(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u16 and the index get a u16
 
     if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
@@ -74,7 +74,7 @@ pvt PyObject * _atU16(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     return PyLong_FromLong(*pItem);
 }
 
-pvt PyObject * _atU16Put(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _atU16Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u16, the index, set the bits given by the mask and value
 
     if (nargs != 4) return jErrWrongNumberOfArgs(__FUNCTION__, 4, nargs);
@@ -93,7 +93,7 @@ pvt PyObject * _atU16Put(PyObject *mod, PyObject *const *args, Py_ssize_t nargs)
     return PyBool_FromLong(*pItem);
 }
 
-pvt PyObject * _atU8(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _atU8(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u8 and the index get a U8
 
     if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
@@ -107,7 +107,7 @@ pvt PyObject * _atU8(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
     return PyLong_FromLong(*pItem);
 }
 
-pvt PyObject * _atU8Put(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _atU8Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u8 and the index, set the bits given by the mask and value
 
     if (nargs != 4) return jErrWrongNumberOfArgs(__FUNCTION__, 4, nargs);

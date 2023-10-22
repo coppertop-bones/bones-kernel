@@ -28,16 +28,16 @@
 #include "pp.c"
 
 
-pvt inline char const * nameFromEntry(ht_struct(SM_SYMID_BY_NAMEHASH) *h, SYM_ID_T entry) {
+pvt inline char * nameFromEntry(ht_struct(SM_SYMID_BY_NAMEHASH) *h, SYM_ID_T entry) {
     return h->sm->symname_buf + h->sm->rp_by_symid[entry];
 }
 
-pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) const * h, SYM_ID_T entry, char const * key) {
+pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) *h, SYM_ID_T entry, char *key) {
     return strcmp(h->sm->symname_buf + h->sm->rp_by_symid[entry], key) == 0;
 }
 
 // HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(SM_SYMID_BY_NAMEHASH, SYM_ID_T, char const *, ht_str_hash, nameFound, nameFromEntry)
+HT_IMPL(SM_SYMID_BY_NAMEHASH, SYM_ID_T, char *, ht_str_hash, nameFound, nameFromEntry)
 
 
 pub struct SM * SM_create(struct MM *mm) {
@@ -70,7 +70,7 @@ pub int SM_trash(struct SM *sm) {
     return 0;
 }
 
-pub SYM_ID_T sm_id(struct SM *sm, char const * name) {
+pub SYM_ID_T sm_id(struct SM *sm, char *name) {
     int res, pageSize = 0;
     u32 idx = ht_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
 

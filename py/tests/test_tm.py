@@ -92,6 +92,12 @@ def test_nominal():
     # 3b) kernel manager
     # this is why gc is good for scripting languages - bones cleans up the mess so you don't have to :)
 
+    # OPEN: explicit independent life cycle, e.g.
+    # jones.createKernel("fred")
+    # tm = jones.getKernel("fred").tm
+    # [jones.trashKernel(name) for name in jones.kernels()]
+
+
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
@@ -102,6 +108,7 @@ def test_nominal():
     tm.btype('u32').id >> check >> equals >> t.id
     # tm.btype('u32') >> check >> equals >> t
     tm.name(t) >> check >> equals >> 'u32'
+
 
 
 def test_intersection():

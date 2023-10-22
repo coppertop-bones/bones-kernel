@@ -7,7 +7,7 @@
  * collisions it seems to be replaced with "siphash" in n-djbdns, see
  * https://github.com/pjps/ndjbdns/commit/16cb625eccbd68045737729792f09b4945a4b508
  */
-uint32_t djb33_hash(const char* s, size_t len) {
+uint32_t djb33_hash(char *s, size_t len) {
     uint32_t h = 5381;
     while (len--) {
         /* h = 33 * h ^ s[i]; */
@@ -23,7 +23,7 @@ uint32_t djb33_hash(const char* s, size_t len) {
  * The Java hash, but really no-one seems to know where it came from, see
  * https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4045622
  */
-uint32_t h31_hash(const char* s, size_t len) {
+uint32_t h31_hash(char *s, size_t len) {
     uint32_t h = 0;
     while (len) {
         h = 31 * h + *s++;
@@ -37,7 +37,7 @@ uint32_t h31_hash(const char* s, size_t len) {
  * See: http://www.isthe.com/chongo/tech/comp/fnv/
  *      https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
  */
-uint32_t fnv32_hash(const char *str, size_t len) {
+uint32_t fnv32_hash(char *str, size_t len) {
     unsigned char *s = (unsigned char *)str;	/* unsigned string */
 
     /* See the FNV parameters at www.isthe.com/chongo/tech/comp/fnv/#FNV-param */
@@ -58,7 +58,7 @@ uint32_t fnv32_hash(const char *str, size_t len) {
 /*
  * "This came from ejb's hsearch."
  */
-uint32_t ejb_hash(const char *s, size_t len) {
+uint32_t ejb_hash(char *s, size_t len) {
     unsigned char *key = (unsigned char*) s;
     const uint32_t PRIME1 = 37;
     const uint32_t PRIME2 = 1048583;
@@ -75,7 +75,7 @@ uint32_t ejb_hash(const char *s, size_t len) {
 /*
  * Bob Jenkins "One-at-a-time" hash
  */
-uint32_t oat_hash(const char *s, size_t len) {
+uint32_t oat_hash(char *s, size_t len) {
     unsigned char *p = (unsigned char*) s;
     uint32_t h = 0;
 

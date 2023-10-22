@@ -53,7 +53,7 @@ static const double __ht_HASH_UPPER = 0.77;
         }                                                                                                               \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE u32 ht_get_idx_##name(struct ht_##name const * h, key_t key) {                                                \
+    SCOPE u32 ht_get_idx_##name(struct ht_##name *h, key_t key) {                                                \
         u32 k, idx, last, mask, step = 0;                                                                               \
         if (!h->n_slots) return 0;                                                                                      \
         mask = h->n_slots - 1;                                                                                          \
@@ -200,19 +200,19 @@ static const double __ht_HASH_UPPER = 0.77;
 #define ht_int64_hash(h, key) (u32)((key)>>33^(key)^(key)<<11)
 
 /*! @function
-  @abstract     const char* hash function
+  @abstract     char* hash function
   @param  key   Pointer to a null terminated string
   @return       The hash value
  */
-static bk_inline u32 __ht_X31_hash_string(const char * key) {
+static bk_inline u32 __ht_X31_hash_string(char * key) {
     u32 hash = (u32)*key;
     if (hash) for (++key ; *key; ++key) hash = (hash << 5) - hash + (u32)*key;
     return hash;
 }
 
 /*! @function
-  @abstract     Another interface to const char* hash function
-  @param  key   Pointer to a null terminated string [char const *]
+  @abstract     Another interface to char * hash function
+  @param  key   Pointer to a null terminated string [char *]
   @return       The hash value [u32]
  */
 #define ht_str_hash(key) __ht_X31_hash_string(key)

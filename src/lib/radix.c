@@ -12,7 +12,7 @@
         rstype_t *b, *e;                                                                                                \
     } rsbucket_##name##_t;                                                                                              \
                                                                                                                         \
-    void rs_insertsort_##name(rstype_t *beg, rstype_t const *end) {                                                           \
+    void rs_insertsort_##name(rstype_t *beg, rstype_t *end) {                                                           \
         rstype_t *i;                                                                                                    \
         for (i = beg + 1; i < end; ++i)                                                                                 \
             if (rskey(*i) < rskey(*(i - 1))) {                                                                          \
@@ -23,7 +23,7 @@
             }                                                                                                           \
     }                                                                                                                   \
                                                                                                                         \
-    void rs_sort_##name(rstype_t *beg, rstype_t const *end, int n_bits, int s) {                                              \
+    void rs_sort_##name(rstype_t *beg, rstype_t *end, int n_bits, int s) {                                              \
         rstype_t *i;                                                                                                    \
         int size = 1<<n_bits, m = size - 1;                                                                             \
         rsbucket_##name##_t *k, b[1<<RS_MAX_BITS], *be = b + size;                                                      \
@@ -55,7 +55,7 @@
     }                                                                                                                   \
                                                                                                                         \
     void radix_sort_##name(rstype_t *beg, size_t N) {                                                                   \
-        rstype_t const *end = beg + N;                                                                                        \
+        rstype_t *end = beg + N;                                                                                        \
         if (N <= RS_MIN_SIZE) rs_insertsort_##name(beg, end);                                                           \
         else rs_sort_##name(beg, end, RS_MAX_BITS, (sizeof_key - 1) * RS_MAX_BITS);                                     \
     }

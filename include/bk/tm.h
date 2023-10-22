@@ -161,12 +161,12 @@ struct TM {
 pub struct TM * TM_create(struct MM *, struct SM *);
 pub int TM_trash(struct TM *);
 
-pub BTYPEID_T tm_exclnominal(struct TM *, char const *, enum btexclusioncat);
-pub BTYPEID_T tm_btypeid(struct TM *, char const *);
+pub BTYPEID_T tm_exclnominal(struct TM *, char *, enum btexclusioncat);
+pub BTYPEID_T tm_btypeid(struct TM *, char *);
 pub BTYPEID_T tm_inter(struct TM *, BTYPEID_T *);
 pub char * tm_name(struct TM *, BTYPEID_T);
-pub BTYPEID_T tm_name_as(struct TM *, BTYPEID_T, char const *);
-pub BTYPEID_T tm_nominal(struct TM *, char const *);
+pub BTYPEID_T tm_name_as(struct TM *, BTYPEID_T, char *);
+pub BTYPEID_T tm_nominal(struct TM *, char *);
 
 
 #endif // __BK_BM_H

@@ -19,15 +19,15 @@
 
 
 
-pvt bk_inline u32 _X31_hash_fred(const char *s) {
+pvt bk_inline u32 _X31_hash_fred(char *s) {
     u32 h = (u32)*s;
     if (h) for (++s ; *s; ++s) h = (h << 5) - h + (u32)*s;
     return h;
 }
 
-pvt int fredcmp (const char *p1, const char *p2) {
-    const char *s1 = (const char *) p1;
-    const char *s2 = (const char *) p2;
+pvt int fredcmp (char *p1, char *p2) {
+    char *s1 = (char *) p1;
+    char *s2 = (char *) p2;
     char c1, c2;
     do {
         c1 = (char) *s1++;
@@ -80,14 +80,14 @@ pvt PyTypeObject PyPlayCls;
 // free fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyObject * _sizeofFredJoe(PyObject *mod, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * _sizeofFredJoe(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 0) return jErrWrongNumberOfArgs(__FUNCTION__, 0, nargs);
     return PyTuple_Pack(2, PyLong_FromLong((long) sizeof(struct PyFred)), PyLong_FromLong((long) sizeof(struct PyJoe)));
 }
 
 
 pvt PyObject * _execShell(PyObject *mod, PyObject *args) {
-    const char *command;  int ret;
+    char *command;  int ret;
     if (!PyArg_ParseTuple(args, "s", &command)) return 0;
     ret = system(command);
     if (ret < 0) {
@@ -166,7 +166,7 @@ pvt PyObject * PyPlay_name(struct PyPlay *self, PyObject *Py_UNUSED(ignored)) {
 }
 
 
-pvt PyObject * PyPlay_has(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_has(struct PyPlay *self, PyObject **args, Py_ssize_t nargs) {
     kh_iter_t it;  int exists;  int k;
     if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     if (!PyLong_Check(args[0])) return 0;       // TODO raise a type error
@@ -178,7 +178,7 @@ pvt PyObject * PyPlay_has(struct PyPlay *self, PyObject *const *args, Py_ssize_t
 }
 
 
-pvt PyObject * PyPlay_atIfNone(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_atIfNone(struct PyPlay *self, PyObject **args, Py_ssize_t nargs) {
     kh_iter_t it;  int k;
     if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;       // TODO raise a type error
@@ -191,7 +191,7 @@ pvt PyObject * PyPlay_atIfNone(struct PyPlay *self, PyObject *const *args, Py_ss
 }
 
 
-pvt PyObject * PyPlay_atPut(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_atPut(struct PyPlay *self, PyObject **args, Py_ssize_t nargs) {
     kh_iter_t it;  int ret;  int k;  int v;
     if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;        // TODO raise a type error
@@ -208,7 +208,7 @@ pvt PyObject * PyPlay_atPut(struct PyPlay *self, PyObject *const *args, Py_ssize
 }
 
 
-pvt PyObject * PyPlay_drop(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_drop(struct PyPlay *self, PyObject **args, Py_ssize_t nargs) {
     kh_iter_t it;  int k;
     if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
     if (!PyLong_Check(args[0])) return 0;           // TODO raise a type error
@@ -223,13 +223,13 @@ pvt PyObject * PyPlay_drop(struct PyPlay *self, PyObject *const *args, Py_ssize_
 }
 
 
-pvt PyObject * PyPlay_count(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_count(struct PyPlay *self, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 0) return jErrWrongNumberOfArgs(__FUNCTION__, 0, nargs);
     return PyLong_FromLong(kh_size(self->hm));
 }
 
 
-pvt PyObject * PyPlay_numBuckets(struct PyPlay *self, PyObject *const *args, Py_ssize_t nargs) {
+pvt PyObject * PyPlay_numBuckets(struct PyPlay *self, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 0) return jErrWrongNumberOfArgs(__FUNCTION__, 0, nargs);
     return PyLong_FromLong(kh_n_buckets(self->hm));
 }

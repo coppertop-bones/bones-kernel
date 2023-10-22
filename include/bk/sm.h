@@ -49,7 +49,7 @@ struct SM {
 
 pub struct SM * SM_create(struct MM*);
 pub int SM_trash(struct SM *);
-pub SYM_ID_T sm_id(struct SM *, char const *);
+pub SYM_ID_T sm_id(struct SM *, char *);
 pub char * sm_name(struct SM *, RP);
 pub bool sm_id_le(struct SM *, SYM_ID_T a, SYM_ID_T b);
 pub inline RP sm_id_2_RP(struct SM *, SYM_ID_T);

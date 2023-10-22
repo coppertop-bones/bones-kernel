@@ -54,7 +54,7 @@ pub int os_cache_line_size() {
 
 #define INIT_SZ 128
 
-pvt int vasprintf(char **str, const char *fmt, va_list ap) {
+pvt int vasprintf(char **str, char *fmt, va_list ap) {
     int ret;  va_list ap2;  char *string, *newstr;  size_t len;
 
     if ((string = malloc(INIT_SZ)) == 0) goto fail;
@@ -90,7 +90,7 @@ fail:
     return (-1);
 }
 
-pvt int asprintf(char **str, const char *fmt, ...) {
+pvt int asprintf(char **str, char *fmt, ...) {
     va_list ap; int ret;
 
     *str = 0;

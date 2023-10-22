@@ -17,11 +17,11 @@ KRADIX_SORT_INIT(BTYPEID_T, BTYPEID_T, ,sizeof(BTYPEID_T))
 // symid_by_btypeid hash fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline SYM_ID_T symIdFromEntry(ht_struct(TM_BTYPEID_BY_SYMIDHASH) const * ht, SYM_ID_T entry) {
+pvt inline SYM_ID_T symIdFromEntry(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, SYM_ID_T entry) {
     return ht->tm->symid_by_btypeid[entry];
 }
 
-pvt bool inline found(ht_struct(TM_BTYPEID_BY_SYMIDHASH) const * ht, SYM_ID_T entry, BTYPEID_T key) {
+pvt bool inline found(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, SYM_ID_T entry, BTYPEID_T key) {
     return ht->tm->symid_by_btypeid[entry] == key;
 }
 
@@ -33,18 +33,18 @@ HT_IMPL(TM_BTYPEID_BY_SYMIDHASH, BTYPEID_T, SYM_ID_T, ht_int32_hash, found, symI
 // rp_by_tlid hash fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline BTYPEID_T const * tlFromEntry(ht_struct(TM_TLID_BY_TLHASH) const * ht, TM_TLID_T entry) {
+pvt inline BTYPEID_T * tlFromEntry(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry) {
     return ht->tm->typelist_buf + ht->tm->rp_by_tlid[entry];
 }
 
-pvt inline bool tlCompare(BTYPEID_T const *a, BTYPEID_T const *b) {
+pvt inline bool tlCompare(BTYPEID_T *a, BTYPEID_T *b) {
     BTYPEID_T size;
     if ((size=a[0]) != b[0]) return 0;
     for (BTYPEID_T i=1; i<=size; i++) if (a[i] != b[i]) return 0;     // beware <= :)
     return 1;
 }
 
-pvt u32 tl_hash(BTYPEID_T const *tl) {
+pvt u32 tl_hash(BTYPEID_T *tl) {
     u32 n = tl[0] * sizeof(BTYPEID_T);
     u8 *s = (unsigned char *) tl;
     u8 *e = s + n;
@@ -53,23 +53,23 @@ pvt u32 tl_hash(BTYPEID_T const *tl) {
     return hash;
 }
 
-pvt bool inline tlFound(ht_struct(TM_TLID_BY_TLHASH) const *ht, TM_TLID_T entry, BTYPEID_T const *key) {
+pvt bool inline tlFound(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry, BTYPEID_T *key) {
     return tlCompare(tlFromEntry(ht, entry), key);
 }
 
 // HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, BTYPEID_T const *, tl_hash, tlFound, tlFromEntry)
+HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, BTYPEID_T *, tl_hash, tlFound, tlFromEntry)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // TM_XXXID_BY_TLIDHASH fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline TM_TLID_T tlidFromEntry(ht_struct(TM_XXXID_BY_TLIDHASH) const * ht, TM_XXXID_T entry) {
+pvt inline TM_TLID_T tlidFromEntry(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T entry) {
     return ht->tlid_by_xxxid[entry];
 }
 
-pvt bool inline tlidFound(ht_struct(TM_XXXID_BY_TLIDHASH) const * ht, TM_XXXID_T entry, TM_TLID_T key) {
+pvt bool inline tlidFound(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T entry, TM_TLID_T key) {
     return ht->tlid_by_xxxid[entry] == key;
 }
 
@@ -82,7 +82,7 @@ HT_IMPL(TM_XXXID_BY_TLIDHASH, u32, u32, ht_int32_hash, tlidFound, tlidFromEntry)
 // utils
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt void _growTo(void **p, size_t size, struct MM *mm, char const *fnName) {
+pvt void _growTo(void **p, size_t size, struct MM *mm, char *fnName) {
     void *t = *p;
     t = mm->realloc(t, size);
     onOomDie(t, "%s: realloc #1 failed", fnName);
@@ -128,7 +128,7 @@ tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum bte
 // type accessing / creation fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub BTYPEID_T tm_btypeid(struct TM *tm, char const * name) {
+pub BTYPEID_T tm_btypeid(struct TM *tm, char *name) {
     int res;  u32 idx;
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &res);
     if (res == HT_EXISTS)
@@ -137,7 +137,7 @@ pub BTYPEID_T tm_btypeid(struct TM *tm, char const * name) {
         return 0;
 }
 
-pub BTYPEID_T tm_exclnominal(struct TM *tm, char const * name, enum btexclusioncat excl) {
+pub BTYPEID_T tm_exclnominal(struct TM *tm, char *name, enum btexclusioncat excl) {
     int res;  BTYPEID_T btypeid;  SYM_ID_T symid;  u32 idx;
     symid = sm_id(tm->sm, name);                                        // get symid of name
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
@@ -316,7 +316,7 @@ pub char * tm_name(struct TM *tm, BTYPEID_T btypeid) {
         return 0;
 }
 
-pub BTYPEID_T tm_name_as(struct TM *tm, BTYPEID_T btypeid, char const *name) {
+pub BTYPEID_T tm_name_as(struct TM *tm, BTYPEID_T btypeid, char *name) {
     int res;  BTYPEID_T existingId;  SYM_ID_T symid;  u32 idx;
     symid = sm_id(tm->sm, name);
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
@@ -330,7 +330,7 @@ pub BTYPEID_T tm_name_as(struct TM *tm, BTYPEID_T btypeid, char const *name) {
     }
 }
 
-pub BTYPEID_T tm_nominal(struct TM *tm, char const * name) {
+pub BTYPEID_T tm_nominal(struct TM *tm, char *name) {
     int res;  BTYPEID_T btypeid;  SYM_ID_T symid;  u32 idx;
     symid = sm_id(tm->sm, name);                                        // get symid of name
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
