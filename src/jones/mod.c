@@ -17,22 +17,22 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _toAddress(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     return PyTuple_Pack(2, PyLong_FromVoidPtr(args[0]), PyLong_FromSize_t(args[0] -> ob_refcnt));
 }
 
 pvt PyObject * _toPtr(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     return PyLong_FromVoidPtr(args[0]);
 }
 
 pvt PyObject * _pageSize(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 0) return jErrWrongNumberOfArgs(__FUNCTION__, 0, nargs);
+    if (nargs != 0) return jErrWrongNumberOfArgs(FN_NAME, 0, nargs);
     return PyLong_FromLong(os_page_size());
 }
 
 pvt PyObject * _getCacheLineSize(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 0) return jErrWrongNumberOfArgs(__FUNCTION__, 0, nargs);
+    if (nargs != 0) return jErrWrongNumberOfArgs(FN_NAME, 0, nargs);
     return PyLong_FromLong((long) os_cache_line_size());
 }
 
@@ -52,7 +52,7 @@ pvt PyObject * _ob_refcnt(PyObject *mod, PyObject *args) {
 }
 
 pvt PyObject * _malloc(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;        // size_t
     size_t size = (size_t) PyLong_AsSize_t(args[0]);
@@ -63,7 +63,7 @@ pvt PyObject * _malloc(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 pvt PyObject * _atU16(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u16 and the index get a u16
 
-    if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
+    if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 2, nargs);
     // TODO raise a type error & check within bounds of u16
     if (!PyLong_Check(args[0])) return 0;        // ptr
     if (!PyLong_Check(args[1])) return 0;        // size_t index
@@ -77,7 +77,7 @@ pvt PyObject * _atU16(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 pvt PyObject * _atU16Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u16, the index, set the bits given by the mask and value
 
-    if (nargs != 4) return jErrWrongNumberOfArgs(__FUNCTION__, 4, nargs);
+    if (nargs != 4) return jErrWrongNumberOfArgs(FN_NAME, 4, nargs);
     // TODO raise a type error & check within bounds of u16
     if (!PyLong_Check(args[0])) return 0;        // ptr
     if (!PyLong_Check(args[1])) return 0;        // size_t index
@@ -96,7 +96,7 @@ pvt PyObject * _atU16Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 pvt PyObject * _atU8(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u8 and the index get a U8
 
-    if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
+    if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 2, nargs);
     // TODO raise a type error & check within bounds of u16
     if (!PyLong_Check(args[0])) return 0;        // ptr
     if (!PyLong_Check(args[1])) return 0;        // size_t index
@@ -110,7 +110,7 @@ pvt PyObject * _atU8(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 pvt PyObject * _atU8Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // for the given pointer to an array of u8 and the index, set the bits given by the mask and value
 
-    if (nargs != 4) return jErrWrongNumberOfArgs(__FUNCTION__, 4, nargs);
+    if (nargs != 4) return jErrWrongNumberOfArgs(FN_NAME, 4, nargs);
     // TODO raise a type error & check within bounds of u8
     if (!PyLong_Check(args[0])) return 0;        // ptr
     if (!PyLong_Check(args[1])) return 0;        // size_t index

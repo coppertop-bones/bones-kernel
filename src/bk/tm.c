@@ -85,7 +85,7 @@ HT_IMPL(TM_XXXID_BY_TLIDHASH, u32, u32, ht_int32_hash, tlidFound, tlidFromEntry)
 pvt void _growTo(void **p, size_t size, struct MM *mm, char *fnName) {
     void *t = *p;
     t = mm->realloc(t, size);
-    onOomDie(t, "%s: realloc #1 failed", fnName);
+    onOomDie(t, s8("%s: realloc #1 failed"), fnName);
     *p = t;
 }
 
@@ -93,7 +93,7 @@ tdd TM_TLID_T _commit_typelist_buf_at(struct TM *tm, TM_TLID_T numTypes, u32 idx
     TM_TLID_T tlid;
     if ((tlid = tm->next_tlid++) >= tm->max_tlid) {
         tm->max_tlid += TM_RP_BY_TLID_INC_SIZE;
-        _growTo((void **)&tm->rp_by_tlid, tm->max_tlid * sizeof(RP), tm->mm, __FUNCTION__);
+        _growTo((void **)&tm->rp_by_tlid, tm->max_tlid * sizeof(RP), tm->mm, FN_NAME);
         tm->intid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_intid;
     }
     tm->rp_by_tlid[tlid] = tm->next_rp;
@@ -111,8 +111,8 @@ tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum bte
     BTYPEID_T btypeid = tm->next_btypeId++;
     if (btypeid >= tm->max_btypeId) {
         tm->max_btypeId += TM_MAX_BTYPEID_INC_SIZE;
-        _growTo((void **)&tm->summary_by_btypeid, tm->max_btypeId * sizeof(struct btsummary), tm->mm, __FUNCTION__);
-        _growTo((void **)&tm->symid_by_btypeid, tm->max_intid * sizeof(SYM_ID_T), tm->mm, __FUNCTION__);
+        _growTo((void **)&tm->summary_by_btypeid, tm->max_btypeId * sizeof(struct btsummary), tm->mm, FN_NAME);
+        _growTo((void **)&tm->symid_by_btypeid, tm->max_intid * sizeof(SYM_ID_T), tm->mm, FN_NAME);
     }
     tm->symid_by_btypeid[btypeid] = symid;
     tm->summary_by_btypeid[btypeid].bmtid = bmtid;
@@ -159,7 +159,7 @@ void tm_pp(struct TM *tm, BTYPEID_T btypeid) {
     sum = tm->summary_by_btypeid + btypeid;
     switch (sum->bmtid) {
         case bmtnom:
-            if (symid = tm->symid_by_btypeid[btypeid]) {
+            if ((symid = tm->symid_by_btypeid[btypeid])) {
                 fprintf(stderr, "%s", sm_name(tm->sm, symid));
             }
             else {
@@ -213,7 +213,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
 
     // grow tm->typelist_buf if necessary
     if (tm->next_rp + numTypes >= tm->max_rp) {
-        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", __FUNCTION__);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
         os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
         os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
@@ -270,7 +270,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
     u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &res);
     switch (res) {
         default:
-            die("%s: HT_TOMBSTONE1!", __FUNCTION__);
+            die("%s: HT_TOMBSTONE1!", FN_NAME);
         case HT_EXISTS:
             tlid = tm->tlid_by_tlhash->slots[idx];
             break;
@@ -283,7 +283,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
     idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->intid_by_tlidhash, tlid, &res);
     switch (res) {
         default:
-            die("%s: HT_TOMBSTONE2!", __FUNCTION__);
+            die("%s: HT_TOMBSTONE2!", FN_NAME);
         case HT_EXISTS:
             intid = tm->intid_by_tlidhash->slots[idx];
             return tm->btypid_by_intid[intid];
@@ -292,8 +292,8 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
             intid = tm->next_intid++;
             if (intid >= tm->max_intid) {
                 tm->max_intid += TM_MAX_ID_INC_SIZE;
-                _growTo((void **)&tm->tlid_by_intid, tm->max_intid * sizeof(TM_TLID_T), tm->mm, __FUNCTION__);
-                _growTo((void **)&tm->btypid_by_intid, tm->max_intid * sizeof(BTYPEID_T), tm->mm, __FUNCTION__);
+                _growTo((void **)&tm->tlid_by_intid, tm->max_intid * sizeof(TM_TLID_T), tm->mm, FN_NAME);
+                _growTo((void **)&tm->btypid_by_intid, tm->max_intid * sizeof(BTYPEID_T), tm->mm, FN_NAME);
             }
             tm->tlid_by_intid[intid] = tlid;
             btypeid = _new_type_summary_at(tm, bmtint, excl, idx, 0, intid);

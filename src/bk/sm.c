@@ -53,9 +53,9 @@ pub struct SM * SM_create(struct MM *mm) {
     sm->next_symid = SM_NA_SYM + 1;
     sm->next_rp = 2;                                               // i.e. pointer to the char after the len prefix
     sm->rp_by_symid = mm->malloc(sm->max_symid * sizeof(RP));
-    onOomDie(sm->rp_by_symid, "in %s malloc #1 failed", __FUNCTION__);
+    onOomDie(sm->rp_by_symid, s8("in %s malloc #1 failed"), FN_NAME);
     sm->sortorder_by_symid = mm->malloc(sm->max_symid * sizeof(SYM_ID_T));
-    onOomDie(sm->sortorder_by_symid, "in %s malloc #2 failed", __FUNCTION__);
+    onOomDie(sm->sortorder_by_symid, s8("in %s malloc #2 failed"), FN_NAME);
     sm->symid_by_namehash = ht_create(SM_SYMID_BY_NAMEHASH);
     sm->symid_by_namehash->sm = sm;
     return sm;
@@ -80,7 +80,7 @@ pub SYM_ID_T sm_id(struct SM *sm, char *name) {
     // add the symbol
     int l = strlen(name);
     if (l >= SM_MAX_NAME_LEN || l == 0) return SM_NA_SYM;
-    if (sm->next_rp + l >= SM_MAX_NAME_STORAGE) die("%s: out of typelist storage", __FUNCTION__);   // OPEN: we've run out of storage space, but really we should add an error reporting mechanism, e.g. SM_ERR_NAME_TOO_LONG, SM_ERR_OUT_OF_NAME_STORAGE etc
+    if (sm->next_rp + l >= SM_MAX_NAME_STORAGE) die("%s: out of typelist storage", FN_NAME);   // OPEN: we've run out of storage space, but really we should add an error reporting mechanism, e.g. SM_ERR_NAME_TOO_LONG, SM_ERR_OUT_OF_NAME_STORAGE etc
     bool needsAnotherPage = (2 + sm->next_rp + l + 1 >= sm->max_rp);
     if (needsAnotherPage) {
         // make next page r/w and mark as random access
@@ -92,9 +92,9 @@ pub SYM_ID_T sm_id(struct SM *sm, char *name) {
         // xxx_by_symid arrays need growing
         sm->max_symid += SM_MAX_SYM_ID_INC_SIZE;
         sm->rp_by_symid = sm->mm->realloc(sm->rp_by_symid, sm->max_symid * sizeof(SYM_ID_T));
-        onOomDie(sm->sortorder_by_symid, "in %s realloc #1 failed", __FUNCTION__);
+        onOomDie(sm->sortorder_by_symid, s8("in %s realloc #1 failed"), FN_NAME);
         sm->sortorder_by_symid = sm->mm->realloc(sm->sortorder_by_symid, sm->max_symid * sizeof(SYM_ID_T));
-        onOomDie(sm->sortorder_by_symid, "in %s realloc #2 failed", __FUNCTION__);
+        onOomDie(sm->sortorder_by_symid, s8("in %s realloc #2 failed"), FN_NAME);
     }
     SYM_ID_T id = sm->next_symid;
     sm->rp_by_symid[id] = sm->next_rp;

@@ -13,7 +13,7 @@
         asprintf (&s1, "%li", (long)(lb));                                                                              \
         asprintf (&s2, "%li", (long)(ub));                                                                              \
         asprintf (&s3, "%li", (long)(variable));                                                                        \
-        char *msg = join_txts(12, __FUNCTION__, ": ", accessorDesc, " = ", s3, " but {", s1, " <= ", accessorDesc, " <= ", s2, "}"); \
+        char *msg = join_txts(12, FN_NAME, ": ", accessorDesc, " = ", s3, " but {", s1, " <= ", accessorDesc, " <= ", s2, "}"); \
         PyObject *answer =  PyErr_Format(PyJonesError, msg);                                                            \
         free(s1);                                                                                                       \
         free(s2);                                                                                                       \

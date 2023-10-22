@@ -28,21 +28,22 @@ pvt void die_(char *preamble, char *msg, va_list args);
 //    exit(1);
 //}
 
-pvt void PP(int level, char *msg, ...) {
+pvt void PP(i32 level, char *msg, ...) {
     if (level & g_logging_level) {
         va_list args;
         va_start(args, msg);
-        vfprintf(stderr, msg, args);
-        fprintf(stderr, "\n");
+        FILE *f = level == error ? stderr : stdout;
+        vfprintf(f, msg, args);
+        fprintf(f, "\n");
         va_end(args);
     }
 }
 
-pvt void onOomDie(void *p, char *msg, ...) {
+pvt void onOomDie(void *p, s8 msg, ...) {
     if (p == 0) {
         va_list args;
         va_start(args, msg);
-        die_("", msg, args);
+        die_("", (char*) msg.cs, args);
         va_end(args);
     }
 }
@@ -61,6 +62,8 @@ pvt void nyi(char *msg, ...) {
     va_end(args);
 }
 
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wunused-function\"")
 pvt void bug(char *msg, ...) {
     va_list args;
     va_start(args, msg);
@@ -76,5 +79,6 @@ pvt void check(bool truth, char *msg, ...) {
         va_end(args);
     }
 }
+_Pragma("GCC diagnostic pop")
 
 #endif  // __BK_PP_C

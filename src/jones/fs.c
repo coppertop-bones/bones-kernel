@@ -21,7 +21,7 @@ static PyObject * Partial_o_tbc(struct Partial *, void *);
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _fs_get_result(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;
 
     struct FunctionSelector *fs = PyLong_AsVoidPtr(args[0]);
@@ -66,7 +66,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
 
     PyObject *maybe;  struct PyBType *t;
     // (pSc : SC&ptr, args : N**py, BTypeByType : pydict)
-    if (npyargs != 5) return jErrWrongNumberOfArgs(__FUNCTION__, 4, npyargs);
+    if (npyargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 4, npyargs);
 
     // get pSC
     if (!PyLong_Check(pyargs[0])) return PyErr_Format(PyExc_TypeError, "pSC, argument 1, is not a ptr (long)");
@@ -211,7 +211,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
 pvt PyObject * _fs_tArgs_from_query(PyObject *mod, PyObject **params, Py_ssize_t nparams) {
     // (pSc : Selector&ptr, BTypeById : N**BType&pylist) -> N**BType&pytuple
 
-    if (nparams != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nparams);
+    if (nparams != 2) return jErrWrongNumberOfArgs(FN_NAME, 2, nparams);
 
     if (!PyLong_Check(params[0])) return 0;
     struct FunctionSelector *fs = PyLong_AsVoidPtr(params[0]);
@@ -247,7 +247,7 @@ pvt PyObject * _fs_tArgs_from_query(PyObject *mod, PyObject **params, Py_ssize_t
 //    for (Py_ssize_t o=0; o < full_size; o++) num_tbc += (args[o] == TBC);
 
 pvt PyObject * _fs_next_free_array_index(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
@@ -258,7 +258,7 @@ pvt PyObject * _fs_next_free_array_index(PyObject *mod, PyObject **args, Py_ssiz
 
 pvt PyObject * _fs_atArrayPut(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     // pSC : *fs, index : unsigned char, pSig : unsigned short[], fnId : u16
-    if (nargs != 4) return jErrWrongNumberOfArgs(__FUNCTION__, 4, nargs);
+    if (nargs != 4) return jErrWrongNumberOfArgs(FN_NAME, 4, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
     if (!PyLong_Check(args[1])) return 0;
@@ -283,7 +283,7 @@ pvt PyObject * _fs_atArrayPut(PyObject *mod, PyObject **args, Py_ssize_t nargs) 
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _fs_create(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
+    if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 2, nargs);
     // TODO raise a descriptive type error
     if (!PyLong_Check(args[0])) return 0;
     if (!PyLong_Check(args[1])) return 0;
@@ -302,7 +302,7 @@ pvt PyObject * _fs_create(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 
 
 pvt PyObject * _fs_trash(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
@@ -314,7 +314,7 @@ pvt PyObject * _fs_trash(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 
 
 pvt PyObject * _fs_pQuery(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
@@ -329,21 +329,21 @@ pvt PyObject * _fs_pQuery(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * _fs_test_slot_width(PyObject *mod, PyObject **params, Py_ssize_t nparams) {
-    if (nparams != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nparams);
+    if (nparams != 1) return jErrWrongNumberOfArgs(FN_NAME, 2, nparams);
     struct FunctionSelector *fs = PyLong_AsVoidPtr(params[0]);
     return PyLong_FromLong(fs->slot_width);
 }
 
 
 pvt PyObject * _fs_test_num_slots(PyObject *mod, PyObject **params, Py_ssize_t nparams) {
-    if (nparams != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nparams);
+    if (nparams != 1) return jErrWrongNumberOfArgs(FN_NAME, 2, nparams);
     struct FunctionSelector *fs = PyLong_AsVoidPtr(params[0]);
     return PyLong_FromLong(fs->num_slots);
 }
 
 
 pvt PyObject * _fs_test_pArray(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     // TODO raise a type error
     if (!PyLong_Check(args[0])) return 0;
 
@@ -353,7 +353,7 @@ pvt PyObject * _fs_test_pArray(PyObject *mod, PyObject **args, Py_ssize_t nargs)
 
 
 pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
+    if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 2, nargs);
     if (!PyLong_Check(args[0])) return 0;
     PyObject *tArgs = args[1];
     if (!PyTuple_Check(tArgs)) return 0;
@@ -387,7 +387,7 @@ pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
 
 //pvt PyObject * _fs_test_get_result_for_query(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 //    // pQuery:unsigned short*, pSigs:unsigned short*, slot_width:unsigned char, num_slots:unsigned char
-//    if (nargs != 4) return jErrWrongNumberOfArgs(__FUNCTION__, 4, nargs);
+//    if (nargs != 4) return jErrWrongNumberOfArgs(FN_NAME, 4, nargs);
 //    // TODO raise a type error
 //    if (!PyLong_Check(args[0])) return 0;
 //    if (!PyLong_Check(args[1])) return 0;

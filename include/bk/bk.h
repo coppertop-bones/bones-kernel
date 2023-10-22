@@ -42,6 +42,10 @@
 #endif /* bk_unused */
 
 
+/* __PRETTY_FUNCTION__, __FILE__, __LINE__, __FUNCTION__, __func__ */
+#define FN_NAME (char *)(__FUNCTION__)
+
+
 typedef unsigned int    RP;                // relative pointer
 //typedef unsigned char   u8;
 typedef uint8_t         u8;
@@ -62,11 +66,16 @@ typedef size_t          usize;
 
 
 
-#define sizeof(x)    (size)sizeof(x)
-#define alignof(x)   (size)_Alignof(x)
+#define sizeof(x)    (ptrdiff_t)sizeof(x)
+#define alignof(x)   (ptrdiff_t)_Alignof(x)
 #define countof(a)   (sizeof(a) / sizeof(*(a)))
-#define lengthof(s)  (countof(s) - 1)
+#define lengthof(cs)  (countof(cs) - 1)
 
+#define s8(cs) (s8){(u8 *)cs, lengthof(cs)}
+typedef struct {
+    u8 *cs;
+    size len;
+} s8;
 
 
 typedef unsigned int BTYPEID_T;        /* currently ls 18 bits for 256k types */

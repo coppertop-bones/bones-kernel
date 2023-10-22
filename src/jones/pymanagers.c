@@ -17,7 +17,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * PySM_symid(struct PySM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
         return PyErr_Format(PyExc_TypeError, "name must be utf8");
     }
@@ -26,7 +26,7 @@ pvt PyObject * PySM_symid(struct PySM *self, PyObject **args, Py_ssize_t nargs) 
 }
 
 pvt PyObject * PySM_name(struct PySM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyLong_Check(args[0])) {
         return PyErr_Format(PyExc_TypeError, "symid must be int");
     }
@@ -94,7 +94,7 @@ pvt PyTypeObject PyEMCls = {
 // btype: (name:str) -> btype + exception
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_btype(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
         return PyErr_Format(PyExc_TypeError, "name must be utf8");
     }
@@ -112,7 +112,7 @@ pvt PyObject * PyTM_btype(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
 // exists: (name:str) -> boolean
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_exists(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
         return PyErr_Format(PyExc_TypeError, "name must be utf8");
     }
@@ -124,7 +124,7 @@ pvt PyObject * PyTM_exists(struct PyTM *self, PyObject **args, Py_ssize_t nargs)
 // exclusiveNominal: (str, int) -> btype + exception
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 2, nargs);
+    if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 2, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
     if (!PyLong_Check(args[1])) return PyErr_Format(PyExc_TypeError, "exclusionCategory must be an integer");
     enum btexclusioncat excl = PyLong_AsLong(args[1]);
@@ -186,7 +186,7 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
 // name: (btype) -> str + exception
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_name(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     // OPEN: what to do if there is no name (use t123?) - 0 means invalid type?
     char *name = tm_name(self->tm, ((struct PyBType *) args[0])->btypeid);
@@ -198,7 +198,7 @@ pvt PyObject * PyTM_name(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
 // nameAs: (btype, str) -> btype + exception
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_nameAs(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 2) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     if (!PyUnicode_Check(args[1]) || (PyUnicode_KIND(args[1]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
 
@@ -212,7 +212,7 @@ pvt PyObject * PyTM_nameAs(struct PyTM *self, PyObject **args, Py_ssize_t nargs)
 // nominal: (str) -> btype + exception
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return jErrWrongNumberOfArgs(__FUNCTION__, 1, nargs);
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) {
         PyErr_SetString(PyExc_TypeError, "name must be utf8");
         return 0;
@@ -347,8 +347,10 @@ pvt PyObject * PyKernel_create(PyTypeObject *type, PyObject *args, PyObject *kwd
 
 pvt void PyKernel_trash(struct PyKernel *self) {
     struct MM *mm = self->kernel->mm;
-    int res = K_trash(self->kernel);
+    i32 res = K_trash(self->kernel);
+    if (res) PP(error, "%s: K_trash failed", FN_NAME);
     res = MM_trash(mm);
+    if (res) PP(error, "%s: MM_trash failed", FN_NAME);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
