@@ -2,8 +2,9 @@
 #include "../bk/kernel.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {
-    fprintf(stderr, "%s", preamble);
-    vfprintf(stderr, msg, args);
+    fprintf(stdout, "%s", preamble);
+    vfprintf(stdout, msg, args);
+    fprintf(stdout, "\n");
     exit(1);
 }
 
@@ -11,7 +12,7 @@ pub BTYPEID_T _intersect(struct TM *tm, size_t numTypes, ...) {
     va_list args;  BTYPEID_T *typelist;  int i;  BTYPEID_T btypeid;
     va_start(args, numTypes);
     typelist = malloc((1 + numTypes) * sizeof(BTYPEID_T));
-    for (i = 1; i <= numTypes; i++) typelist[i] = va_arg(args, unsigned int);
+    for (i = 1; i <= numTypes; i++) typelist[i] = va_arg(args, BTYPEID_T);
     typelist[0] = numTypes;
     btypeid = tm_inter(tm, typelist);
     free(typelist);
@@ -34,31 +35,20 @@ pub BTYPEID_T _intersect2(struct TM *tm, size_t numTypes, BTYPEID_T *args) {
     _intersect2((tm), sizeof(args) / sizeof(args[0]), args);                                                            \
 })
 
-
-void * tp_mark(struct TP *);            // null is error
-int tp_drop(struct TP *, void *);       //
+#define countArgs(x, y...)  countArgsImpl((x) , ## y, 0)
 
 
-void test_tp() {
-    struct MM *mm = MM_create();
-    struct K *k = K_create(mm);
+int countArgsImpl(int x, ...) {
+    va_list ap;
+    int e;
+    int count = 1;
 
-    char *txt, *msg;
-    void *cp;
-    cp = tp_mark(k->tp);   // push, note, checkpoint
-    msg = "type error %s";
-
-    char *buf = tp_alloc(0, 1024);           // suggest, pencil, reserve, advise, regrowAt, pad
-    tp_stream(buf);
-    tp_printf(...);
-
-    realloc();
-    txt = tm_pp(tm, btypeid);
-
-
-    tp_strcpy(tp, );
-    tp
-    tp_drop(tp, cp);        // drop, wipe, trash, clean, pop
+    va_start(ap, x);
+    while ((e = va_arg(ap, int)) != 0) {
+        count ++;
+    }
+    va_end(ap);
+    return count;
 }
 
 
@@ -66,7 +56,7 @@ void test_tm() {
     BTYPEID_T t, expected;
     struct MM *mm = MM_create();
     struct K *k = K_create(mm);
-    PP(info, "kernel created");
+    PP(debug, "kernel created");
 
     t = tm_btypeid(k->tm, "joe");
     check(t == 0, "id == %i (should be 0) @ %i", t, __LINE__);
@@ -98,56 +88,53 @@ void test_tm() {
 
 
 void test_exclusions() {
-    BTYPEID_T tCcy, u32, u64, t4, t5, t6, t7, _GBP, GBP, EUR, *tl, res;
+    BTYPEID_T tCcy, u32, u64, t7, t8, GBP, EUR, *tl, actual, _GBP;
     struct MM *mm = MM_create();
     struct K *k = K_create(mm);
-    PP(info, "kernel created");
+    struct TM *tm = k->tm;
+    PP(debug, "kernel created");
 
-    _GBP = tm_nominal(k->tm, "_GBP");
-    u32 = tm_exclnominal(k->tm, "u32", btmemory);
-    u64 = tm_exclnominal(k->tm, "u64", btmemory);
-    tCcy = tm_exclnominal(k->tm, "ccy", btuser1);
+    _GBP = tm_nominal(tm, "_GBP");
+    u32 = tm_exclnominal(tm, "u32", btmemory);
+    u64 = tm_exclnominal(tm, "u64", btmemory);
+    tCcy = tm_exclnominal(tm, "ccy", btuser1);
 
-
-    t6 = intersect(k->tm, intersect(k->tm, u32, tCcy), intersect(k->tm, u64, tCcy));
-    check(t6 == 0, "t == %i (should be %i)", t6, 0);
-
-    GBP = intersect(k->tm, tCcy, tm_nominal(k->tm, "_GBP"));
+    GBP = intersect(tm, tCcy, tm_nominal(tm, "_GBP"));
     check(GBP != 0, "t == %i (should not be %i)", GBP, 0);
 
-    EUR = intersect(k->tm, tCcy, tm_nominal(k->tm, "_EUR"));
+    EUR = intersect(tm, tCcy, tm_nominal(tm, "_EUR"));
     check(EUR != 0, "t == %i (should not be %i)", EUR, 0);
 
-
     // name as
-    check(tm_btypeid(k->tm, "EUR") != EUR, "t == %i (should not be %i) @ %i", tm_btypeid(k->tm, "EUR"), EUR, __LINE__);
-    tm_name_as(k->tm, EUR, "EUR");
-    check(tm_btypeid(k->tm, "EUR") == EUR, "t == %i (should be %i) @ %i", tm_btypeid(k->tm, "EUR"), EUR, __LINE__);
+    check(tm_btypeid(tm, "EUR") != EUR, "t == %i (should not be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
+    tm_name_as(tm, EUR, "EUR");
+    check(tm_btypeid(tm, "EUR") == EUR, "t == %i (should be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
+    check(strcmp(tm_pp(tm, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, EUR).cs, __LINE__);
 
+    // check construction returns identical objects
+    t7 = intersect(tm, GBP, u32);
+    t8 = intersect(tm, GBP, u32);
+    check(t7 == t8, "t7 != t8 got %i and %i @ %i", t7, t8, __LINE__);
 
-    tm_name_as(k->tm, GBP, "GBP");
+    // check u32 doesn't mix with u64
+    actual = intersect(tm, intersect(tm, u32, tCcy), intersect(tm, u64, tCcy));
+    check(actual == 0, "t == %i (should be %i)", actual, 0);
 
-    t7 = intersect(k->tm, GBP, u32);
-    check(t7 != 0, "t == %i (should not be %i) @ %i", t7, 0, __LINE__);
+    // check GBP mixes with EUR
+    actual = intersect(tm, GBP, EUR);
+    check(actual != 0, "t == %i (should not be %i) @ %i", actual, 0, __LINE__);
 
-    res = intersect(k->tm, t7, u64);
-    check(res == 0, "t == %i (should be %i) @ %i", res, 0, __LINE__);
-
-    tm_pp(k->tm, GBP);
-    PP(info, "");
-    tm_pp(k->tm, EUR);
-    PP(info, "");
-
-    check(intersect(k->tm, GBP, EUR) != 0, "t == %i (should not be %i) @ %i", intersect(k->tm, GBP, EUR), 0, __LINE__);
-
-    res = intersect(k->tm, t7, EUR);
-    check(res == 0, "t == %i (should be %i) @ %i", res, 0, __LINE__);
+    actual = intersect(tm, intersect(tm, GBP, u32), EUR);
+    check(actual != 0, "t == %i (should not be %i) @ %i", actual, 0, __LINE__);
 
     K_trash(k);
 }
 
 
 int main() {
+    g_logging_level = info;
+    PP(debug, "%i", countArgs(1));
+    PP(debug, "%i", countArgs(1,2));
     test_tm();
     test_exclusions();
     PP(info, "passed");

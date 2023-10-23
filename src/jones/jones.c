@@ -1,17 +1,17 @@
-#ifndef __JONES___JONES_C
-#define __JONES___JONES_C "jones/__jones.c"
+#ifndef JONES_JONES_C
+#define JONES_JONES_C "jones/jones.c"
 
 
-#include "_jones.h"
+#include "jones.h"
 #include "pyfns.c"
-#include "../lib/os.c"
+#include "../bk/lib/os.c"
 #include "../bk/buckets.c"
 #include "pybtype.c"
 #include "pymanagers.c"
 #include "fs.c"
 #include "mod.c"
 
-#ifdef INCLUDE_JONES_PLAY
+#ifdef JONES_INCLUDE_PLAY
 #include "play.c"
 #endif
 
@@ -67,7 +67,7 @@ pvt PyModuleDef jones_module = {
 
 //    {"bmodule", Py_T_OBJECT_EX, offsetof(struct Fn, bmodule), Py_READONLY, "bones module name"},
 
-pyapi PyMODINIT_FUNC PyInit_jones(void) {
+pub PyMODINIT_FUNC PyInit_jones(void) {
     PyObject *m;
 
     m = PyModule_Create(&jones_module);
@@ -204,7 +204,7 @@ pyapi PyMODINIT_FUNC PyInit_jones(void) {
     }
 
 
-    #ifdef INCLUDE_JONES_PLAY
+    #ifdef JONES_INCLUDE_PLAY
 
     // add PyPlayCls
     if (PyType_Ready(&PyPlayCls) < 0) return 0;
@@ -225,4 +225,4 @@ pvt void die_(char *preamble, char *msg, va_list args) {
     exit(1);
 }
 
-#endif  // __JONES___JONES_C
+#endif  // JONES_JONES_C

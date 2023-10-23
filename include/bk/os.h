@@ -2,7 +2,6 @@
 #define __BK_OS_H "bk/os.h"
 
 
-#include "../all.cfg"
 #include "bk.h"
 
 #define BK_M_NONE       0x0

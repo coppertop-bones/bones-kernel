@@ -6,8 +6,6 @@
 #define __BK_BK_H "bk/bk.h"
 
 
-#include "../all.cfg"
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -71,10 +69,10 @@ typedef size_t          usize;
 #define countof(a)   (sizeof(a) / sizeof(*(a)))
 #define lengthof(cs)  (countof(cs) - 1)
 
-#define s8(cs) (s8){(u8 *)cs, lengthof(cs)}
+#define s8(cs) (s8){lengthof(cs), (char *)cs}
 typedef struct {
-    u8 *cs;
     size len;
+    char *cs;
 } s8;
 
 
@@ -88,7 +86,17 @@ typedef unsigned char BMETATYPE_ID_T;   /* currently 4 bits for 16 metatypes */
 
 // error codes
 typedef char* err;
-#define ok 0
+#define NO_ERROR 0
+
+
+// the following control visibility of functions
+#define pvt static
+#define pub
+#ifdef BK_EXPOSE_TDD
+#define tdd
+#else
+#define tdd static
+#endif
 
 
 #endif   // __BK_BK_H

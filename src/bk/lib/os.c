@@ -16,9 +16,9 @@
 #define __BK_OS_C "bk/os.c"
 
 
-#include "../../include/bk/bk.h"
-#include "../../include/bk/os.h"
-#include "../bk/pp.c"
+#include "../../../include/bk/bk.h"
+#include "../../../include/bk/os.h"
+#include "../pp.c"
 #include <sys/sysctl.h>
 #include <libc.h>
 

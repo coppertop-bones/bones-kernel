@@ -1,7 +1,7 @@
 #ifndef JONES_PYFNS_C
 #define JONES_PYFNS_C "jones/pipe_ops.c"
 
-#include "_jones.h"
+#include "jones.h"
 
 #include BK_PYTHON_H
 

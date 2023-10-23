@@ -8,26 +8,14 @@
 #include <stdio.h>          /* for vsnprintf */
 #include <stdlib.h>
 #include <windows.h>
-#include "../../include/bk/bk.h"
+#include "../../../include/bk/bk.h"
+//#include "os_win64.h"
 
 pub int os_page_size() {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     return si.dwPageSize;
 }
-
-
-#ifndef VA_COPY
-  #ifdef HAVE_VA_COPY
-    #define VA_COPY(dest, src) va_copy(dest, src)
-  #else
-    #ifdef HAVE___VA_COPY
-      #define VA_COPY(dest, src) __va_copy(dest, src)
-    #else
-      #define VA_COPY(dest, src) (dest) = (src)
-    #endif
-  #endif
-#endif
 
 
 pub int os_cache_line_size() {
@@ -52,54 +40,7 @@ pub int os_cache_line_size() {
 }
 
 
-#define INIT_SZ 128
 
-pvt int vasprintf(char **str, char *fmt, va_list ap) {
-    int ret;  va_list ap2;  char *string, *newstr;  size_t len;
-
-    if ((string = malloc(INIT_SZ)) == 0) goto fail;
-
-    VA_COPY(ap2, ap);
-    ret = vsnprintf(string, INIT_SZ, fmt, ap2);
-    va_end(ap2);
-    if (ret >= 0 && ret < INIT_SZ) { /* succeeded with initial alloc */
-        *str = string;
-    } else if (ret == INT_MAX || ret < 0) { /* Bad length */
-        free(string);
-        goto fail;
-    } else {    /* bigger than initial, realloc allowing for nul */
-        len = (size_t) ret + 1;
-        if ((newstr = realloc(string, len)) == 0) {
-            free(string);
-            goto fail;
-        }
-        VA_COPY(ap2, ap);
-        ret = vsnprintf(newstr, len, fmt, ap2);
-        va_end(ap2);
-        if (ret < 0 || (size_t) ret >= len) { /* failed with realloc'ed string */
-            free(newstr);
-            goto fail;
-        }
-        *str = newstr;
-    }
-    return (ret);
-
-fail:
-    *str = 0;
-    errno = ENOMEM;
-    return (-1);
-}
-
-pvt int asprintf(char **str, char *fmt, ...) {
-    va_list ap; int ret;
-
-    *str = 0;
-    va_start(ap, fmt);
-    ret = vasprintf(str, fmt, ap);
-    va_end(ap);
-
-    return ret;
-}
 
 // https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
 // https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-discardvirtualmemory

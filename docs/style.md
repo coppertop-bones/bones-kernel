@@ -1,9 +1,17 @@
 
 
+
+# Reserved Names
+On leading underscores and names reserved by the C and C++ languages by Raymond Chen - https://devblogs.microsoft.com/oldnewthing/20230109-00/?p=107685
+
+
+
+
 https://nullprogram.com/blog/2023/10/08/
 
 
 
+https://nelkinda.com/blog/suppress-warnings-in-gcc-and-clang/#d12e376
 
 
 
@@ -55,3 +63,6 @@ https://en.wikipedia.org/wiki/X_Macro
 //    INCLUDE file_locator \
 //    DEFINE guard_symbol \
 //    ENDIF
+
+
+

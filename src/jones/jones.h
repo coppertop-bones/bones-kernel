@@ -8,7 +8,7 @@
 
 #define PY_SSIZE_T_CLEAN
 
-#include "../../include/all.cfg"
+#include "config.h"
 #include BK_PYTHON_H
 #include BK_DESCROBJECT_H
 #include BK_STRUCTMEMBER_H

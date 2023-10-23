@@ -2,13 +2,13 @@
 #define JONES_KERNEL_C "jones/kernel.c"
 
 
-#include "_jones.h"
+#include "jones.h"
 #include "../bk/mm.c"
 #include "../bk/sm.c"
 #include "../bk/em.c"
 #include "../bk/tm.c"
 #include "../bk/kernel.c"
-#include "../lib/pyutils.c"
+#include "lib/pyutils.h"
 
 
 

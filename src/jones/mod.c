@@ -7,8 +7,8 @@
 
 #include "../../include/bk/bk.h"
 #include "../../include/bk/os.h"
-#include "_jones.h"
-#include "../lib/pyutils.c"
+#include "jones.h"
+#include "lib/pyutils.h"
 
 
 

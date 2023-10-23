@@ -2,10 +2,9 @@
 #define __BK_BUCKETS_C "bk/buckets.c"
 
 
-#include "../../include/all.cfg"
 #include <stdlib.h>
 #include "../../include/bk/buckets.h"
-#include "../lib/os.c"
+#include "lib/os.c"
 #include "pp.c"
 
 pvt unsigned int PAGE_SIZE = 0;

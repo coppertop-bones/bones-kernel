@@ -5,10 +5,10 @@
 #define JONES_FS_C "jones/fs.c"
 
 
-#include "_jones.h"
+#include "jones.h"
 #include "../../include/bk/bk.h"
 #include "../bk/fs.c"
-#include "../lib/pyutils.c"
+#include "lib/pyutils.h"
 #include "pybtype.c"
 
 

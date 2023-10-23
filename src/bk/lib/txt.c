@@ -1,9 +1,9 @@
-#ifndef __BK_UTILS_C
-#define __BK_UTILS_C "bk/utils.c"
+#ifndef __BK_LIB_TXT_C
+#define __BK_LIB_TXT_C "bk/lib/txt.c"
 
-
-#include "../../include/all.cfg"
-//#include "buckets.c"
+#include <string.h>
+#include <stdio.h>
+#include "../bk.h"
 
 
 pvt char * join_txts(int num_args, ...) {
@@ -24,13 +24,13 @@ pvt char * join_txts(int num_args, ...) {
     return res;
 }
 
-//char * concatMsg(char *str1, char *str2){
-//    char* result;
-//    asprintf(&result, "%s%s", str1, str2);
-//    return result;
-//}
+char * concatMsg(char *str1, char *str2){
+    char* result;
+    asprintf(&result, "%s%s", str1, str2);
+    return result;
+}
 
 
 
 
-#endif  // __BK_UTILS_C
+#endif  // __BK_LIB_TXT_C

@@ -1,15 +1,9 @@
-#ifndef __ALL_CFG
-#define __ALL_CFG "__all.cfg"
+#ifndef JONES_CONFIG_CFG
+#define JONES_CONFIG_CFG "jones/config.h"
 
+#define BK_EXPOSE_TDD
+#define JONES_INCLUDE_PLAY
 
-// the following control visibility of functions in the output file
-#define pvt static
-#define pub
-#define tdd
-//#define tdd static
-#define pyapi
-
-#define INCLUDE_JONES_PLAY
 
 //#define BK_PYTHON_H "Python.h"
 //#define BK_DESCROBJECT_H "descrobject.h"
@@ -20,4 +14,4 @@
 
 
 
-#endif  // __ALL_CFG
+#endif  // JONES_CONFIG_CFG

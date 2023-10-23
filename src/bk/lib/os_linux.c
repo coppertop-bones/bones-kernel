@@ -2,7 +2,7 @@
 #define __BK_UTILS_OS_LINUX_C "bk/os_linux.c"
 
 #include <stdio.h>
-#include "../../include/bk/bk.h"
+#include "../../../include/bk/bk.h"
 
 pub size_t os_cache_line_size() {
     FILE * p = 0;

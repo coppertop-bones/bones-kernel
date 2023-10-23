@@ -1,7 +1,7 @@
 #ifndef JONES_PY_BTYPE_C
 #define JONES_PY_BTYPE_C "jones/py_btype.c"
 
-#include "_jones.h"
+#include "jones.h"
 #include "../../include/bk/tm.h"
 
 

@@ -5,10 +5,9 @@
 #define __BK_FS_C "bk/fs.c"
 
 
-#include "../../include/all.cfg"
 #include "../../include/bk/bk.h"
-#include "bk.c"
-#include "../lib/txt.c"
+#include "bk.h"
+#include "lib/txt.c"
 
 
 typedef unsigned short PAYLOAD;
@@ -73,12 +72,12 @@ pvt int FS_next_free_array_index(struct FunctionSelector *fs) {
 
 pvt inline int fast_compare_sig(unsigned short query[], unsigned short sig[], int slot_width, unsigned short *HC) {
     int N = query[0];
-    if (N != (sig[0] & LOWER_PAYLOAD_MASK)) return 0;                                       // check count
+    if (N != (sig[0] & LOWER_PAYLOAD_MASK)) return 0;                                   // check count
     for (int o = 1; o <= N; o++) {
-        if (query[o] != sig[o]) return 0;                                        // check compressed bt_ids
+        if (query[o] != sig[o]) return 0;                                               // check compressed bt_ids
 //        if (query[o] == 0) return (sig[0] & UPPER_PAYLOAD_MASK) | ((sig[o_last] >> LOWER_PAYLOAD_SHIFT) & LOWER_PAYLOAD_MASK);   // check null terminal
     }
-//    if (query[o_last] != (sig[o_last] & UPPER_PAYLOAD_MASK)) return 0;                             // check last
+//    if (query[o_last] != (sig[o_last] & UPPER_PAYLOAD_MASK)) return 0;                // check last
     int o_last = slot_width - 1;
     int hc = ((sig[o_last] & HC_MASK) + HC_INC) & HC_MASK;
     if (hc == 0) *HC += 1;  // if wrapped inc off struct hit count
@@ -108,7 +107,7 @@ pvt err FS_required_size(int num_args, int num_slots, size_t *size) {
     if (!(1 <= num_slots && num_slots <=128)) SIGNAL("num_slots is not within {1, 128}");
     int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
     *size = sizeof(struct FunctionSelector) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
-    return ok;
+    return NO_ERROR;
 }
 
 pvt err FS_create(struct FunctionSelector *fs, int num_args, int num_slots) {
@@ -124,7 +123,7 @@ pvt err FS_create(struct FunctionSelector *fs, int num_args, int num_slots) {
     unsigned short *array = P_SIG_ARRAY(fs);
     for (i=0; i < slot_width * num_slots; i++) array[i] = 0x0000;
     for (iHC=0; iHC < num_slots; iHC++) array[i+iHC] = 0x0000;
-    return ok;
+    return NO_ERROR;
 }
 
 pvt void FS_trash(struct FunctionSelector *fs) {

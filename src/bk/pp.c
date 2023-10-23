@@ -16,6 +16,7 @@ enum {
     info = 8,
     error = 16,
     pt = 32,        // parse tree
+    debug = 64,
 };
 int g_logging_level = info;     // OPEN: add filter as well as level?
 
@@ -28,6 +29,8 @@ pvt void die_(char *preamble, char *msg, va_list args);
 //    exit(1);
 //}
 
+
+// can distinguish between s8 and char * by making the first byte of s8 > 128
 pvt void PP(i32 level, char *msg, ...) {
     if (level & g_logging_level) {
         va_list args;

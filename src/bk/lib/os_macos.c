@@ -41,9 +41,9 @@
 #define __BK_OS_MACOS_C "bk/os_macos.c"
 
 
-#include "../../include/bk/bk.h"
+#include "../../../include/bk/bk.h"
 //#include "../../include/bk/os.h"
-#include "../bk/pp.c"
+#include "../pp.c"
 #include <sys/sysctl.h>
 #include <libc.h>
 #include <sys/mman.h>

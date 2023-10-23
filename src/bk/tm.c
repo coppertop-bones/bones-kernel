@@ -2,12 +2,11 @@
 #define __BK_TM_C "bk/tm.c"
 
 
-#include "../../include/all.cfg"
 #include "buckets.c"
 #include "../../include/bk/mm.h"
 #include "../../include/bk/tm.h"
-#include "../lib/ht_impl.c"
-#include "../lib/radix.c"
+#include "lib/ht_impl.h"
+#include "lib/radix.h"
 
 
 KRADIX_SORT_INIT(BTYPEID_T, BTYPEID_T, ,sizeof(BTYPEID_T))
@@ -154,30 +153,44 @@ pub BTYPEID_T tm_exclnominal(struct TM *tm, char *name, enum btexclusioncat excl
 }
 
 
-void tm_pp(struct TM *tm, BTYPEID_T btypeid) {
-    struct btsummary *sum;  SYM_ID_T symid;  BTYPEID_T *tl;  int i;  char sep;
+pvt void tm_pp_impl(FILE *f, struct TM *tm, BTYPEID_T btypeid) {
+    struct btsummary *sum;
+    SYM_ID_T symid;
+    BTYPEID_T *tl;
+    i32 i;
+    char sep;
     sum = tm->summary_by_btypeid + btypeid;
-    switch (sum->bmtid) {
-        case bmtnom:
-            if ((symid = tm->symid_by_btypeid[btypeid])) {
-                fprintf(stderr, "%s", sm_name(tm->sm, symid));
-            }
-            else {
-                fprintf(stderr, "t%i", btypeid);
-            }
-            break;
-        case bmtint:
-            tl = tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
-            sep = 0;
-            for (i = 1; i <= tl[0]; i++) {
-                if (sep) fprintf(stderr, " & ");
-                sep = 1;
-                tm_pp(tm, tl[i]);
-            }
-            break;
-        default:
-            printf("???");
+    if ((symid = tm->symid_by_btypeid[btypeid])) {
+        fprintf(f, "%s", sm_name(tm->sm, symid));
+    } else {
+        switch (sum->bmtid) {
+            case bmtnom:
+                fprintf(f, "%s", sm_name(tm->sm, symid));
+                break;
+            case bmtint:
+                tl = tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
+                sep = 0;
+                for (i = 1; i <= (i32) tl[0]; i++) {
+                    if (sep) fprintf(f, " & ");
+                    sep = 1;
+                    tm_pp_impl(f, tm, tl[i]);
+                }
+                break;
+            default:
+                printf("NAT");
+        }
     }
+}
+
+
+
+pub s8 tm_pp(struct TM *tm, BTYPEID_T btypeid) {
+    char *buf = NULL;
+    size size = 0;
+    FILE* f = open_memstream(&buf, (size_t*)&size);
+    tm_pp_impl(f, tm, btypeid);
+    fclose(f);
+    return (s8){size, buf};
 }
 
 
@@ -187,12 +200,12 @@ void tm_pp(struct TM *tm, BTYPEID_T btypeid) {
 
 
 pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
-    int i, j, res, numTypes, hasUnions;  enum btexclusioncat excl = 0;  TM_TLID_T tlid;
+    i32 i, j, res, numTypes, hasUnions;  enum btexclusioncat excl = 0;  TM_TLID_T tlid;
     BTYPEID_T btypeid, *interTl, *p1, *p2, *p3, *nextTypelist;
     TM_XXXID_T intid;  struct btsummary *sum;
     // (A&B) & (C&D)  = A & B & C & D
     // (A&B) & (B&C)  = A & B & C
-    // (A+B) & (B+C)  = (A+B) & (B+C)  why not B? because we need to keep the detail when the program is causes intersections
+    // (A+B) & (B+C)  = (A+B) & (B+C)  why not B? because we need to keep the detail when the program causes intersections
     //
     // (A&B) + (B&C)  = B & (A + C)    - not the same for unions of intersections
 
@@ -202,7 +215,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
     if (!(numTypes = typelist[0])) return 0;
 
     // check typeid is in range, and figure total length (including possible duplicate from child intersections)
-    for (i = 1; i <= typelist[0]; i++) {
+    for (i = 1; i <= (i32)typelist[0]; i++) {
         if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtint) {
@@ -224,13 +237,13 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
     // copy typelist into typelist_buf unpacking any intersections
     p1 = nextTypelist;
     *p1++ = numTypes;
-    for (i = 1; i <= typelist[0]; i++) {
+    for (i = 1; i <= (i32)typelist[0]; i++) {
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtint) {
             // we have an intersection type - expand it
             tlid = tm->tlid_by_intid[sum->intId];
             interTl = (tm->typelist_buf + tm->rp_by_tlid[tlid]);
-            for (j = 1; j <= interTl[0]; j++) *p1++ = interTl[j];
+            for (j = 1; j <= (i32)interTl[0]; j++) *p1++ = interTl[j];
         }
         else
             *p1++ = typelist[i];

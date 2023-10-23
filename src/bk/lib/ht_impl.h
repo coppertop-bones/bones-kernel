@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include "../../include/bk/ht.h"
+#include "../../../include/bk/ht.h"
 
 
 
@@ -27,8 +27,8 @@
 static const double __ht_HASH_UPPER = 0.77;
 
 #define RESIZE_FAILED -1
-#define OK 0
-#define NO_RESIZE 0 
+#define RESIZED_OK 0
+#define RESIZE_NOT_NEEDED 0
 
 
 // u32 __hash_fn(key_t key);
@@ -53,7 +53,7 @@ static const double __ht_HASH_UPPER = 0.77;
         }                                                                                                               \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE u32 ht_get_idx_##name(struct ht_##name *h, key_t key) {                                                \
+    SCOPE u32 ht_get_idx_##name(struct ht_##name *h, key_t key) {                                                       \
         u32 k, idx, last, mask, step = 0;                                                                               \
         if (!h->n_slots) return 0;                                                                                      \
         mask = h->n_slots - 1;                                                                                          \
@@ -72,7 +72,7 @@ static const double __ht_HASH_UPPER = 0.77;
         u32 *new_flags;                                                                                                 \
         kroundup32(new_n_slots);                                                                                        \
         if (new_n_slots < 4) new_n_slots = 4;                                                                           \
-        if (h->n_entries >= (u32)(new_n_slots * __ht_HASH_UPPER + 0.5)) return NO_RESIZE;                               \
+        if (h->n_entries >= (u32)(new_n_slots * __ht_HASH_UPPER + 0.5)) return RESIZE_NOT_NEEDED;                       \
         new_flags = (u32*)malloc(__ht_fsize(new_n_slots) * sizeof(u32));                                                \
         if (!new_flags) return RESIZE_FAILED;                                                                           \
         memset(new_flags, 0xaa, __ht_fsize(new_n_slots) * sizeof(u32));                                                 \
@@ -116,7 +116,7 @@ static const double __ht_HASH_UPPER = 0.77;
         h->n_slots = new_n_slots;                                                                                       \
         h->n_slots_used = h->n_entries;                                                                                 \
         h->n_slots_used_threshold = (u32)(h->n_slots * __ht_HASH_UPPER + 0.5);                                          \
-        return OK;                                                                                                      \
+        return RESIZED_OK;                                                                                              \
     }                                                                                                                   \
                                                                                                                         \
     SCOPE u32 ht_put_idx_##name(struct ht_##name *h, key_t key, int *ret) {                                             \

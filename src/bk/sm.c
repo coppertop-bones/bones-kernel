@@ -24,7 +24,7 @@
 #include "../../include/bk/mm.h"
 #include "../../include/bk/sm.h"
 #include "../../include/bk/os.h"
-#include "../lib/ht_impl.c"
+#include "lib/ht_impl.h"
 #include "pp.c"
 
 

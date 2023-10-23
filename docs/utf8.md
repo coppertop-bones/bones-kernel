@@ -8,3 +8,16 @@ char *PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *size)
 This decision is backed up by
 https://utf8everywhere.org/
 https://developer.twitter.com/en/docs/counting-characters
+
+
+
+
+what about fprintf etc? and the formatting dsl?
+https://www.cprogramming.com/tutorial/unicode.html
+https://www.haible.de/bruno/packages-libutf8.html
+https://icu.unicode.org/
+https://home.unicode.org/
+https://unicode-org.github.io/icu-docs/apidoc/released/icu4c/
+https://www.linkedin.com/pulse/mastering-unicode-modern-c-comprehensive-guide-wide-characters-tariq/
+
+

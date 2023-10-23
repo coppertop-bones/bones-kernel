@@ -2,7 +2,7 @@
 #define __JONES__UTILS_C "jones/_utils.c"
 
 
-#include "../jones/_jones.h"
+#include "../jones.h"
 
 
 // PyExc_ValueError, PyExc_TypeError
