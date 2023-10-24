@@ -138,7 +138,7 @@ def test_intersection():
     t = tm.intersection(GBP, u32)
     tm.intersection >> apply_ >> (t, u64) >> check >> raises >> TypeError
     # tm.intersection >> apply_ >> (t, EUR) >> check >> raises >> TypeError
-
+    
 
 def main():
     test_sm()

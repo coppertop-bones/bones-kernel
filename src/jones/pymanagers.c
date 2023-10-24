@@ -7,6 +7,7 @@
 #include "../bk/sm.c"
 #include "../bk/em.c"
 #include "../bk/tm.c"
+#include "../bk/tp.c"
 #include "../bk/kernel.c"
 #include "lib/pyutils.h"
 
@@ -170,15 +171,32 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
     }
     // call tm_intersection which will check it for exclusion conflict, sort it and return a btypeid (0 if conflicts)
     BTYPEID_T btypeid = tm_inter(self->tm, typelist);
-    // free the typelist
-    free(typelist);
     // raise an error if 0
     if (btypeid) {
+        // free the typelist
+        free(typelist);
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
         answer->btypeid = btypeid;
         return (PyObject *) answer;
     } else {
-        return PyErr_Format(PyExc_TypeError, "There are exclusion conflicts");  // OPEN: say which types are in conflict
+        TP tp;
+        tp_init(&tp, 0, self->tm->mm);
+        FILE *f = tp_open(&tp, "r+");
+        int firstDone = 0;
+        for (int i = 1; i < typelist[0] + 1; i++) {
+            if (firstDone)
+                fprintf(f, ", ");
+            else
+                firstDone = 1;
+            tm_pp_impl(self->tm, f, typelist[i]);
+        }
+        fclose(f);
+        s8 res = tp_getS8(&tp);
+        // free the typelist
+        free(typelist);
+        PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", res.cs);
+        tp_free(&tp);
+        return 0;
     }
 }
 

@@ -8,7 +8,7 @@
 
 
 struct PTPCookie {
-    struct PTP *ptp;    
+    struct PTP *ptp;
     size cursor;
 };
 
@@ -224,5 +224,4 @@ tdd s8 tp_getS8(TP *tp) {
     union TP_PTP cv = { .tp = tp };
     return (s8) {.szs = cv.ptp->sz, .cs = cv.ptp->buf};
 }
-
 
