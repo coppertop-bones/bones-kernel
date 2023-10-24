@@ -1,3 +1,6 @@
+#ifndef SRC_BK_TP_C
+#define SRC_BK_TP_C "bk/tp.c"
+
 #include <errno.h>
 #include <limits.h>
 #include <libc.h>
@@ -39,7 +42,7 @@ pvt int tp_grow_buf_if_needed(struct PTPCookie *cookie, size required) {
 
     while (required > newsize) newsize = tp_new_size(newsize);
 
-    char *p = cookie->ptp->mm->realloc(cookie->ptp->buf, newsize);
+    char *p = reallocInBuckets(cookie->ptp->buckets, cookie->ptp->buf, newsize, 1);
     if (!p) return -1;
 
     cookie->ptp->buf = p;
@@ -126,7 +129,7 @@ pvt off_t tp_seek(void *p, off_t off, int whence) {
 }
 
 pvt int tp_close(void *p) {
-    free(p);
+//    free(p);
     return 0;
 }
 
@@ -135,17 +138,17 @@ pvt int tp_close(void *p) {
 // TP lifecycle
 // ---------------------------------------------------------------------------------------------------------------------
 
-tdd void tp_init(TP *tp, size initSz, struct MM *mm) {
+tdd void tp_init(TP *tp, size initSz, Buckets *buckets) {
     union TP_PTP cv = { .tp = tp };                     // UB?
     cv.ptp->sz = 0;
-    cv.ptp->mm = mm;
+    cv.ptp->buckets = buckets;
     cv.ptp->buf_size = initSz;
-    cv.ptp->buf = initSz ? cv.ptp->mm->malloc(initSz) : 0;
+    cv.ptp->buf = initSz ? allocInBuckets(cv.ptp->buckets, initSz, 1) : 0;
 }
 
 tdd void tp_free(TP *tp) {
     union TP_PTP cv = { .tp = tp };
-    free(cv.ptp->buf);
+//    free(cv.ptp->buf);
     cv.ptp->buf_size = 0;
 }
 
@@ -191,15 +194,16 @@ tdd FILE *tp_open(TP *tp, char const *mode) {
 
     if (!cv.ptp->buf) {
         cv.ptp->buf_size = 128;
-        cv.ptp->buf = cv.ptp->mm->malloc(cv.ptp->buf_size);
+        cv.ptp->buf = allocInBuckets(cv.ptp->buckets, cv.ptp->buf_size, 1);
         bufAllocated = 1;
     }
     if (!cv.ptp->buf) return 0;
 
-    struct PTPCookie *c = cv.ptp->mm->malloc(sizeof (struct PTPCookie));
+    struct PTPCookie *c = allocInBuckets(cv.ptp->buckets, sizeof(struct PTPCookie), 1);
     if (!c) {
         if (bufAllocated) {
-            cv.ptp->mm->free(cv.ptp->buf);
+//            cv.ptp->mm->free(cv.ptp->buf);
+            cv.ptp->buf = 0;
             cv.ptp->buf_size = 0;
         }
         return 0;
@@ -211,10 +215,11 @@ tdd FILE *tp_open(TP *tp, char const *mode) {
     FILE *f = funopen(c, tp_read, tp_write, tp_seek, tp_close);
     if (!f) {
         if (bufAllocated) {
-            cv.ptp->mm->free(cv.ptp->buf);
+//            cv.ptp->mm->free(cv.ptp->buf);
+            cv.ptp->buf = 0;
             cv.ptp->buf_size = 0;
         }
-        cv.ptp->mm->free(c);
+//        cv.ptp->mm->free(c);
     }
     return f;
 }
@@ -225,3 +230,4 @@ tdd s8 tp_getS8(TP *tp) {
     return (s8) {.szs = cv.ptp->sz, .cs = cv.ptp->buf};
 }
 
+#endif      // SRC_BK_TP_C

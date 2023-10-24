@@ -5,6 +5,7 @@
 #include "buckets.c"
 #include "../../include/bk/mm.h"
 #include "../../include/bk/tm.h"
+#include "../../include/bk/tp.h"
 #include "lib/ht_impl.h"
 #include "lib/radix.h"
 
@@ -124,34 +125,8 @@ tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum bte
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// type accessing / creation fns
+// pretty printing
 // ---------------------------------------------------------------------------------------------------------------------
-
-pub BTYPEID_T tm_btypeid(struct TM *tm, char *name) {
-    int res;  u32 idx;
-    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &res);
-    if (res == HT_EXISTS)
-        return tm->btypeid_by_symidhash->slots[idx];
-    else
-        return 0;
-}
-
-pub BTYPEID_T tm_exclnominal(struct TM *tm, char *name, enum btexclusioncat excl) {
-    int res;  BTYPEID_T btypeid;  SYM_ID_T symid;  u32 idx;
-    symid = sm_id(tm->sm, name);                                        // get symid of name
-    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
-    if (res == HT_EXISTS) {
-        btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
-        struct btsummary summary = tm->summary_by_btypeid[btypeid];
-        if (summary.excl != excl || summary.bmtid != bmtnom) return 0;      // check it's a nominal with the same exclusion
-        return btypeid;
-    }
-    else {
-        // create a new nominal in an exclusive category
-        return _new_type_summary_at(tm, bmtnom, excl, idx, symid, 0);
-    }
-}
-
 
 pvt void tm_pp_impl(struct TM *tm, FILE *f, BTYPEID_T btypeid) {
     struct btsummary *sum;
@@ -182,11 +157,55 @@ pvt void tm_pp_impl(struct TM *tm, FILE *f, BTYPEID_T btypeid) {
     }
 }
 
+pvt s8 tm_pp_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {
+    FILE *f = tp_open(tp, "r+");
+    int firstDone = 0;
+    for (int i = 1; i < typelist[0] + 1; i++) {
+        if (firstDone)
+            fprintf(f, ", ");
+        else
+            firstDone = 1;
+        tm_pp_impl(tm, f, typelist[i]);
+    }
+    fclose(f);
+    return tp_getS8(tp);
+}
 
-pub s8 tm_pp(struct TM *tm, BTYPEID_T btypeid) {
-    FILE *f = tpm_start(tm->tp);
+pub s8 tm_pp(struct TM *tm, TP *tp, BTYPEID_T btypeid) {
+    FILE *f = tp_open(tp, "r+");
     tm_pp_impl(tm, f, btypeid);
-    return tpm_finish(tm->tp, f);
+    fclose(f);
+    return tp_getS8(tp);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// type accessing / creation fns
+// ---------------------------------------------------------------------------------------------------------------------
+
+pub BTYPEID_T tm_btypeid(struct TM *tm, char *name) {
+    int res;  u32 idx;
+    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &res);
+    if (res == HT_EXISTS)
+        return tm->btypeid_by_symidhash->slots[idx];
+    else
+        return 0;
+}
+
+pub BTYPEID_T tm_exclnominal(struct TM *tm, char *name, enum btexclusioncat excl) {
+    int res;  BTYPEID_T btypeid;  SYM_ID_T symid;  u32 idx;
+    symid = sm_id(tm->sm, name);                                        // get symid of name
+    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
+    if (res == HT_EXISTS) {
+        btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
+        struct btsummary summary = tm->summary_by_btypeid[btypeid];
+        if (summary.excl != excl || summary.bmtid != bmtnom) return 0;      // check it's a nominal with the same exclusion
+        return btypeid;
+    }
+    else {
+        // create a new nominal in an exclusive category
+        return _new_type_summary_at(tm, bmtnom, excl, idx, symid, 0);
+    }
 }
 
 
@@ -373,10 +392,11 @@ tdd int tm_setNominalTo(struct TM *tm, char *name, BTYPEID_T btypeid) {
 // type manager lifecycle fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub struct TM * TM_create(struct MM *mm, struct SM *sm, struct TPM *tp) {
+pub struct TM * TM_create(struct MM *mm, Buckets *buckets, struct SM *sm, struct TPM *tp) {
     // OPEN: should we use calloc instead of memset to init arrays to zero?
     struct TM *tm = (struct TM *) mm->malloc(sizeof(struct TM));
     tm->mm = mm;
+    tm->buckets = buckets;
     tm->sm = sm;
     tm->tp = tp;
     tm->typelist_buf = os_vm_reserve(0, TM_MAX_TL_STORAGE);

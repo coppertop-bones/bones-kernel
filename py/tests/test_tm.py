@@ -36,7 +36,9 @@ class tvfloat(float):
 
 
 def test_sm():
+    1 >> PP
     sys._k = jones.Kernel()
+    2 >> PP
     sm = sys._k.sm
 
     id1 = sm.symid("joe")
@@ -50,6 +52,8 @@ def test_sm():
     sm.name >> apply_ >> 0 >> check >> raises >> ValueError
     sm.name >> apply_ >> 100000 >> check >> raises >> ValueError
 
+    return "test_sm passed"
+
 
 def test_sm_sort_order():
     sys._k = jones.Kernel()
@@ -60,6 +64,8 @@ def test_sm_sort_order():
     sm.le(id2, id1) >> check >> equals >> True
     sm.le(id2, id2) >> check >> equals >> False
     sm.le(id1, id2) >> check >> equals >> False
+
+    return "test_sm_sort_order passed"
 
 
 def test_em():
@@ -80,6 +86,8 @@ def test_em():
 
     em.setEnumTo(['fred', 'mem', 1]).id >> check >> equals >> 1
     em.setEnumTo >> apply_ >> ('fred', 'mem', 2) >> check >> raises >> ValueError
+
+    return "test_em passed"
 
 
 def test_nominal():
@@ -108,6 +116,8 @@ def test_nominal():
     tm.btype('u32').id >> check >> equals >> t.id
     # tm.btype('u32') >> check >> equals >> t
     tm.name(t) >> check >> equals >> 'u32'
+
+    return "test_nominal passed"
 
 
 
@@ -138,14 +148,16 @@ def test_intersection():
     t = tm.intersection(GBP, u32)
     tm.intersection >> apply_ >> (t, u64) >> check >> raises >> TypeError
     # tm.intersection >> apply_ >> (t, EUR) >> check >> raises >> TypeError
-    
+
+    return "test_intersection passed"
+
 
 def main():
-    test_sm()
+    test_sm() >> PP
     # test_sm_sort_order()
     # test_em()
-    test_nominal()
-    test_intersection()
+    test_nominal() >> PP
+    test_intersection() >> PP
 
 
 

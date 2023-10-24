@@ -1,5 +1,6 @@
 #include "../bk/pp.c"
 #include "../bk/kernel.c"
+#include "../bk/tp.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {
     fprintf(stdout, "%s", preamble);
@@ -55,7 +56,10 @@ int countArgsImpl(int x, ...) {
 void test_tm() {
     BTYPEID_T t, expected;
     struct MM *mm = MM_create();
-    struct K *k = K_create(mm);
+    Buckets buckets;
+    initBuckets(&buckets, 64);
+    struct K *k = K_create(mm, &buckets);
+
     PP(debug, "kernel created");
 
     t = tm_btypeid(k->tm, "joe");
@@ -85,15 +89,20 @@ void test_tm() {
     check(t == expected, "t == %i (should be %i)", t, expected);
 
     K_trash(k);
+    freeBuckets(buckets.first_bucket);
+    MM_trash(mm);
 }
 
 
 
 void test_exclusions() {
-    BTYPEID_T tCcy, u32, u64, t7, t8, GBP, EUR, *tl, actual, _GBP;
+    BTYPEID_T tCcy, u32, u64, t7, t8, GBP, EUR, *tl, actual, _GBP;  TP tp;
     struct MM *mm = MM_create();
-    struct K *k = K_create(mm);
+    Buckets buckets;
+    initBuckets(&buckets, 64);
+    struct K *k = K_create(mm, &buckets);
     struct TM *tm = k->tm;
+    tp_init(&tp, 0, &buckets);
     PP(debug, "kernel created");
 
     _GBP = tm_nominal(tm, "_GBP");
@@ -111,7 +120,7 @@ void test_exclusions() {
     check(tm_btypeid(tm, "EUR") != EUR, "t == %i (should not be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
     tm_name_as(tm, EUR, "EUR");
     check(tm_btypeid(tm, "EUR") == EUR, "t == %i (should be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
-    check(strcmp(tm_pp(tm, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, EUR).cs, __LINE__);        // leak
+    check(strcmp(tm_pp(tm, &tp, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, &tp, EUR).cs, __LINE__);        // leak
 
     // check construction returns identical objects
     t7 = intersect(tm, GBP, u32);
@@ -129,7 +138,10 @@ void test_exclusions() {
     actual = intersect(tm, intersect(tm, GBP, u32), EUR);
     check(actual != 0, "t == %i (should not be %i) @ %i", actual, 0, __LINE__);
 
+    tp_free(&tp);
     K_trash(k);
+    freeBuckets(buckets.first_bucket);
+    MM_trash(mm);
 }
 
 

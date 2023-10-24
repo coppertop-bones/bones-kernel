@@ -28,9 +28,9 @@ typedef struct Buckets Buckets;
 typedef struct BucketsCheckpoint BucketsCheckpoint;
 typedef struct BucketHeader BucketHeader;
 
-tdd void * initBuckets(Buckets *a, unsigned long chunkSize);
-tdd void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align);
-tdd void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int align);
+tdd void * initBuckets(Buckets *a, size chunkSize);
+tdd void * allocInBuckets(Buckets *a, size n, size align);
+tdd void * reallocInBuckets(Buckets *a, void* p, size n, size align);
 tdd void checkpointBuckets(Buckets *a, BucketsCheckpoint *s);
 tdd void resetToCheckpoint(Buckets *a, BucketsCheckpoint *s);
 tdd void cleanBuckets(void *first_bucket);

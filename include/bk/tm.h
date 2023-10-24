@@ -99,6 +99,7 @@ HT_STRUCT2(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
 
 struct TM {
     struct MM *mm;
+    Buckets *buckets;
     struct SM *sm;
     struct TPM *tp;
 
@@ -160,7 +161,7 @@ struct TM {
     TM_XXXID_T next_svrid;
 };
 
-pub struct TM * TM_create(struct MM *, struct SM *, struct TPM *);
+pub struct TM * TM_create(struct MM *, Buckets *, struct SM *, struct TPM *);
 pub int TM_trash(struct TM *);
 
 pub BTYPEID_T tm_exclnominal(struct TM *, char *, enum btexclusioncat);

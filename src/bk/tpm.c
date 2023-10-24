@@ -6,13 +6,14 @@
 
 pub struct TPM * TPM_create(struct MM *mm) {
     struct TPM *tp = (struct TPM *) mm->malloc(sizeof(struct TPM));
-    initBuckets(&tp->all_strings, 1);
-    checkpointBuckets(&tp->all_strings, &tp->cp);
+    tp->all_strings = mm->malloc(sizeof(Buckets));
+    initBuckets(tp->all_strings, 1);
+    checkpointBuckets(tp->all_strings, &tp->cp);
     return tp;
 }
 
 pub int TPM_trash(struct TPM *tp) {
-    freeBuckets(tp->all_strings.first_bucket);
+    freeBuckets(tp->all_strings->first_bucket);
     free(tp);
     return 0;
 }
@@ -41,7 +42,7 @@ pub void tpm_fprintf(struct TPM *tp, FILE *f, s8 format, ...) {
 
 pub s8 tpm_finish(struct TPM *tp, FILE *f) {
     fclose(f);
-    char *txt = allocInBuckets(&tp->all_strings, tp->size, 1);
+    char *txt = allocInBuckets(tp->all_strings, tp->size, 1);
     strcpy(txt, tp->buf);
     s8 answer = (s8){tp->size, txt};
     free(tp->buf);
@@ -51,7 +52,7 @@ pub s8 tpm_finish(struct TPM *tp, FILE *f) {
 }
 
 pub void tpm_drop(struct TPM *tp) {
-    resetToCheckpoint(&tp->all_strings, &tp->cp);
+    resetToCheckpoint(tp->all_strings, &tp->cp);
 }
 
 

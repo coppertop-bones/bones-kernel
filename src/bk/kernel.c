@@ -6,16 +6,18 @@
 #include "sm.c"
 #include "em.c"
 #include "tm.c"
+#include "tp.c"
 #include "tpm.c"
 
 
-pub struct K * K_create(struct MM *mm) {
+pub struct K * K_create(struct MM *mm, Buckets *buckets) {
     struct K *k = (struct K *) mm->malloc(sizeof(struct K));
     k->mm = mm;
+    k->buckets = buckets;
     k->sm = SM_create(mm);
     k->em = EM_create(mm, k->sm);
     k->tp = TPM_create(mm);
-    k->tm = TM_create(mm, k->sm, k->tp);
+    k->tm = TM_create(mm, k->buckets, k->sm, k->tp);
 
     int n = 0;
     struct TM *tm = k->tm;

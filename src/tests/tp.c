@@ -11,8 +11,10 @@ pvt void die_(char *preamble, char *msg, va_list args) {
 
 void test_tp() {
     struct MM *mm = MM_create();
+    Buckets buckets;
+    initBuckets(&buckets, 4096);
     TP tp;
-    tp_init(&tp, 0, mm);
+    tp_init(&tp, 0, &buckets);
     FILE *f = tp_open(&tp, "r+");
     fprintf(f, "hello %s", "world");
     fflush(f);
@@ -31,6 +33,7 @@ void test_tp() {
     res = tp_getS8(&tp);
     check(res.szs > 100*10, "oh dear %i", res.szs);
     tp_free(&tp);
+    freeBuckets(buckets.first_bucket);
 }
 
 void test_tpm() {

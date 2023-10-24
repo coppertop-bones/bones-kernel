@@ -9,11 +9,11 @@
 
 pvt unsigned int PAGE_SIZE = 0;
 
-tdd void *_nextBucket(Buckets *a, unsigned int n, unsigned int align);
-tdd void *_allocBucket(size_t size);
+tdd void *_nextBucket(Buckets *a, size n, size align);
+tdd void *_allocBucket(size size);
 
 
-pub void * initBuckets(Buckets *a, unsigned long chunkSize) {
+pub void * initBuckets(Buckets *a, size chunkSize) {
     if (PAGE_SIZE == 0) {PAGE_SIZE = os_page_size();}
     a->first_bucket = 0;
     a->current_bucket = 0;
@@ -23,7 +23,7 @@ pub void * initBuckets(Buckets *a, unsigned long chunkSize) {
     return _nextBucket(a, 0, 1);
 }
 
-pub void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align) {
+pub void * allocInBuckets(Buckets *a, size n, size align) {
     void *p;
     p = a->next + (align - ((unsigned long)a->next % align));
     if ((p + n) > a->eoc) {
@@ -36,7 +36,7 @@ pub void * allocInBuckets(Buckets *a, unsigned int n, unsigned int align) {
     return p;
 }
 
-pub void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int align) {
+pub void * reallocInBuckets(Buckets *a, void* p, size n, size align) {
     if (!p  || p != a->last_alloc) return allocInBuckets(a, n, align);
     if ((p + n) > a->eoc) {
         void *chunk = _nextBucket(a, n, align);
@@ -48,7 +48,7 @@ pub void * reallocInBuckets(Buckets *a, void* p, unsigned int n, unsigned int al
     return p;
 }
 
-tdd void * _nextBucket(Buckets *a, unsigned int n, unsigned int align) {
+tdd void * _nextBucket(Buckets *a, size n, size align) {
     void *p;  BucketHeader *ch;
     if (!a->current_bucket) {
         // OPEN: allocate enough pages to hold size n aligned to align
@@ -71,7 +71,7 @@ tdd void * _nextBucket(Buckets *a, unsigned int n, unsigned int align) {
     return p;
 }
 
-tdd void * _allocBucket(size_t size) {
+tdd void * _allocBucket(size size) {
     void *p;  BucketHeader *ch;
     p = malloc(size);                              // OPEN: cache, page and set alignment options
     if (!p) return 0;

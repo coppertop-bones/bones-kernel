@@ -10,23 +10,28 @@ pvt void die_(char *preamble, char *msg, va_list args) {
 int main() {
     int id;
     struct MM *mm = MM_create();
-    struct K *k = K_create(mm);
+    Buckets *buckets = mm->malloc(sizeof(Buckets));
+    initBuckets(buckets, 64);
+    freeBuckets(buckets);
+    struct K *k = K_create(mm, buckets);
     PP(info, "kernel created");
 
-    id = sm_id(k->sm, "fred");
-    check(id == 1, "id == %i (should be 1)", id);
+    int off = 7;
 
     id = sm_id(k->sm, "fred");
-    check(id == 1, "id == %i (should be 1)", id);
+    check(id == 1 + off, "id == %i (should be %i)", id, 1 + off);
+
+    id = sm_id(k->sm, "fred");
+    check(id == 1 + off, "id == %i (should be %i)", id, 1 + off);
 
     id = sm_id(k->sm, "joe");
-    check(id == 2, "id == %i (should be 2)", id);
+    check(id == 2 + off, "id == %i (should be %i)", id, 2 + off);
 
     id = tm_btypeid(k->tm, "joe");
-    check(id == 0, "id == %i (should be 0)", id);
+    check(id == 0, "id == %i (should be %i)", id, 0);
 
     id = tm_btypeid(k->tm, "sally");
-    check(id == 0, "id == %i (should be 0)", id);
+    check(id == 0, "id == %i (should be %i)", id, 0);
 
 
     K_trash(k);

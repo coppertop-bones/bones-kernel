@@ -155,47 +155,35 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssiz
 // intersection: (btype1, btype2, ...) -> btype + exception
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    TP tp;  Buckets *buckets;  BucketsCheckpoint cp;
     if (nargs == 1) {
-        if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "arg 1 is not a BType");
+        if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "arg1 is not a BType");
         return args[0];
     }
+    checkpointBuckets((buckets = self->tm->buckets), &cp);
+
     // create a type list of the correct length
-    BTYPEID_T *typelist = (BTYPEID_T *) malloc((1 + nargs) * sizeof(BTYPEID_T));
+    BTYPEID_T *typelist = allocInBuckets(buckets, ((1 + nargs) * sizeof(BTYPEID_T)), alignof(BTYPEID_T));
     typelist[0] = (BTYPEID_T) nargs;
     for (int i=0; i < nargs; i++) {
         if (!PyObject_IsInstance(args[i], (PyObject *) &PyBTypeCls)) {
-            free(typelist);
-            return PyErr_Format(PyExc_TypeError, "arg %i is not a BType", i + 1);
+            resetToCheckpoint(buckets, &cp);
+            return PyErr_Format(PyExc_TypeError, "arg%i is not a BType", i + 1);
         }
         typelist[i+1] = ((struct PyBType *) args[i])->btypeid;
     }
-    // call tm_intersection which will check it for exclusion conflict, sort it and return a btypeid (0 if conflicts)
+
     BTYPEID_T btypeid = tm_inter(self->tm, typelist);
-    // raise an error if 0
+
     if (btypeid) {
-        // free the typelist
-        free(typelist);
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
         answer->btypeid = btypeid;
+        resetToCheckpoint(buckets, &cp);
         return (PyObject *) answer;
     } else {
-        TP tp;
-        tp_init(&tp, 0, self->tm->mm);
-        FILE *f = tp_open(&tp, "r+");
-        int firstDone = 0;
-        for (int i = 1; i < typelist[0] + 1; i++) {
-            if (firstDone)
-                fprintf(f, ", ");
-            else
-                firstDone = 1;
-            tm_pp_impl(self->tm, f, typelist[i]);
-        }
-        fclose(f);
-        s8 res = tp_getS8(&tp);
-        // free the typelist
-        free(typelist);
-        PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", res.cs);
-        tp_free(&tp);
+        tp_init(&tp, 0, buckets);
+        PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, typelist).cs);
+        resetToCheckpoint(buckets, &cp);
         return 0;
     }
 }
@@ -353,7 +341,9 @@ pvt PyObject * PyKernel_create(PyTypeObject *type, PyObject *args, PyObject *kwd
     // OPEN: assert no args or kwargs are passed
     struct PyKernel *self = (struct PyKernel *) type->tp_alloc(type, 0);
     struct MM *mm = MM_create();
-    self->kernel = K_create(mm);
+    Buckets *buckets = mm->malloc(sizeof(Buckets));
+    initBuckets(buckets, BUCKETS_CHUNK_SIZE);
+    self->kernel = K_create(mm, buckets);
     self->pySM = (PyObject *) ((&PySMCls)->tp_alloc(&PySMCls, 0));
     ((struct PySM *) self->pySM)->sm = self->kernel->sm;
     self->pyEM = (PyObject *) ((&PyEMCls)->tp_alloc(&PyEMCls, 0));
@@ -365,6 +355,7 @@ pvt PyObject * PyKernel_create(PyTypeObject *type, PyObject *args, PyObject *kwd
 
 pvt void PyKernel_trash(struct PyKernel *self) {
     struct MM *mm = self->kernel->mm;
+    freeBuckets(self->kernel->buckets->first_bucket);
     i32 res = K_trash(self->kernel);
     if (res) PP(error, "%s: K_trash failed", FN_NAME);
     res = MM_trash(mm);

@@ -51,7 +51,7 @@
 
 
 struct TPM {
-    Buckets all_strings;
+    Buckets *all_strings;
     BucketsCheckpoint cp;
     char *buf;
     size size;
