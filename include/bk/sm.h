@@ -4,8 +4,8 @@
 // we check size first
 
 
-#ifndef __BK_SM_H
-#define __BK_SM_H "bk/sm.h"
+#ifndef API_BK_SM_H
+#define API_BK_SM_H "bk/sm.h"
 
 #include "bk.h"
 #include "ht.h"
@@ -54,4 +54,4 @@ pub char * sm_name(struct SM *, RP);
 pub bool sm_id_le(struct SM *, SYM_ID_T a, SYM_ID_T b);
 pub inline RP sm_id_2_RP(struct SM *, SYM_ID_T);
 
-#endif // __BK_SM_H
+#endif // API_BK_SM_H

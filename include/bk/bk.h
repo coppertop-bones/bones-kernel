@@ -2,8 +2,8 @@
 // keep constants, global structs, type defs here
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_BK_H
-#define __BK_BK_H "bk/bk.h"
+#ifndef API_BK_BK_H
+#define API_BK_BK_H "bk/bk.h"
 
 
 #include <stdlib.h>
@@ -71,10 +71,11 @@ typedef size_t          usize;
 
 #define s8(cs) (s8){lengthof(cs), (char *)cs}
 typedef struct {
-    size len;
+    size szs;
     char *cs;
 } s8;
-
+#define s1(s) ((s.szs & 0xFFFFFFFF00000000) >> 8)
+#define s2(s) ((s.szs & 0x00000000FFFFFFFF) >> 8)
 
 typedef unsigned int BTYPEID_T;        /* currently ls 18 bits for 256k types */
 typedef unsigned char BMETATYPE_ID_T;   /* currently 4 bits for 16 metatypes */
@@ -99,4 +100,4 @@ typedef char* err;
 #endif
 
 
-#endif   // __BK_BK_H
+#endif   // API_BK_BK_H

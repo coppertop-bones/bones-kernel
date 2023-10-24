@@ -153,7 +153,7 @@ pub BTYPEID_T tm_exclnominal(struct TM *tm, char *name, enum btexclusioncat excl
 }
 
 
-pvt void tm_pp_impl(FILE *f, struct TM *tm, BTYPEID_T btypeid) {
+pvt void tm_pp_impl(struct TM *tm, FILE *f, BTYPEID_T btypeid) {
     struct btsummary *sum;
     SYM_ID_T symid;
     BTYPEID_T *tl;
@@ -161,36 +161,32 @@ pvt void tm_pp_impl(FILE *f, struct TM *tm, BTYPEID_T btypeid) {
     char sep;
     sum = tm->summary_by_btypeid + btypeid;
     if ((symid = tm->symid_by_btypeid[btypeid])) {
-        fprintf(f, "%s", sm_name(tm->sm, symid));
+        tpm_fprintf(tm->tp, f, s8("%s"), sm_name(tm->sm, symid));
     } else {
         switch (sum->bmtid) {
             case bmtnom:
-                fprintf(f, "%s", sm_name(tm->sm, symid));
+                tpm_fprintf(tm->tp, f, s8("%s"), sm_name(tm->sm, symid));
                 break;
             case bmtint:
                 tl = tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
                 sep = 0;
                 for (i = 1; i <= (i32) tl[0]; i++) {
-                    if (sep) fprintf(f, " & ");
+                    if (sep) tpm_fprintf(tm->tp, f, s8(" & "));
                     sep = 1;
-                    tm_pp_impl(f, tm, tl[i]);
+                    tm_pp_impl(tm, f, tl[i]);
                 }
                 break;
             default:
-                printf("NAT");
+                tpm_fprintf(tm->tp, f, s8("NAT"));
         }
     }
 }
 
 
-
 pub s8 tm_pp(struct TM *tm, BTYPEID_T btypeid) {
-    char *buf = NULL;
-    size size = 0;
-    FILE* f = open_memstream(&buf, (size_t*)&size);
-    tm_pp_impl(f, tm, btypeid);
-    fclose(f);
-    return (s8){size, buf};
+    FILE *f = tpm_start(tm->tp);
+    tm_pp_impl(tm, f, btypeid);
+    return tpm_finish(tm->tp, f);
 }
 
 
@@ -377,11 +373,12 @@ tdd int tm_setNominalTo(struct TM *tm, char *name, BTYPEID_T btypeid) {
 // type manager lifecycle fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub struct TM * TM_create(struct MM *mm, struct SM *sm) {
+pub struct TM * TM_create(struct MM *mm, struct SM *sm, struct TPM *tp) {
     // OPEN: should we use calloc instead of memset to init arrays to zero?
     struct TM *tm = (struct TM *) mm->malloc(sizeof(struct TM));
     tm->mm = mm;
     tm->sm = sm;
+    tm->tp = tp;
     tm->typelist_buf = os_vm_reserve(0, TM_MAX_TL_STORAGE);
 
     // typelists

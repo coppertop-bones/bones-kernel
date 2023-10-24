@@ -1,5 +1,5 @@
-#ifndef __BK_BUCKETS_H
-#define __BK_BUCKETS_H "bk/buckets.h"
+#ifndef API_BK_BUCKETS_H
+#define API_BK_BUCKETS_H "bk/buckets.h"
 
 #include "bk.h"
 
@@ -41,4 +41,4 @@ tdd int isAlive(Buckets *a, void *p);
 tdd int isDead(Buckets *a, void *p);
 
 
-#endif // __BK_BUCKETS_H
+#endif // API_BK_BUCKETS_H

@@ -68,7 +68,8 @@ void test_tm() {
     t = tm_nominal(k->tm, "fred");
     check(t == expected, "t == %i (should be %i)", t, expected);
     t = tm_nominal(k->tm, "joe");
-    check(t == ++expected, "t == %i (should be %i)", t, expected);
+    expected++;
+    check(t == expected, "t == %i (should be %i)", t, expected);
     t = tm_btypeid(k->tm, "joe");
     check(t == expected, "t == %i (should be %i)", t, expected);
 
@@ -77,7 +78,8 @@ void test_tm() {
     typelist[1] = 1;
     typelist[2] = 2;
     t = tm_inter(k->tm, typelist);
-    check(t == ++expected, "t == %i (should be %i)", t, expected);
+    expected ++;
+    check(t == expected, "t == %i (should be %i)", t, expected);
 
     t = tm_inter(k->tm, typelist);
     check(t == expected, "t == %i (should be %i)", t, expected);
@@ -109,7 +111,7 @@ void test_exclusions() {
     check(tm_btypeid(tm, "EUR") != EUR, "t == %i (should not be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
     tm_name_as(tm, EUR, "EUR");
     check(tm_btypeid(tm, "EUR") == EUR, "t == %i (should be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
-    check(strcmp(tm_pp(tm, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, EUR).cs, __LINE__);
+    check(strcmp(tm_pp(tm, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, EUR).cs, __LINE__);        // leak
 
     // check construction returns identical objects
     t7 = intersect(tm, GBP, u32);

@@ -6,6 +6,7 @@
 #include "sm.c"
 #include "em.c"
 #include "tm.c"
+#include "tpm.c"
 
 
 pub struct K * K_create(struct MM *mm) {
@@ -13,7 +14,8 @@ pub struct K * K_create(struct MM *mm) {
     k->mm = mm;
     k->sm = SM_create(mm);
     k->em = EM_create(mm, k->sm);
-    k->tm = TM_create(mm, k->sm);
+    k->tp = TPM_create(mm);
+    k->tm = TM_create(mm, k->sm, k->tp);
 
     int n = 0;
     struct TM *tm = k->tm;
@@ -36,6 +38,7 @@ pub int K_trash(struct K *k) {
     TM_trash(k->tm);
     EM_trash(k->em);
     SM_trash(k->sm);
+    TPM_trash(k->tp);
     k->mm->free(k);
     return 0;
 }

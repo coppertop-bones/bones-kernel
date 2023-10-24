@@ -19,16 +19,15 @@ pub int os_page_size() {
 
 
 pub int os_cache_line_size() {
-    size_t lineSize = 0;
+    size lineSize = 0;
     DWORD bufferSize = 0;
-    DWORD i = 0;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION * buffer = 0;
 
     GetLogicalProcessorInformation(0, &bufferSize);
     buffer = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION *) malloc(bufferSize);
     GetLogicalProcessorInformation(&buffer[0], &bufferSize);
 
-    for (i = 0; i != bufferSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION); ++i) {
+    for (int i = 0; i != bufferSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION); ++i) {
         if (buffer[i].Relationship == RelationCache && buffer[i].Cache.Level == 1) {
             lineSize = buffer[i].Cache.LineSize;
             break;

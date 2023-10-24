@@ -1,5 +1,5 @@
-#ifndef __BK_EM_H
-#define __BK_EM_H "bk/em.h"
+#ifndef API_BK_EM_H
+#define API_BK_EM_H "bk/em.h"
 
 #include "bk.h"
 #include "mm.h"
@@ -16,4 +16,4 @@ pub int EM_trash(struct EM *);
 
 // sort order stuff
 
-#endif // __BK_EM_H
+#endif // API_BK_EM_H

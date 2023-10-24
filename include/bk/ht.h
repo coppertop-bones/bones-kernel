@@ -1,5 +1,5 @@
-#ifndef __BK_HT_H
-#define __BK_HT_H
+#ifndef API_BK_HT_H
+#define API_BK_HT_H
 
 #include <stdlib.h>
 #include <string.h>
@@ -197,4 +197,4 @@
     }
 
 
-#endif // __BK_HT_H
+#endif // API_BK_HT_H

@@ -1,5 +1,5 @@
-#ifndef __BK_OS_H
-#define __BK_OS_H "bk/os.h"
+#ifndef API_BK_OS_H
+#define API_BK_OS_H "bk/os.h"
 
 
 #include "bk.h"
@@ -28,4 +28,4 @@ pub int os_madvise(void *addr, size_t len, int advice);
 pub int os_mfree(void *addr, size_t len);
 
 
-#endif // __BK_OS_H
+#endif // API_BK_OS_H

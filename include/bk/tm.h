@@ -1,9 +1,10 @@
-#ifndef __BK_BM_H
-#define __BK_BM_H "bk/tm.h"
+#ifndef API_BK_BM_H
+#define API_BK_BM_H "bk/tm.h"
 
 #include "bk.h"
 #include "sm.h"
 #include "ht.h"
+#include "tpm.h"
 
 
 // typelist is length prefixed array of btypeid, i.e. a BTYPEID_T *
@@ -99,6 +100,7 @@ HT_STRUCT2(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
 struct TM {
     struct MM *mm;
     struct SM *sm;
+    struct TPM *tp;
 
     // type summaries
     struct btsummary *summary_by_btypeid;        
@@ -158,7 +160,7 @@ struct TM {
     TM_XXXID_T next_svrid;
 };
 
-pub struct TM * TM_create(struct MM *, struct SM *);
+pub struct TM * TM_create(struct MM *, struct SM *, struct TPM *);
 pub int TM_trash(struct TM *);
 
 pub BTYPEID_T tm_exclnominal(struct TM *, char *, enum btexclusioncat);
@@ -169,7 +171,7 @@ pub BTYPEID_T tm_name_as(struct TM *, BTYPEID_T, char *);
 pub BTYPEID_T tm_nominal(struct TM *, char *);
 
 
-#endif // __BK_BM_H
+#endif // API_BK_BM_H
 
 
 
