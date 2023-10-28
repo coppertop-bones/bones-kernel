@@ -1,3 +1,7 @@
+// ---------------------------------------------------------------------------------------------------------------------
+//                                                    Type Manager
+// ---------------------------------------------------------------------------------------------------------------------
+
 #ifndef __BK_TM_C
 #define __BK_TM_C "bk/tm.c"
 
@@ -128,7 +132,7 @@ tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum bte
 // pretty printing
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt void tm_pp_impl(struct TM *tm, FILE *f, BTYPEID_T btypeid) {
+pvt void tm_pb(struct TM *tm, TP *tp, BTYPEID_T btypeid) {
     struct btsummary *sum;
     SYM_ID_T symid;
     BTYPEID_T *tl;
@@ -136,47 +140,46 @@ pvt void tm_pp_impl(struct TM *tm, FILE *f, BTYPEID_T btypeid) {
     char sep;
     sum = tm->summary_by_btypeid + btypeid;
     if ((symid = tm->symid_by_btypeid[btypeid])) {
-        tpm_fprintf(tm->tp, f, s8("%s"), sm_name(tm->sm, symid));
+        tp_printfb(tp, "%s", sm_name(tm->sm, symid));
     } else {
         switch (sum->bmtid) {
             case bmtnom:
-                tpm_fprintf(tm->tp, f, s8("%s"), sm_name(tm->sm, symid));
+                tp_printfb(tp, "%s", sm_name(tm->sm, symid));
                 break;
             case bmtint:
                 tl = tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
                 sep = 0;
                 for (i = 1; i <= (i32) tl[0]; i++) {
-                    if (sep) tpm_fprintf(tm->tp, f, s8(" & "));
+                    if (sep) tp_printfb(tp, " & ");
                     sep = 1;
-                    tm_pp_impl(tm, f, tl[i]);
+                    tm_pb(tm, tp, tl[i]);
                 }
                 break;
             default:
-                tpm_fprintf(tm->tp, f, s8("NAT"));
+                tp_printfb(tp, "NAT");
         }
     }
 }
+pvt inline tp tm_tp(struct TM *tm, TP *tp, BTYPEID_T btypeid) {tm_pb(tm, tp, btypeid); return tp_flush(tp);}
+pvt inline s8 tm_pp(struct TM *tm, TP *tp, BTYPEID_T btypeid) {tm_pb(tm, tp, btypeid); return tp_render(tp, tp_flush(tp));}
 
-pvt s8 tm_pp_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {
-    FILE *f = tp_open(tp, "r+");
-    int firstDone = 0;
+
+pvt void tm_pb_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {
+    int firstTime = 1;
     for (int i = 1; i < typelist[0] + 1; i++) {
-        if (firstDone)
-            fprintf(f, ", ");
-        else
-            firstDone = 1;
-        tm_pp_impl(tm, f, typelist[i]);
+        if (firstTime) {
+            firstTime = 0;
+            tm_pb(tm, tp, typelist[i]);
+        }
+        else {
+            tp_printfb(tp, ", ");
+            tm_pb(tm, tp, typelist[i]);
+        }
     }
-    fclose(f);
-    return tp_getS8(tp);
 }
+pvt inline tp tm_tp_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_flush(tp);}
+pvt inline s8 tm_pp_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_render(tp, tp_flush(tp));}
 
-pub s8 tm_pp(struct TM *tm, TP *tp, BTYPEID_T btypeid) {
-    FILE *f = tp_open(tp, "r+");
-    tm_pp_impl(tm, f, btypeid);
-    fclose(f);
-    return tp_getS8(tp);
-}
 
 
 // ---------------------------------------------------------------------------------------------------------------------

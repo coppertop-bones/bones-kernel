@@ -1,3 +1,7 @@
+// ---------------------------------------------------------------------------------------------------------------------
+//                                                Text Pad Manager
+// ---------------------------------------------------------------------------------------------------------------------
+
 #ifndef __BK_TP_C
 #define __BK_TP_C "bk/tp.c"
 
@@ -33,7 +37,7 @@ pub s8 tpm_printf(struct TPM *tp, s8 format, ...) {
     return tpm_finish(tp, f);
 }
 
-pub void tpm_fprintf(struct TPM *tp, FILE *f, s8 format, ...) {
+pub void tpm_fprintf(struct TPM *tpm, FILE *f, s8 format, ...) {
     va_list args;
     va_start(args, format);
     vfprintf(f, format.cs, args);

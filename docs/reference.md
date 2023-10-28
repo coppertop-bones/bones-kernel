@@ -98,4 +98,5 @@ https://learn.microsoft.com/en-gb/archive/blogs/larryosterman/its-only-temporary
 https://github.com/Arryboom/fmemopen_windows/
 
 
+https://github.com/eblot/newlib/blob/master/newlib/libc/stdio/fopencookie.c
 

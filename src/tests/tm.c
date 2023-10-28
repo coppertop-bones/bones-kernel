@@ -103,7 +103,8 @@ void test_exclusions() {
     struct K *k = K_create(mm, &buckets);
     struct TM *tm = k->tm;
     tp_init(&tp, 0, &buckets);
-    PP(debug, "kernel created");
+    s8 txt = tp_render(&tp, tp_printftp(&tp, "kernel created"));
+    PP(debug, txt.cs);
 
     _GBP = tm_nominal(tm, "_GBP");
     u32 = tm_exclnominal(tm, "u32", btmemory);

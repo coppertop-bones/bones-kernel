@@ -31,7 +31,7 @@ void test_tp() {
         fprintf(f, "1234567890");
     fclose(f);
     res = tp_getS8(&tp);
-    check(res.szs > 100*10, "oh dear %i", res.szs);
+    check(s8_sz(res) > 100*10, "oh dear %i", s8_sz(res));
     tp_free(&tp);
     freeBuckets(buckets.first_bucket);
 }

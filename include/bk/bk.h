@@ -59,7 +59,9 @@ typedef uint64_t        u64;
 typedef float           f32;
 typedef double          f64;
 typedef ptrdiff_t       size;
+typedef int             size32;
 typedef size_t          usize;
+typedef unsigned int    usize32;
 //typedef uintptr_t       uptr;
 
 
@@ -69,13 +71,16 @@ typedef size_t          usize;
 #define countof(a)   (sizeof(a) / sizeof(*(a)))
 #define lengthof(cs)  (countof(cs) - 1)
 
-#define s8(cs) (s8){lengthof(cs), (char *)cs}
+
+#define s8(cs) (s8){(lengthof(cs)), (void *)cs}
+
 typedef struct {
-    size szs;
+    size opaque;
     char *cs;
 } s8;
-#define s1(s) ((s.szs & 0xFFFFFFFF00000000) >> 8)
-#define s2(s) ((s.szs & 0x00000000FFFFFFFF) >> 8)
+
+
+#define s8_sz(s) (size)(s.opaque)
 
 typedef unsigned int BTYPEID_T;        /* currently ls 18 bits for 256k types */
 typedef unsigned char BMETATYPE_ID_T;   /* currently 4 bits for 16 metatypes */

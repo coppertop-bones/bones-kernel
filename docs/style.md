@@ -1,5 +1,14 @@
 
 
+# Casing
+
+PascalCase for agents - e.g. typedef struct TP {} TP
+camelCase and lower_snake_case for names
+value structs - 
+
+
+Use struct wrappers for strong typing - https://floooh.github.io/2019/09/27/modern-c-for-cpp-peeps.html
+
 
 # Reserved Names
 On leading underscores and names reserved by the C and C++ languages by Raymond Chen - https://devblogs.microsoft.com/oldnewthing/20230109-00/?p=107685
@@ -8,7 +17,6 @@ On leading underscores and names reserved by the C and C++ languages by Raymond 
 
 
 https://nullprogram.com/blog/2023/10/08/
-
 
 
 https://nelkinda.com/blog/suppress-warnings-in-gcc-and-clang/#d12e376

@@ -156,6 +156,7 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssiz
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     TP tp;  Buckets *buckets;  BucketsCheckpoint cp;
+    if (nargs == 0) return PyErr_Format(PyExc_TypeError, "Must provide at least one type");
     if (nargs == 1) {
         if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "arg1 is not a BType");
         return args[0];

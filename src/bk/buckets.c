@@ -1,3 +1,8 @@
+// ---------------------------------------------------------------------------------------------------------------------
+//                                                   Buckets
+// ---------------------------------------------------------------------------------------------------------------------
+
+
 #ifndef __BK_BUCKETS_C
 #define __BK_BUCKETS_C "bk/buckets.c"
 
@@ -37,6 +42,7 @@ pub void * allocInBuckets(Buckets *a, size n, size align) {
 }
 
 pub void * reallocInBuckets(Buckets *a, void* p, size n, size align) {
+    // OPEN: if we can't realloc the client should decide how much needs allocating
     if (!p  || p != a->last_alloc) return allocInBuckets(a, n, align);
     if ((p + n) > a->eoc) {
         void *chunk = _nextBucket(a, n, align);

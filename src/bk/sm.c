@@ -1,4 +1,6 @@
 // ---------------------------------------------------------------------------------------------------------------------
+//                                                     Sym Manager
+//
 // DESCRIPTION: Bones uses symbols (a q/kdb term for strings that have been interned) extensively. Symbols are not
 //              intended for general strings usage, and it is probably performant to create less rather than more
 //              symbols. Symbols are used as type names and in enums and are dictionary presorted for fast sorting.
