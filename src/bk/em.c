@@ -9,14 +9,14 @@
 #include "../../include/bk/mm.h"
 #include "../../include/bk/em.h"
 
-pub struct EM *EM_create(struct MM *mm, struct SM *sm) {
-    struct EM *em = (struct EM*) mm->malloc(sizeof(struct EM));
+pub BK_EM *EM_create(BK_MM *mm, BK_SM *sm) {
+    BK_EM *em = (BK_EM*) mm->malloc(sizeof(BK_EM));
     em->mm = mm;
     em->sm = sm;
     return em;
 }
 
-pub int EM_trash(struct EM *em) {
+pub int EM_trash(BK_EM *em) {
     em->mm->free(em);
     return 0;
 }

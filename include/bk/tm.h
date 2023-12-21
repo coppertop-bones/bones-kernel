@@ -1,19 +1,26 @@
+// ---------------------------------------------------------------------------------------------------------------------
+// TM - TYPE MANAGER
+// ---------------------------------------------------------------------------------------------------------------------
+
 #ifndef API_BK_BM_H
 #define API_BK_BM_H "bk/tm.h"
 
 #include "bk.h"
 #include "sm.h"
 #include "ht.h"
-#include "tpm.h"
 
 
-// typelist is length prefixed array of btypeid, i.e. a BTYPEID_T *
+// typelist is length prefixed array of btypeid, i.e. a btypeid_t *
 typedef unsigned int TM_TLID_T;
 typedef unsigned int TM_XXXID_T;
 #define TM_RP_BY_TLID_INC_SIZE (0x4000 / sizeof(RP))        /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
 
+typedef unsigned int BTYPEID_T_TYPE;            /* currently ls 18 bits for 256k types */
+typedef unsigned char BMETATYPEID_T_TYPE;       /* currently 4 bits for 16 metatypes */
+typedef unsigned char BTEXCLUSIONCAST_T_TYPE;   /* currently 3 bits for 8 exclusion categories */
 
-typedef enum : BTYPEID_T {
+
+typedef enum : BTYPEID_T_TYPE {
     _nat = 0,           // not-a-type - i.e. an error code
     _m8 = 1,
     _m16 = 2,
@@ -23,10 +30,10 @@ typedef enum : BTYPEID_T {
     _i32 = 6,
     _litint = 7,
     _null = 8,          // empty set - not the same as not-a-type
-} btypeid;
+} btypeid_t;
 
 
-enum bmetatypeid : unsigned char {
+typedef enum : BMETATYPEID_T_TYPE {
     bmterr = 0,
     bmtnom = 1, // nominal - atomic type with a given name
 
@@ -46,13 +53,13 @@ enum bmetatypeid : unsigned char {
 
                 // schemas
     bmtsvr = 10,// schema variable
-};
+} bmetatypeid_t;
 
 
 // allow up to 8 categories of exclusion so can AND these together to detail conflict - OPEN: is that enough categories
 // actually since exclusion is detected on union creation speed is not that important - so we can have intersections of
 // exclusions but that is a little more involved - use the bitmask for the moment
-enum btexclusioncat : unsigned char {
+typedef enum : BTEXCLUSIONCAST_T_TYPE {
     btnone = 0,
     btmemory = 1,
     btuser1 = 2,
@@ -62,58 +69,58 @@ enum btexclusioncat : unsigned char {
     btuser5 = 32,
     btuser6 = 64,
     btuser7 = 128,
-};
+} btexclusioncat_t;
 
 
 // OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
 // also will store recursion, exclusivecat
 struct btsummary {
-    enum bmetatypeid bmtid;     // 1
-    enum btexclusioncat excl;   // 1
+    bmetatypeid_t bmtid;        // 1
+    btexclusioncat_t excl;   // 1
     unsigned char unused2;      // 1
     unsigned char unused3;      // 1
     union {
-        BTYPEID_T nomId;
-        BTYPEID_T intId;
-        BTYPEID_T uniId;
-        BTYPEID_T tupId;
-        BTYPEID_T strId;
-        BTYPEID_T recId;
-        BTYPEID_T seqId;
-        BTYPEID_T mapId;
-        BTYPEID_T fncId;
-        BTYPEID_T svrId;
+        btypeid_t nomId;
+        btypeid_t intId;
+        btypeid_t uniId;
+        btypeid_t tupId;
+        btypeid_t strId;
+        btypeid_t recId;
+        btypeid_t seqId;
+        btypeid_t mapId;
+        btypeid_t fncId;
+        btypeid_t svrId;
     };                          // 4
 };
 
 
 #define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by SYM_ID_T and vm space is cheap */
 #define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
-#define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(BTYPEID_T))  /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
+#define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(btypeid_t))  /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
 #define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macos M1, 1 page on windows intel */
 
 // HT_STRUCT2(name, slot_t, extravars)
-HT_STRUCT2(TM_BTYPEID_BY_SYMIDHASH, BTYPEID_T, struct TM *tm;)
-HT_STRUCT2(TM_TLID_BY_TLHASH, TM_TLID_T, struct TM *tm;)
+HT_STRUCT2(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
+HT_STRUCT2(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
 HT_STRUCT2(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
 
-struct TM {
-    struct MM *mm;
+typedef struct PVT_TM {
+    BK_MM *mm;
     Buckets *buckets;
-    struct SM *sm;
+    BK_SM *sm;
     struct TPM *tp;
 
     // type summaries
     struct btsummary *summary_by_btypeid;        
-    BTYPEID_T max_btypeId;
-    BTYPEID_T next_btypeId;
+    btypeid_t max_btypeId;
+    btypeid_t next_btypeId;
     
     // type names - colder than type summaries
     SYM_ID_T *symid_by_btypeid;                 
     ht_struct(TM_BTYPEID_BY_SYMIDHASH) *btypeid_by_symidhash; 
 
     // type lists
-    BTYPEID_T *typelist_buf;                           // VM buffer of btypeid (typelist) indexed by RP
+    btypeid_t *typelist_buf;                           // VM buffer of btypeid (typelist) indexed by RP
     RP max_rp;
     RP next_rp;
     RP *rp_by_tlid;  
@@ -126,11 +133,14 @@ struct TM {
     TM_XXXID_T next_intid;
     ht_struct(TM_XXXID_BY_TLIDHASH) *intid_by_tlidhash;
     TM_TLID_T *tlid_by_intid;
-    BTYPEID_T *btypid_by_intid;
+    btypeid_t *btypid_by_intid;
 
     // unions
     TM_XXXID_T max_uniid;
     TM_XXXID_T next_uniid;
+    ht_struct(TM_XXXID_BY_TLIDHASH) *uniid_by_tlidhash;
+    TM_TLID_T *tlid_by_uniid;
+    btypeid_t *btypid_by_uniid;
     
     // tuples
     TM_XXXID_T max_tupid;
@@ -159,17 +169,18 @@ struct TM {
     // schema variables
     TM_XXXID_T max_svrid;
     TM_XXXID_T next_svrid;
-};
+} BK_TM;
 
-pub struct TM * TM_create(struct MM *, Buckets *, struct SM *, struct TPM *);
-pub int TM_trash(struct TM *);
+pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, struct TPM *);
+pub int TM_trash(BK_TM *);
 
-pub BTYPEID_T tm_exclnominal(struct TM *, char *, enum btexclusioncat);
-pub BTYPEID_T tm_btypeid(struct TM *, char *);
-pub BTYPEID_T tm_inter(struct TM *, BTYPEID_T *);
-pub char * tm_name(struct TM *, BTYPEID_T);
-pub BTYPEID_T tm_name_as(struct TM *, BTYPEID_T, char *);
-pub BTYPEID_T tm_nominal(struct TM *, char *);
+pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t);
+pub btypeid_t tm_btypeid(BK_TM *, char *);
+pub btypeid_t tm_inter(BK_TM *, btypeid_t *);
+pub char * tm_name(BK_TM *, btypeid_t);
+pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
+pub btypeid_t tm_nominal(BK_TM *, char *);
+pub size tm_size(BK_TM *, btypeid_t);
 
 
 #endif // API_BK_BM_H
@@ -198,12 +209,12 @@ pub BTYPEID_T tm_nominal(struct TM *, char *);
 
 
 //struct BType {
-//    enum bmetatypeid meta;            // 1 + 3 pad OPEN: could do 4 bits + 28 bits (250k) for type
+//    bmetatypeid_t meta;             // 1 + 3 pad OPEN: could do 4 bits + 28 bits (250k) for type
 //    DESC_ID descId;                 // 4
 //};
 //
 //typedef struct {
-//    BTYPEID_T n;                   // 4
+//    btypeid_t n;                    // 4
 //    btype ts[];                     // n * 4
 //} BTypeList;
 //

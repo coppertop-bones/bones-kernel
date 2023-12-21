@@ -14,7 +14,7 @@
 #include "lib/radix.h"
 
 
-KRADIX_SORT_INIT(BTYPEID_T, BTYPEID_T, ,sizeof(BTYPEID_T))
+KRADIX_SORT_INIT(btypeid_t, btypeid_t, ,sizeof(btypeid_t))
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -25,31 +25,31 @@ pvt inline SYM_ID_T symIdFromEntry(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, SYM_I
     return ht->tm->symid_by_btypeid[entry];
 }
 
-pvt bool inline found(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, SYM_ID_T entry, BTYPEID_T key) {
+pvt bool inline found(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, SYM_ID_T entry, btypeid_t key) {
     return ht->tm->symid_by_btypeid[entry] == key;
 }
 
 // HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(TM_BTYPEID_BY_SYMIDHASH, BTYPEID_T, SYM_ID_T, ht_int32_hash, found, symIdFromEntry)
+HT_IMPL(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, SYM_ID_T, ht_int32_hash, found, symIdFromEntry)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // rp_by_tlid hash fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline BTYPEID_T * tlFromEntry(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry) {
+pvt inline btypeid_t * tlFromEntry(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry) {
     return ht->tm->typelist_buf + ht->tm->rp_by_tlid[entry];
 }
 
-pvt inline bool tlCompare(BTYPEID_T *a, BTYPEID_T *b) {
-    BTYPEID_T size;
+pvt inline bool tlCompare(btypeid_t *a, btypeid_t *b) {
+    btypeid_t size;
     if ((size=a[0]) != b[0]) return 0;
-    for (BTYPEID_T i=1; i<=size; i++) if (a[i] != b[i]) return 0;     // beware <= :)
+    for (btypeid_t i=1; i<=size; i++) if (a[i] != b[i]) return 0;     // beware <= :)
     return 1;
 }
 
-pvt u32 tl_hash(BTYPEID_T *tl) {
-    u32 n = tl[0] * sizeof(BTYPEID_T);
+pvt u32 tl_hash(btypeid_t *tl) {
+    u32 n = tl[0] * sizeof(btypeid_t);
     u8 *s = (unsigned char *) tl;
     u8 *e = s + n;
     u32 hash = *s++;
@@ -57,12 +57,12 @@ pvt u32 tl_hash(BTYPEID_T *tl) {
     return hash;
 }
 
-pvt bool inline tlFound(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry, BTYPEID_T *key) {
+pvt bool inline tlFound(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry, btypeid_t *key) {
     return tlCompare(tlFromEntry(ht, entry), key);
 }
 
 // HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, BTYPEID_T *, tl_hash, tlFound, tlFromEntry)
+HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, btypeid_t *, tl_hash, tlFound, tlFromEntry)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -86,14 +86,14 @@ HT_IMPL(TM_XXXID_BY_TLIDHASH, u32, u32, ht_int32_hash, tlidFound, tlidFromEntry)
 // utils
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt void _growTo(void **p, size_t size, struct MM *mm, char *fnName) {
+pvt void _growTo(void **p, size_t size, BK_MM *mm, char *fnName) {
     void *t = *p;
     t = mm->realloc(t, size);
     onOomDie(t, s8("%s: realloc #1 failed"), fnName);
     *p = t;
 }
 
-tdd TM_TLID_T _commit_typelist_buf_at(struct TM *tm, TM_TLID_T numTypes, u32 idx) {
+tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
     TM_TLID_T tlid;
     if ((tlid = tm->next_tlid++) >= tm->max_tlid) {
         tm->max_tlid += TM_RP_BY_TLID_INC_SIZE;
@@ -111,8 +111,8 @@ tdd TM_TLID_T _commit_typelist_buf_at(struct TM *tm, TM_TLID_T numTypes, u32 idx
     return tlid;
 }
 
-tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum btexclusioncat excl, u32 idx, SYM_ID_T symid, BTYPEID_T id) {
-    BTYPEID_T btypeid = tm->next_btypeId++;
+tdd btypeid_t _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusioncat_t excl, u32 idx, SYM_ID_T symid, btypeid_t id) {
+    btypeid_t btypeid = tm->next_btypeId++;
     if (btypeid >= tm->max_btypeId) {
         tm->max_btypeId += TM_MAX_BTYPEID_INC_SIZE;
         _growTo((void **)&tm->summary_by_btypeid, tm->max_btypeId * sizeof(struct btsummary), tm->mm, FN_NAME);
@@ -132,10 +132,10 @@ tdd BTYPEID_T _new_type_summary_at(struct TM *tm, BMETATYPE_ID_T bmtid, enum bte
 // pretty printing
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt void tm_pb(struct TM *tm, TP *tp, BTYPEID_T btypeid) {
+pvt void tm_pb(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {
     struct btsummary *sum;
     SYM_ID_T symid;
-    BTYPEID_T *tl;
+    btypeid_t *tl;
     i32 i;
     char sep;
     sum = tm->summary_by_btypeid + btypeid;
@@ -160,13 +160,13 @@ pvt void tm_pb(struct TM *tm, TP *tp, BTYPEID_T btypeid) {
         }
     }
 }
-pvt inline tp tm_tp(struct TM *tm, TP *tp, BTYPEID_T btypeid) {tm_pb(tm, tp, btypeid); return tp_flush(tp);}
-pvt inline s8 tm_pp(struct TM *tm, TP *tp, BTYPEID_T btypeid) {tm_pb(tm, tp, btypeid); return tp_render(tp, tp_flush(tp));}
+pvt inline TPN tm_tp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_flush(tp);}
+pvt inline S8 tm_pp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_render(tp, tp_flush(tp));}
 
 
-pvt void tm_pb_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {
+pvt void tm_pb_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {
     int firstTime = 1;
-    for (int i = 1; i < typelist[0] + 1; i++) {
+    for (u32 i = 1; i < typelist[0] + 1; i++) {
         if (firstTime) {
             firstTime = 0;
             tm_pb(tm, tp, typelist[i]);
@@ -177,8 +177,8 @@ pvt void tm_pb_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {
         }
     }
 }
-pvt inline tp tm_tp_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_flush(tp);}
-pvt inline s8 tm_pp_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_render(tp, tp_flush(tp));}
+pvt inline TPN tm_tp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_flush(tp);}
+pvt inline S8 tm_pp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_render(tp, tp_flush(tp));}
 
 
 
@@ -186,7 +186,7 @@ pvt inline s8 tm_pp_typelist(struct TM *tm, TP *tp, BTYPEID_T *typelist) {tm_pb_
 // type accessing / creation fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub BTYPEID_T tm_btypeid(struct TM *tm, char *name) {
+pub btypeid_t tm_btypeid(BK_TM *tm, char *name) {
     int res;  u32 idx;
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &res);
     if (res == HT_EXISTS)
@@ -195,8 +195,8 @@ pub BTYPEID_T tm_btypeid(struct TM *tm, char *name) {
         return 0;
 }
 
-pub BTYPEID_T tm_exclnominal(struct TM *tm, char *name, enum btexclusioncat excl) {
-    int res;  BTYPEID_T btypeid;  SYM_ID_T symid;  u32 idx;
+pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl) {
+    int res;  btypeid_t btypeid;  SYM_ID_T symid;  u32 idx;
     symid = sm_id(tm->sm, name);                                        // get symid of name
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
     if (res == HT_EXISTS) {
@@ -211,15 +211,14 @@ pub BTYPEID_T tm_exclnominal(struct TM *tm, char *name, enum btexclusioncat excl
     }
 }
 
-
 // set of values intersection ((1 2 3) + (4 5)) & ((1 2 3) + (6 7)) = (1 2 3 4 5) & (1 2 3 6 7) = (1 2 3)
 // (int + str) & (int + bool) => (int+int) & (int+bool) & (str+int) & (str+bool)
 // types only make sense in the context of fitsWithin a LHS might not behaviour as a RHS
 
 
-pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
-    i32 i, j, res, numTypes, hasUnions;  enum btexclusioncat excl = 0;  TM_TLID_T tlid;
-    BTYPEID_T btypeid, *interTl, *p1, *p2, *p3, *nextTypelist;
+pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist) {
+    i32 i, j, res, numTypes, hasUnions;  btexclusioncat_t excl = 0;  TM_TLID_T tlid;
+    btypeid_t btypeid, *interTl, *p1, *p2, *p3, *nextTypelist;
     TM_XXXID_T intid;  struct btsummary *sum;
     // (A&B) & (C&D)  = A & B & C & D
     // (A&B) & (B&C)  = A & B & C
@@ -232,7 +231,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
 
     if (!(numTypes = typelist[0])) return 0;
 
-    // check typeid is in range, and figure total length (including possible duplicate from child intersections)
+    // check typeid is in range, and figure total possible length (including possible duplicate from child intersections)
     for (i = 1; i <= (i32)typelist[0]; i++) {
         if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
         sum = tm->summary_by_btypeid + typelist[i];
@@ -268,7 +267,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
     }
 
     // sort types into btypeid order
-    ks_radix_sort(BTYPEID_T, nextTypelist + 1, numTypes);
+    ks_radix_sort(btypeid_t, nextTypelist + 1, numTypes);
 
     // eliminate duplicates + check for unions
     p1 = nextTypelist + 1;
@@ -324,7 +323,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
             if (intid >= tm->max_intid) {
                 tm->max_intid += TM_MAX_ID_INC_SIZE;
                 _growTo((void **)&tm->tlid_by_intid, tm->max_intid * sizeof(TM_TLID_T), tm->mm, FN_NAME);
-                _growTo((void **)&tm->btypid_by_intid, tm->max_intid * sizeof(BTYPEID_T), tm->mm, FN_NAME);
+                _growTo((void **)&tm->btypid_by_intid, tm->max_intid * sizeof(btypeid_t), tm->mm, FN_NAME);
             }
             tm->tlid_by_intid[intid] = tlid;
             btypeid = _new_type_summary_at(tm, bmtint, excl, idx, 0, intid);
@@ -336,7 +335,7 @@ pub BTYPEID_T tm_inter(struct TM *tm, BTYPEID_T *typelist) {
     }
 }
 
-pub char * tm_name(struct TM *tm, BTYPEID_T btypeid) {
+pub char * tm_name(BK_TM *tm, btypeid_t btypeid) {
     // OPEN: do we return a null or "" if the type is unnamed? in Python we might want to return f't{btypeid}'
     SYM_ID_T symid;
     if (btypeid >= tm->next_btypeId) return "";
@@ -347,8 +346,8 @@ pub char * tm_name(struct TM *tm, BTYPEID_T btypeid) {
         return 0;
 }
 
-pub BTYPEID_T tm_name_as(struct TM *tm, BTYPEID_T btypeid, char *name) {
-    int res;  BTYPEID_T existingId;  SYM_ID_T symid;  u32 idx;
+pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
+    int res;  btypeid_t existingId;  SYM_ID_T symid;  u32 idx;
     symid = sm_id(tm->sm, name);
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
     if (res == HT_EXISTS) {
@@ -361,8 +360,8 @@ pub BTYPEID_T tm_name_as(struct TM *tm, BTYPEID_T btypeid, char *name) {
     }
 }
 
-pub BTYPEID_T tm_nominal(struct TM *tm, char *name) {
-    int res;  BTYPEID_T btypeid;  SYM_ID_T symid;  u32 idx;
+pub btypeid_t tm_nominal(BK_TM *tm, char *name) {
+    int res;  btypeid_t btypeid;  SYM_ID_T symid;  u32 idx;
     symid = sm_id(tm->sm, name);                                        // get symid of name
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
     if (res == HT_EXISTS) {
@@ -375,7 +374,7 @@ pub BTYPEID_T tm_nominal(struct TM *tm, char *name) {
     }
 }
 
-tdd int tm_setNominalTo(struct TM *tm, char *name, BTYPEID_T btypeid) {
+tdd int tm_setNominalTo(BK_TM *tm, char *name, btypeid_t btypeid) {
      SYM_ID_T symid;  int res;  u32 idx;
     if (tm->summary_by_btypeid[btypeid].bmtid != bmterr) return 0;
     symid = sm_id(tm->sm, name);
@@ -389,15 +388,114 @@ tdd int tm_setNominalTo(struct TM *tm, char *name, BTYPEID_T btypeid) {
     return btypeid;
 }
 
+pub size tm_size(BK_TM * tm, btypeid_t btypeid) {
+    // OPEN: implement
+    return 8;
+}
+
+pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist) {
+    i32 i, j, res, numTypes;  struct btsummary *sum;  TM_XXXID_T uniid;  TM_TLID_T tlid;
+    btypeid_t btypeid, *uniTl, *p1, *p2, *p3, *nextTypelist;
+    if (!(numTypes = typelist[0])) return 0;
+
+    // check typeid is in range, and figure total possible length (including possible duplicate from child unions)
+    for (i = 1; i <= (i32)typelist[0]; i++) {
+        if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
+        sum = tm->summary_by_btypeid + typelist[i];
+        if (sum->bmtid == bmtuni) {
+            tlid = tm->tlid_by_uniid[sum->uniId];
+            numTypes += (tm->typelist_buf + tm->rp_by_tlid[tlid])[0] - 1;
+        }
+    }
+
+    // grow tm->typelist_buf if necessary
+    if (tm->next_rp + numTypes >= tm->max_rp) {
+        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+        size_t pageSize = os_page_size();
+        os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
+    }
+
+    nextTypelist = tm->typelist_buf + tm->next_rp;
+
+    // copy typelist into typelist_buf unpacking any unions
+    p1 = nextTypelist;
+    *p1++ = numTypes;
+    for (i = 1; i <= (i32)typelist[0]; i++) {
+        sum = tm->summary_by_btypeid + typelist[i];
+        if (sum->bmtid == bmtuni) {
+            // we have a union type - expand it
+            tlid = tm->tlid_by_uniid[sum->uniId];
+            uniTl = (tm->typelist_buf + tm->rp_by_tlid[tlid]);
+            for (j = 1; j <= (i32)uniTl[0]; j++) *p1++ = uniTl[j];
+        }
+        else
+            *p1++ = typelist[i];
+    }
+
+    // sort types into btypeid order
+    ks_radix_sort(btypeid_t, nextTypelist + 1, numTypes);
+
+    // eliminate duplicates
+    p1 = nextTypelist + 1;
+    p2 = p1 + 1;
+    p3 = p1 + numTypes;
+    while (p2 < p3) {
+        if (*p1 != *p2)
+            *++p1 = *p2++;
+        else
+            while (*p1 == *p2 && p2 < p3) p2++;
+    }
+    numTypes = *nextTypelist = p1 - nextTypelist;
+
+    // get the tlid for the typelist - adding if missing, returning 0 if invalid
+    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &res);
+    switch (res) {
+        default:
+            die("%s: HT_TOMBSTONE1!", FN_NAME);
+        case HT_EXISTS:
+            tlid = tm->tlid_by_tlhash->slots[idx];
+            break;
+        case HT_EMPTY:
+            tlid = _commit_typelist_buf_at(tm, numTypes, idx);
+            if (!tlid) return 0;       // an error occurred OPEN handle properly
+    }
+
+    // get the btypeid for the tlid
+    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->uniid_by_tlidhash, tlid, &res);
+    switch (res) {
+        default:
+            die("%s: HT_TOMBSTONE2!", FN_NAME);
+        case HT_EXISTS:
+            uniid = tm->uniid_by_tlidhash->slots[idx];
+            return tm->btypid_by_uniid[uniid];
+        case HT_EMPTY:
+            // missing so commit the union type for tlid
+            uniid = tm->next_uniid++;
+            if (uniid >= tm->max_uniid) {
+                tm->max_uniid += TM_MAX_ID_INC_SIZE;
+                _growTo((void **)&tm->tlid_by_uniid, tm->max_uniid * sizeof(TM_TLID_T), tm->mm, FN_NAME);
+                _growTo((void **)&tm->btypid_by_uniid, tm->max_uniid * sizeof(btypeid_t), tm->mm, FN_NAME);
+            }
+            tm->tlid_by_uniid[uniid] = tlid;
+            btypeid = _new_type_summary_at(tm, bmtuni, 0, idx, 0, uniid);
+            tm->btypid_by_uniid[uniid] = btypeid;
+
+            ht_replace_empty(TM_XXXID_BY_TLIDHASH, tm->uniid_by_tlidhash, idx, uniid);
+
+            return btypeid;
+    }
+
+}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // type manager lifecycle fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub struct TM * TM_create(struct MM *mm, Buckets *buckets, struct SM *sm, struct TPM *tp) {
+pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     // OPEN: should we use calloc instead of memset to init arrays to zero?
-    struct TM *tm = (struct TM *) mm->malloc(sizeof(struct TM));
+    BK_TM *tm = (BK_TM *) mm->malloc(sizeof(BK_TM));
     tm->mm = mm;
     tm->buckets = buckets;
     tm->sm = sm;
@@ -422,8 +520,8 @@ pub struct TM * TM_create(struct MM *mm, Buckets *buckets, struct SM *sm, struct
     tm->btypeid_by_symidhash->tm = tm;
     tm->max_btypeId = TM_MAX_BTYPEID_INC_SIZE;
     tm->next_btypeId = 1;
-    tm->symid_by_btypeid = (BTYPEID_T *) mm->malloc(tm->max_btypeId * sizeof(BTYPEID_T));
-    memset(tm->symid_by_btypeid, 0, tm->max_btypeId * sizeof(BTYPEID_T));
+    tm->symid_by_btypeid = (btypeid_t *) mm->malloc(tm->max_btypeId * sizeof(btypeid_t));
+    memset(tm->symid_by_btypeid, 0, tm->max_btypeId * sizeof(btypeid_t));
 
     // type summaries
     tm->summary_by_btypeid = (struct btsummary *) mm->malloc(tm->max_btypeId * sizeof(struct btsummary));
@@ -434,14 +532,20 @@ pub struct TM * TM_create(struct MM *mm, Buckets *buckets, struct SM *sm, struct
     tm->next_intid = 1;
     tm->tlid_by_intid = (TM_TLID_T *) mm->malloc(tm->max_intid * sizeof(TM_TLID_T));
     memset(tm->tlid_by_intid, 0, tm->max_intid * sizeof(TM_TLID_T));
-    tm->btypid_by_intid = (TM_TLID_T *) mm->malloc(tm->max_intid * sizeof(BTYPEID_T));
-    memset(tm->summary_by_btypeid, 0, tm->max_intid * sizeof(BTYPEID_T));
+    tm->btypid_by_intid = (TM_TLID_T *) mm->malloc(tm->max_intid * sizeof(btypeid_t));
+    memset(tm->summary_by_btypeid, 0, tm->max_intid * sizeof(btypeid_t));
     tm->intid_by_tlidhash = ht_create(TM_XXXID_BY_TLIDHASH);
     tm->intid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_intid;
 
     // unions
     tm->max_uniid = TM_MAX_ID_INC_SIZE;
     tm->next_uniid = 1;
+    tm->tlid_by_uniid = (TM_TLID_T *) mm->malloc(tm->max_uniid * sizeof(TM_TLID_T));
+    memset(tm->tlid_by_uniid, 0, tm->max_uniid * sizeof(TM_TLID_T));
+    tm->btypid_by_uniid = (TM_TLID_T *) mm->malloc(tm->max_uniid * sizeof(btypeid_t));
+    memset(tm->summary_by_btypeid, 0, tm->max_uniid * sizeof(btypeid_t));
+    tm->uniid_by_tlidhash = ht_create(TM_XXXID_BY_TLIDHASH);
+    tm->uniid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_uniid;
 
     // tuples
     tm->max_tupid = TM_MAX_ID_INC_SIZE;
@@ -474,7 +578,7 @@ pub struct TM * TM_create(struct MM *mm, Buckets *buckets, struct SM *sm, struct
     return tm;
 }
 
-pub int TM_trash(struct TM *tm) {
+pub int TM_trash(BK_TM *tm) {
     ht_trash(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash);
     tm->mm->free(tm->symid_by_btypeid);
     tm->mm->free(tm);

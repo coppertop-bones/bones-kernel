@@ -1,3 +1,7 @@
+// ---------------------------------------------------------------------------------------------------------------------
+// TP - TEXT PAD
+// ---------------------------------------------------------------------------------------------------------------------
+
 #ifndef BK_TP_H
 #define BK_TP_H "tp.h"
 #define BK_TP_H "tp.h"
@@ -82,7 +86,7 @@
 // single render requires a change of flow
 
 // without too much effort we could get to
-//s8 fred() {
+//S8 fred() {
 //    return tp_print(tp,
 //        ds8("answer: %i > %s"),
 //        di32(++x),
@@ -156,25 +160,23 @@
 // to move - this requires precise typing etc
 
 
-typedef struct TP_pub TP;       // protect internals of TP
+typedef struct TP_pub BK_TP;       // protect internals of BK_TP
 
-typedef struct tp {
-    size opaque;
-    char *cs;
-} tp;
-
-
-#define s8_vt(s) (enum tpvt)(s.opaque.v & 0x00000000FFFFFFFF)
+typedef struct {
+    size opaque;        // 8
+    void *p;            // 8
+} TPN;
 
 
-pub void tp_init(TP *, size, Buckets *);
-pub void tp_free(TP *);
-tdd FILE *tp_open(TP *, char const *mode);        // macos and linux only I think - not obvious how to catch the flush on windows even it maps to a mm file
-pub s8 tp_pp(TP *, char const *format, ...);
-pub tp tp_printftp(TP *, char const *format, ...);
-pub void tp_printfb(TP *, char const *format, ...);
-pub tp tp_flush(TP *);
-pub s8 tp_render(TP*, tp);
+
+pub void TP_init(BK_TP *, size, Buckets *);
+pub void TP_free(BK_TP *);
+tdd FILE *tp_open(BK_TP *, char const *mode);        // macos and linux only I think - not obvious how to catch the flush on windows even it maps to a mm file
+pub S8 tp_pp(BK_TP *, char const *format, ...);
+pub TPN tp_printftp(BK_TP *, char const *format, ...);
+pub void tp_printfb(BK_TP *, char const *format, ...);
+pub TPN tp_flush(BK_TP *);
+pub S8 tp_render(BK_TP *, TPN);
 
 
 #endif      // BK_TP_H

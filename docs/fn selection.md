@@ -111,3 +111,7 @@ struct FunctionSelector {
 };
 
 
+- three sorts of error
+    - DispatchError / PathNotImplemented - dynamic, equivalent to does not understand, Binding error, NoFunctionWithSig, FunctionNotFound, UnhandledSignature
+    - NoPossiblePath - static
+    - MetaTypeError - can't construct type - static

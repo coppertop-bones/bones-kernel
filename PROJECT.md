@@ -1,13 +1,19 @@
+SEQUENCE
+types - unions, structs, tuples etc - then coppertop can have c types
+untracked memory - requires block allocator, large object allocator
+fitswithin
+user init tracking
+
+
 ## NEXT
-- organise c style docs
 - expose setNominalTo and setEnumTo (and maybe setSymTo?)
 - add BTypeError - a subclass of TypeError. multidispatch means CantFindError rather than TypeError, which means BTypeError 
-  indicates an error constructing the btype. BTypeError is nicer than BMetaTypeError. 
+  indicates an error constructing the btype. BTypeError is nicer than BMetaTypeError
 - add BEnumError
+- organise c style docs
 
 
 ## RADAR
-- add tp functions and s8 as necessary
 
 
 ## MID
@@ -32,6 +38,9 @@
 
 
 ## DONE
+- get size of tp list
+- render tp list
+- add tp functions and s8 as necessary
 - exclusions
 - answer same PyBType for same id
 - "t1", "t2" etc for unnamed types (dynamically generated for now)

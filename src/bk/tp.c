@@ -18,9 +18,20 @@
 
 #define TP_BUF_INC 1024
 
+
+#define tp_as_s8(n) (n << 32 | tpvt_s8)
+#define tp_as_seq(n) (n << 32 | tpvt_s8)
+#define tp_t(x) (enum tpvt)(x.opaque & 0x00000000FFFFFFFF)
+#define tp_sz(x) (size)((x.opaque & 0xFFFFFFFF00000000) >> 32)
+#define tp_at(x, i) (((TPN*) x.p)[i])
+#define tp_nseq(tp) (*((int *)tp.p))
+
+
 enum tpvt {
+    tpvt_err = 0,
     tpvt_s8 = 1,
     tpvt_seq = 2,
+    tpvt_empty = 3,
 };
 
 struct TP_ {
@@ -31,9 +42,8 @@ struct TP_ {
     size32 end;         // 4
 };
 
-
 union TP_PTP {
-    TP *tp;
+    BK_TP *tp;
     struct TP_ *_tp;
 };
 
@@ -171,7 +181,7 @@ pvt int tp_close(void *p) {
 // TP lifecycle
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub void tp_init(TP *tp, size initSz, Buckets *buckets) {
+pub void TP_init(BK_TP *tp, size initSz, Buckets *buckets) {
     union TP_PTP cv = { .tp = tp };
     cv._tp->start = 0;
     cv._tp->end = 0;
@@ -183,7 +193,7 @@ pub void tp_init(TP *tp, size initSz, Buckets *buckets) {
     cv._tp->buf = buf_sz ? buf : 0;
 }
 
-pub void tp_free(TP *tp) {
+pub void TP_free(BK_TP *tp) {
     union TP_PTP cv = { .tp =  tp };
     cv._tp->buf_sz = 0;
 }
@@ -193,7 +203,7 @@ pub void tp_free(TP *tp) {
 // tp api
 // ---------------------------------------------------------------------------------------------------------------------
 
-tdd FILE *tp_open(TP *tp, char const *mode) {
+tdd FILE *tp_open(BK_TP *tp, char const *mode) {
     b32 bufAllocated = 0;  size pos;
     union TP_PTP cv = {.tp = tp};
 
@@ -260,21 +270,39 @@ tdd FILE *tp_open(TP *tp, char const *mode) {
     return f;
 }
 
-pub s8 tp_render(TP *tp, struct tp x) {
-    union TP_PTP cv = { .tp = tp };
-    if ((x.opaque & 0x00000000FFFFFFFF) == tpvt_seq) {
-        // OPEN: copy the seq onto a newly allocated buf
-        size32 n = 0;
-        char *buf = allocInBuckets(cv._tp->buckets, n, 1);
-        nyi("tp_render");
-    }
-    else {
-        return (s8) {.opaque = x.opaque >> 32, .cs = x.cs};
-    }
-
+pub int tp_sizeof(TPN tp) {
+    int answer = 0;
+    if (tp_t(tp) == tpvt_seq) {
+        int n = tp_nseq(tp);
+        for (int i = 1; i <= n; i++) answer += tp_sizeof(tp_at(tp, i));
+    } else
+        return tp_sz(tp);
 }
 
-pub void tp_printfb(TP *tp, char const *format, ...) {
+pvt char * tp_render_(TPN x, char *p) {
+    if (tp_t(x) == tpvt_s8) {
+        size n = tp_sz(x);
+        memcpy(p, x.p, n);
+        return p + n;
+    } else {
+        size n = tp_nseq(x);
+        for (int i = 1; i <= n; i++) p = tp_render_(tp_at(x, i), p);
+        return p;
+    }
+}
+
+pub S8 tp_render(BK_TP *tp, TPN x) {
+    union TP_PTP cv = { .tp = tp };
+    if (tp_t(x) == tpvt_seq) {
+        // OPEN: rather than traversing twice we could reallocInBuckets (except it doesn't work yet)
+        size32 n = tp_sizeof(x);
+        char *buf = allocInBuckets(cv._tp->buckets, n, 1);
+        return (S8) {.opaque = n, .cs = tp_render_(x, buf)};
+    } else
+        return (S8) {.opaque = tp_sz(x), .cs = x.p};
+}
+
+pub void tp_printfb(BK_TP *tp, char const *format, ...) {
     char *buf;  int avail, buf_sz;  size n;  va_list args;
     union TP_PTP cv = { .tp = tp };
     buf = cv._tp->buf + cv._tp->end;
@@ -296,7 +324,45 @@ pub void tp_printfb(TP *tp, char const *format, ...) {
     va_end(args);
 }
 
-pub tp tp_printftp(TP *tp, char const *format, ...) {
+// BK_TP *tp -> TPC ctx, ... ?
+//pub void tp_concat(BK_TP *tp, ...) {
+//    TPN *buf;  int avail, buf_sz;  size n;  va_list args;  TPN answer, x;  size count = 0;
+//    union TP_PTP cv = { .tp = tp };
+//    va_start(args, tp);
+//    x = va_arg(args, TPN);
+//    x.opaque = tpvt_empty;
+//    while (tp_t(x) != tpvt_err) {
+//        count ++;
+//        if (count == 1) {
+//            answer = x;
+//        } else if (count == 2) {
+//            buf = allocInBuckets(cv._tp->buckets, sizeof(TPN*) * (count + 1), alignof(TPN*));
+//            memset(buf, 0, sizeof(TPN*) * (count + 1));
+//            buf[0] = count;
+//            buf[1] = answer;
+//            buf[2] = x;
+//        } else {
+//            buf = reallocInBuckets(cv._tp->buckets, buf, sizeof(TPN*) * (count + 1), alignof(TPN*));
+//        }
+//        x = va_arg(args, TPN);
+//    }
+//
+//    if (n > buf_sz) {
+//        // create a new buffer from buckets, forgetting the location of the old one
+//        buf_sz = TP_BUF_INC;
+//        while (n > buf_sz) buf_sz += TP_BUF_INC;
+//        buf = allocInBuckets(cv._tp->buckets, buf_sz, 1);
+//        if (buf == 0) return;
+//        cv._tp->buf = buf;
+//        cv._tp->buf_sz = buf_sz;
+//        cv._tp->end = 0;
+//        n = vsnprintf(buf, buf_sz, format, args);
+//    }
+//    cv._tp->end += n;
+//    va_end(args);
+//}
+
+pub TPN tp_printftp(BK_TP *tp, char const *format, ...) {
     // OPEN: split format into chunks, adding %tp as a valid format and maybe %s8
     va_list args;
     va_start(args, format);
@@ -305,13 +371,12 @@ pub tp tp_printftp(TP *tp, char const *format, ...) {
     return tp_flush(tp);
 }
 
-pub tp tp_flush(TP *tp) {
+pub TPN tp_flush(BK_TP *tp) {
     union TP_PTP cv = { .tp = tp };
     size start = cv._tp->start;  size end = cv._tp->end;
     cv._tp->start = cv._tp->end;
-    return (struct tp) {.cs = cv._tp->buf + start, .opaque = (end - start) << 32 | tpvt_s8};
+    return (TPN) {.p = cv._tp->buf + start, .opaque = tp_as_s8((end - start))};
 }
-
 
 
 #endif      // SRC_BK_TP_C

@@ -1,5 +1,52 @@
 // ---------------------------------------------------------------------------------------------------------------------
-// keep constants, global structs, type defs here
+// BK - BONES KERNEL
+//
+// OVERVIEW
+// Bones is a language inspired by q/kdb and Smalltalk. It is intended to be used by non-career programmers for
+// high performance statistical operations and so includes support for immutable data structures, composable apis and
+// multi-dispatch. It has a strong static type system that happily is amenable to inference and a memory manager that
+// is conservative on stack, precise on heap and encourages differentiation between object generations.
+//
+// It is highly compatible with C, using the C-ABI internally (for the moment) and allow c structs to be used directly.
+//
+// Bones has not been designed to support agent style programming and some of the design decisions may thus hinder
+// writing applications in it.
+//
+// FEATURES
+// - ref counting for CoW immutability and GC
+// - tracing GC, with opportunistic evacuation, object pinning, destructor callbacks
+// - bones shares a simple AST (aka Reduced Syntax Tree) with a C compiler
+// - function selection for multi-dispatch is done statically where possible
+// - automatic region based memory management and user apis to initiate earlier collection (including unmanaged arenas)
+//
+// FUTURE DIRECTIONS
+// - may move RST here, together with tooling such as interactive debugging, profiling, type inference, code gen etc
+// - support itanium exception handling
+//
+// COMPONENTS
+// BUCKETS - unmanaged arena (may move to MM)
+// EM - ENUM MANAGER - sets of symbols
+// HT - HASH TABLE - utils for building hash tables, i.e. maps, sets etc
+// K - KERNEL - global singleton
+// MM - MEMORY MANAGER - api for automatic and manual management
+// OS - OPERATING SYSTEM APIs
+// SM - SYMBOL MANAGER - i.e. interned strings with fast sorting
+// TM - TYPE MANAGER
+// TP - TEXT PAD - composable api for string manipulation
+//
+// DEPRECATED
+// OM - OBJECT MANAGER - moving to MM
+//
+// GLOBAL DETAILS
+// - mm cannot detect / handle encoded pointers
+// - types (i.e. btypeid_t) are encoded into 18 bits
+// - meta-types are encoded in 4 bits
+// - slots are 16 bytes, objects are 32 bit meta data prefixed, thus a single slot can hold up to a 12 byte object
+//
+// NAMING
+// register types are lower case
+// agents are BK_PascalCase
+// structs are either 'struct lowercase' or PascalCase
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef API_BK_BK_H
@@ -12,14 +59,35 @@
 #include <stdbool.h>
 
 
-#define _4K 4096
-#define _16K 16384
-#define _64K 65536
-#define _1M 1048576
-#define _1GB 1073741824
-#define _2GB 2147483648
-#define _4GB 4294967296
-#define _1TB 1099511627776
+#define _4K 0x1000          /* 4096 */
+#define _8K 0x2000
+#define _16K 0x4000         /* 16384 */
+#define _32K 0x8000
+#define _64K 0x10000       /* 65536 */
+#define _1M 0x100000       /* 1048576 */
+#define _2M 0x200000
+#define _4M 0x400000
+#define _8M 0x800000
+#define _16M 0x1000000
+#define _32M 0x2000000
+#define _64M 0x4000000
+#define _128M 0x8000000
+#define _256M 0x10000000
+#define _512M 0x20000000
+#define _1GB 0x40000000     /* 1073741824 */
+#define _2GB 0x80000000     /* 2147483648 */
+#define _4GB 0x100000000    /* 4294967296 */
+#define _8GB 0x200000000
+#define _16GB 0x400000000
+#define _32GB 0x800000000
+#define _64GB 0x1000000000
+#define _128GB 0x2000000000
+#define _256GB 0x4000000000
+#define _512GB 0x8000000000
+#define _1TB 0x10000000000    /* 1099511627776 */
+
+
+
 
 
 #ifndef bk_inline
@@ -72,20 +140,16 @@ typedef unsigned int    usize32;
 #define lengthof(cs)  (countof(cs) - 1)
 
 
-#define s8(cs) (s8){(lengthof(cs)), (void *)cs}
+#define s8(cs) (S8){(lengthof(cs)), (void *)cs}
 
 typedef struct {
     size opaque;
     char *cs;
-} s8;
+} S8;
 
 
 #define s8_sz(s) (size)(s.opaque)
 
-typedef unsigned int BTYPEID_T;        /* currently ls 18 bits for 256k types */
-typedef unsigned char BMETATYPE_ID_T;   /* currently 4 bits for 16 metatypes */
-
-#define NA_BTYPE 0
 #define SYM_ID_T unsigned int
 #define SM_NA_SYM 0
 

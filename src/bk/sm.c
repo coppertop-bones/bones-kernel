@@ -5,7 +5,7 @@
 //              intended for general strings usage, and it is probably performant to create less rather than more
 //              symbols. Symbols are used as type names and in enums and are dictionary presorted for fast sorting.
 //
-//              struct SM is effectively a hash map that maps a char *name to an id, and vice versa. Symbols exist
+//              BK_SM is effectively a hash map that maps a char *name to an id, and vice versa. Symbols exist
 //              for the duration of the kernel, so the memory holding the names is grow-only (we allocate a large
 //              chunk of NO ACCESS VM, pages are made R/W on demand, and pages that no longer not need writing to
 //              are made R/O).
@@ -42,8 +42,8 @@ pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) *h, SYM_ID_T entry, ch
 HT_IMPL(SM_SYMID_BY_NAMEHASH, SYM_ID_T, char *, ht_str_hash, nameFound, nameFromEntry)
 
 
-pub struct SM * SM_create(struct MM *mm) {
-    struct SM *sm = (struct SM *) mm->malloc(sizeof(struct SM));
+pub BK_SM * SM_create(BK_MM *mm) {
+    BK_SM *sm = (BK_SM *) mm->malloc(sizeof(BK_SM));
     sm->mm = mm;
     sm->symname_buf = os_vm_reserve(0, SM_MAX_NAME_STORAGE);
 
@@ -63,7 +63,7 @@ pub struct SM * SM_create(struct MM *mm) {
     return sm;
 }
 
-pub int SM_trash(struct SM *sm) {
+pub int SM_trash(BK_SM *sm) {
     os_vm_unreserve(sm->symname_buf, SM_MAX_NAME_STORAGE);
     sm->mm->free(sm->rp_by_symid);
     sm->mm->free(sm->sortorder_by_symid);
@@ -72,7 +72,7 @@ pub int SM_trash(struct SM *sm) {
     return 0;
 }
 
-pub SYM_ID_T sm_id(struct SM *sm, char *name) {
+pub SYM_ID_T sm_id(BK_SM *sm, char *name) {
     int res, pageSize = 0;
     u32 idx = ht_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
 
@@ -116,16 +116,16 @@ pub SYM_ID_T sm_id(struct SM *sm, char *name) {
     return id;
 }
 
-pub char * sm_name(struct SM *sm, SYM_ID_T id) {
+pub char * sm_name(BK_SM *sm, SYM_ID_T id) {
     return &sm->symname_buf[sm->rp_by_symid[id]];
 }
 
-pvt void _sm_sort_syms(struct SM *sm) {
+pvt void _sm_sort_syms(BK_SM *sm) {
     // OPEN: do the sort
     sm->sortorder_by_symid[0] = SM_SYMS_SORTED;
 }
 
-pub bool sm_id_le(struct SM *sm, SYM_ID_T a, SYM_ID_T b) {
+pub bool sm_id_le(BK_SM *sm, SYM_ID_T a, SYM_ID_T b) {
     if (sm->sortorder_by_symid == SM_SYMS_NOT_SORTED) _sm_sort_syms(sm);
     return sm->sortorder_by_symid[a] < sm->sortorder_by_symid[b];
 }

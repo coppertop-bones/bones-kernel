@@ -11,18 +11,17 @@
 
 #define BUCKETS_CHUNK_SIZE 4096*4
 
-struct K {
-    struct MM *mm;
+typedef struct {
+    BK_MM *mm;
     Buckets *buckets;
-    struct SM *sm;
-    struct EM *em;
-    struct TM *tm;
+    BK_SM *sm;
+    BK_EM *em;
+    BK_TM *tm;
     struct TPM *tp;
-//    struct OM om;  // plural? or does an object manager have allocators?
-};
+} BK_K;
 
-pub struct K * K_create(struct MM *mm, Buckets *buckets);
-pub int K_trash(struct K *k);
+pub BK_K * K_create(BK_MM *mm, Buckets *buckets);
+pub int K_trash(BK_K *k);
 
 #endif // API_BK_KERNEL_H
 

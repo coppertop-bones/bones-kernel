@@ -8,15 +8,15 @@
 #include "../../include/bk/mm.h"
 
 
-pub struct MM * MM_create() {
-    struct MM *mm = (struct MM *) malloc(sizeof(struct MM));
+pub BK_MM * MM_create() {
+    BK_MM *mm = (BK_MM *) malloc(sizeof(BK_MM));
     mm->malloc = malloc;
     mm->realloc = realloc;
     mm->free = free;
     return mm;
 }
 
-pub int MM_trash(struct MM *mm) {
+pub int MM_trash(BK_MM *mm) {
     free(mm);
     return 0;
 }

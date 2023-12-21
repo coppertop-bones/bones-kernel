@@ -7,3 +7,5 @@ __pycache__/
 .DS_Store
 
 bk.xcodeproj/
+
+src/play/setjmp_play

@@ -9,11 +9,11 @@ pvt void die_(char *preamble, char *msg, va_list args) {
 
 int main() {
     int id;
-    struct MM *mm = MM_create();
+    BK_MM *mm = MM_create();
     Buckets *buckets = mm->malloc(sizeof(Buckets));
     initBuckets(buckets, 64);
     freeBuckets(buckets);
-    struct K *k = K_create(mm, buckets);
+    BK_K *k = K_create(mm, buckets);
     PP(info, "kernel created");
 
     int off = 7;

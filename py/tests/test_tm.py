@@ -152,12 +152,52 @@ def test_intersection():
     return "test_intersection passed"
 
 
+def test_union():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    t1 = tm.nominal(f'u32')
+    t2 = tm.nominal(f'err')
+
+    tm.union(t1, t2) >> check >> equals >> tm.union(t2, t1)
+    tm.union(t1, t2, t1) >> check >> equals >> tm.union(t2, t1, t2)
+    tm.union(tm.union(t1, t2), t1) >> check >> equals >> tm.union(t2, tm.union(t2, t1))
+
+    return "test_union passed"
+
+
+def test_om():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+    om = sys._k.om
+
+    mem = 1
+
+    i32 = tm.nominal('i32', mem, 4)
+    p = om.alloc(i32)
+    om.inc(p)
+    om.count(p) == 1
+    om.dec(p)
+    om.count(p) == 0
+    om.inc(p)
+    om.inc(p)
+    om.inc(p)
+    om.count(p) == 3
+    om.dec(p)
+    om.count(p) == 3
+    assert om.btypeid(p) == i32
+
+
+    return "test_intersection passed"
+
 def main():
     test_sm() >> PP
     # test_sm_sort_order()
     # test_em()
     test_nominal() >> PP
     test_intersection() >> PP
+    test_union() >> PP
+    test_om() >> PP
 
 
 

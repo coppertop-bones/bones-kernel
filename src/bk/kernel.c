@@ -5,26 +5,24 @@
 #ifndef __BK_KERNEL_C
 #define __BK_KERNEL_C "bk/kernel.c"
 
-#include "../../include/bk/kernel.h"
+#include "../../include/bk/k.h"
 #include "mm.c"
 #include "sm.c"
 #include "em.c"
 #include "tm.c"
 #include "tp.c"
-#include "tpm.c"
 
 
-pub struct K * K_create(struct MM *mm, Buckets *buckets) {
-    struct K *k = (struct K *) mm->malloc(sizeof(struct K));
+pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
+    BK_K *k = (BK_K *) mm->malloc(sizeof(BK_K));
     k->mm = mm;
     k->buckets = buckets;
     k->sm = SM_create(mm);
     k->em = EM_create(mm, k->sm);
-    k->tp = TPM_create(mm);
     k->tm = TM_create(mm, k->buckets, k->sm, k->tp);
 
     int n = 0;
-    struct TM *tm = k->tm;
+    BK_TM *tm = k->tm;
     n += tm_setNominalTo(tm, "m8", _m8) == 0;
     n += tm_setNominalTo(tm, "m16", _m16) == 0;
     n += tm_setNominalTo(tm, "m32", _m32) == 0;
@@ -40,11 +38,10 @@ pub struct K * K_create(struct MM *mm, Buckets *buckets) {
     return k;
 }
 
-pub int K_trash(struct K *k) {
+pub int K_trash(BK_K *k) {
     TM_trash(k->tm);
     EM_trash(k->em);
     SM_trash(k->sm);
-    TPM_trash(k->tp);
     k->mm->free(k);
     return 0;
 }

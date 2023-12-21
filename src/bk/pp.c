@@ -34,7 +34,7 @@ pvt void die_(char *preamble, char *msg, va_list args);
 //}
 
 
-// can distinguish between s8 and char * by making the first byte of s8 > 128
+// OPEN: could distinguish between void * to an S* and char * by making the first byte of an S8 > 128?
 pvt void PP(i32 level, char *msg, ...) {
     if (level & g_logging_level) {
         va_list args;
@@ -46,7 +46,7 @@ pvt void PP(i32 level, char *msg, ...) {
     }
 }
 
-pvt void onOomDie(void *p, s8 msg, ...) {
+pvt void onOomDie(void *p, S8 msg, ...) {
     if (p == 0) {
         va_list args;
         va_start(args, msg);

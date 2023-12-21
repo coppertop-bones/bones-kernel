@@ -9,11 +9,11 @@ pvt void die_(char *preamble, char *msg, va_list args) {
     exit(1);
 }
 
-pub BTYPEID_T _intersect(struct TM *tm, size_t numTypes, ...) {
-    va_list args;  BTYPEID_T *typelist;  int i;  BTYPEID_T btypeid;
+pub btypeid_t _intersect(BK_TM *tm, size_t numTypes, ...) {
+    va_list args;  btypeid_t *typelist;  int i;  btypeid_t btypeid;
     va_start(args, numTypes);
-    typelist = malloc((1 + numTypes) * sizeof(BTYPEID_T));
-    for (i = 1; i <= numTypes; i++) typelist[i] = va_arg(args, BTYPEID_T);
+    typelist = malloc((1 + numTypes) * sizeof(btypeid_t));
+    for (i = 1; i <= numTypes; i++) typelist[i] = va_arg(args, btypeid_t);
     typelist[0] = numTypes;
     btypeid = tm_inter(tm, typelist);
     free(typelist);
@@ -21,9 +21,9 @@ pub BTYPEID_T _intersect(struct TM *tm, size_t numTypes, ...) {
     return btypeid;
 }
 
-pub BTYPEID_T _intersect2(struct TM *tm, size_t numTypes, BTYPEID_T *args) {
-    BTYPEID_T *typelist;  int i;  BTYPEID_T btypeid;
-    typelist = malloc((1 + numTypes) * sizeof(BTYPEID_T));
+pub btypeid_t _intersect2(BK_TM *tm, size_t numTypes, btypeid_t *args) {
+    btypeid_t *typelist;  int i;  btypeid_t btypeid;
+    typelist = malloc((1 + numTypes) * sizeof(btypeid_t));
     for (i = 1; i <= numTypes; i++) typelist[i] = args[i-1];
     typelist[0] = numTypes;
     btypeid = tm_inter(tm, typelist);
@@ -32,7 +32,7 @@ pub BTYPEID_T _intersect2(struct TM *tm, size_t numTypes, BTYPEID_T *args) {
 }
 
 #define intersect(tm, ...) ({                                                                                           \
-    BTYPEID_T args[] = { __VA_ARGS__ };                                                                                 \
+    btypeid_t args[] = { __VA_ARGS__ };                                                                                 \
     _intersect2((tm), sizeof(args) / sizeof(args[0]), args);                                                            \
 })
 
@@ -40,25 +40,20 @@ pub BTYPEID_T _intersect2(struct TM *tm, size_t numTypes, BTYPEID_T *args) {
 
 
 int countArgsImpl(int x, ...) {
-    va_list ap;
-    int e;
-    int count = 1;
-
+    va_list ap;  int e;  int count = 1;
     va_start(ap, x);
-    while ((e = va_arg(ap, int)) != 0) {
-        count ++;
-    }
+    while ((e = va_arg(ap, int)) != 0) count ++;
     va_end(ap);
     return count;
 }
 
 
 void test_tm() {
-    BTYPEID_T t, expected;
-    struct MM *mm = MM_create();
+    btypeid_t t, expected;
+    BK_MM *mm = MM_create();
     Buckets buckets;
     initBuckets(&buckets, 64);
-    struct K *k = K_create(mm, &buckets);
+    BK_K *k = K_create(mm, &buckets);
 
     PP(debug, "kernel created");
 
@@ -77,7 +72,7 @@ void test_tm() {
     t = tm_btypeid(k->tm, "joe");
     check(t == expected, "t == %i (should be %i)", t, expected);
 
-    BTYPEID_T *typelist = malloc(3 * sizeof(BTYPEID_T));
+    btypeid_t *typelist = malloc(3 * sizeof(btypeid_t));
     typelist[0] = 2;
     typelist[1] = 1;
     typelist[2] = 2;
@@ -96,14 +91,14 @@ void test_tm() {
 
 
 void test_exclusions() {
-    BTYPEID_T tCcy, u32, u64, t7, t8, GBP, EUR, *tl, actual, _GBP;  TP tp;
-    struct MM *mm = MM_create();
+    btypeid_t tCcy, u32, u64, t7, t8, GBP, EUR, *tl, actual, _GBP;  BK_TP tp;
+    BK_MM *mm = MM_create();
     Buckets buckets;
     initBuckets(&buckets, 64);
-    struct K *k = K_create(mm, &buckets);
-    struct TM *tm = k->tm;
-    tp_init(&tp, 0, &buckets);
-    s8 txt = tp_render(&tp, tp_printftp(&tp, "kernel created"));
+    BK_K *k = K_create(mm, &buckets);
+    BK_TM *tm = k->tm;
+    TP_init(&tp, 0, &buckets);
+    S8 txt = tp_render(&tp, tp_printftp(&tp, "kernel created"));
     PP(debug, txt.cs);
 
     _GBP = tm_nominal(tm, "_GBP");
@@ -121,7 +116,7 @@ void test_exclusions() {
     check(tm_btypeid(tm, "EUR") != EUR, "t == %i (should not be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
     tm_name_as(tm, EUR, "EUR");
     check(tm_btypeid(tm, "EUR") == EUR, "t == %i (should be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
-    check(strcmp(tm_pp(tm, &tp, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, &tp, EUR).cs, __LINE__);        // leak
+    check(strcmp(tm_pp(tm, &tp, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, &tp, EUR).cs, __LINE__);
 
     // check construction returns identical objects
     t7 = intersect(tm, GBP, u32);
@@ -139,7 +134,7 @@ void test_exclusions() {
     actual = intersect(tm, intersect(tm, GBP, u32), EUR);
     check(actual != 0, "t == %i (should not be %i) @ %i", actual, 0, __LINE__);
 
-    tp_free(&tp);
+    TP_free(&tp);
     K_trash(k);
     freeBuckets(buckets.first_bucket);
     MM_trash(mm);
@@ -147,9 +142,21 @@ void test_exclusions() {
 
 
 int main() {
-    g_logging_level = info;
+    g_logging_level = debug;
+
+    Buckets buckets; BK_TP tp;
+    initBuckets(&buckets, 64);
+    TP_init(&tp, 0, &buckets);
+
+
+    TPN fred = (TPN) {.p = cv._tp->buf + start, .opaque = tp_as_s8((end - start))};
+    S8 txt = tp_render(&tp, tp_printftp(&tp, "kernel created"));
+
+
     PP(debug, "%i", countArgs(1));
     PP(debug, "%i", countArgs(1,2));
+    PP(debug, "%i", os_cache_line_size());
+    PP(debug, "%i", os_page_size());
     test_tm();
     test_exclusions();
     PP(info, "passed");

@@ -22,7 +22,7 @@
 
 
 #include "../../include/bk/bk.h"
-#include "../../include/bk/tm.h"
+#include "../../include/bk/k.h"
 
 
 struct Base {
@@ -48,27 +48,27 @@ struct Partial {
 
 struct PyBType {
     PyObject_HEAD;
-    btypeid btypeid;
+    btypeid_t btypeid;
 };
 
 struct PySM {
     PyObject_HEAD;
-    struct SM *sm;
+    BK_SM *sm;
 };
 
 struct PyEM {
     PyObject_HEAD;
-    struct EM *em;
+    BK_EM *em;
 };
 
 struct PyTM {
     PyObject_HEAD;
-    struct TM *tm;
+    BK_TM *tm;
 };
 
 struct PyKernel {
     PyObject_HEAD;
-    struct K *kernel;
+    BK_K *kernel;
     PyObject *pySM;
     PyObject *pyEM;
     PyObject *pyTM;

@@ -226,7 +226,7 @@ pvt PyObject * _fs_tArgs_from_query(PyObject *mod, PyObject **params, Py_ssize_t
     unsigned short *query = P_QUERY(fs);
     Py_ssize_t o_next = 1;
     for (Py_ssize_t o = 0; o < num_args; o++) {
-        btypeid btypeid = query[o_next];
+        btypeid_t btypeid = query[o_next];
         if (btypeid & HAS_UPPER_TYPE_FLAG) {
             o_next++;
             btypeid &= LOWER_TYPE_MASK;                                            // remove the hasUpper flag
