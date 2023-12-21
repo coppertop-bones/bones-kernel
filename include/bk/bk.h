@@ -150,7 +150,7 @@ typedef struct {
 
 #define s8_sz(s) (size)(s.opaque)
 
-#define SYM_ID_T unsigned int
+typedef unsigned int symid_t;
 #define SM_NA_SYM 0
 
 

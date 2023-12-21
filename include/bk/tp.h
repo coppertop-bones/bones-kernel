@@ -162,6 +162,7 @@
 
 typedef struct TP_pub BK_TP;       // protect internals of BK_TP
 
+// TPN - TEXT PAD NODE
 typedef struct {
     size opaque;        // 8
     void *p;            // 8

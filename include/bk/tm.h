@@ -94,7 +94,7 @@ struct btsummary {
 };
 
 
-#define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by SYM_ID_T and vm space is cheap */
+#define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by symid_t and vm space is cheap */
 #define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
 #define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(btypeid_t))  /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
 #define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macos M1, 1 page on windows intel */
@@ -116,7 +116,7 @@ typedef struct PVT_TM {
     btypeid_t next_btypeId;
     
     // type names - colder than type summaries
-    SYM_ID_T *symid_by_btypeid;                 
+    symid_t *symid_by_btypeid;
     ht_struct(TM_BTYPEID_BY_SYMIDHASH) *btypeid_by_symidhash; 
 
     // type lists
@@ -145,16 +145,19 @@ typedef struct PVT_TM {
     // tuples
     TM_XXXID_T max_tupid;
     TM_XXXID_T next_tupid;
+    ht_struct(TM_XXXID_BY_TLIDHASH) *tupid_by_tlidhash;
+    TM_TLID_T *tlid_by_tupid;
+    btypeid_t *btypid_by_tupid;
     
     // structs
     TM_XXXID_T max_strid;
     TM_XXXID_T next_strid;
     
-    // records
+    // records - need to have a think about how to do these
     TM_XXXID_T max_recid;
     TM_XXXID_T next_recid;
     
-    // sequences
+    // sequences - not much different to any other type
     TM_XXXID_T max_seqid;
     TM_XXXID_T next_seqid;
     
@@ -177,11 +180,16 @@ pub int TM_trash(BK_TM *);
 pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t);
 pub btypeid_t tm_btypeid(BK_TM *, char *);
 pub btypeid_t tm_inter(BK_TM *, btypeid_t *);
+pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);
 pub char * tm_name(BK_TM *, btypeid_t);
 pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
 pub btypeid_t tm_nominal(BK_TM *, char *);
 pub size tm_size(BK_TM *, btypeid_t);
-
+pub btypeid_t tm_struct(BK_TM *, symid_t *, btypeid_t *);
+pub btypeid_t tm_tuple(BK_TM *, btypeid_t *);
+pub btypeid_t * tm_tuple_tl(BK_TM *, btypeid_t);
+pub btypeid_t tm_union(BK_TM *, btypeid_t *);
+pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 
 #endif // API_BK_BM_H
 

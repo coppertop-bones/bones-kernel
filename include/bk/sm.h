@@ -25,8 +25,8 @@ struct symname {
 
 // following names are easy to find in auto complete as they all start with SM_
 #define SM_MAX_NAME_LEN 0xFF                                    /* DTM: symbols can be up to 255 bytes of utf8 inc null termination - can be increased */
-#define SM_MAX_NAME_STORAGE 0xFFFFFFFF                          /* DTM: 4GB is max addressable by SYM_ID_T and vm space is cheap */
-#define SM_MAX_SYM_ID_INC_SIZE (0x4000 / sizeof(RP))              /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
+#define SM_MAX_NAME_STORAGE 0xFFFFFFFF                          /* DTM: 4GB is max addressable by symid_t and vm space is cheap */
+#define SM_MAX_SYM_ID_INC_SIZE (0x4000 / sizeof(RP))            /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
 #define SM_SYMS_NOT_SORTED 0
 #define SM_SYMS_SORTED 1
 
@@ -41,8 +41,8 @@ typedef struct {
     u32 *sortorder_by_symid;                // 8 - array of sort_order indexed by id - slot0 is 1 if sorted, 0 if not sorted
     ht_struct(SM_SYMID_BY_NAMEHASH) *symid_by_namehash;    // 8 - hash table for name lookup
     BK_MM *mm;                              // 8 - memory manager to use
-    SYM_ID_T max_symid;                     // 4
-    SYM_ID_T next_symid;                    // 4
+    symid_t max_symid;                      // 4
+    symid_t next_symid;                     // 4
     RP next_rp;                             // 4
     RP max_rp;                              // 4
 } BK_SM;
@@ -54,9 +54,9 @@ HT_STRUCT2(SM_SYMID_BY_NAMEHASH, u32, BK_SM* sm;)
 
 pub BK_SM * SM_create(BK_MM*);
 pub int SM_trash(BK_SM *);
-pub SYM_ID_T sm_id(BK_SM *, char *);
+pub symid_t sm_id(BK_SM *, char *);
 pub char * sm_name(BK_SM *, RP);
-pub bool sm_id_le(BK_SM *, SYM_ID_T a, SYM_ID_T b);
-pub inline RP sm_id_2_RP(BK_SM *, SYM_ID_T);
+pub bool sm_id_le(BK_SM *, symid_t a, symid_t b);
+pub inline RP sm_id_2_RP(BK_SM *, symid_t);
 
 #endif // API_BK_SM_H

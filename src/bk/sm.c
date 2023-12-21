@@ -30,16 +30,16 @@
 #include "pp.c"
 
 
-pvt inline char * nameFromEntry(ht_struct(SM_SYMID_BY_NAMEHASH) *h, SYM_ID_T entry) {
+pvt inline char * nameFromEntry(ht_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry) {
     return h->sm->symname_buf + h->sm->rp_by_symid[entry];
 }
 
-pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) *h, SYM_ID_T entry, char *key) {
+pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, char *key) {
     return strcmp(h->sm->symname_buf + h->sm->rp_by_symid[entry], key) == 0;
 }
 
 // HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(SM_SYMID_BY_NAMEHASH, SYM_ID_T, char *, ht_str_hash, nameFound, nameFromEntry)
+HT_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char *, ht_str_hash, nameFound, nameFromEntry)
 
 
 pub BK_SM * SM_create(BK_MM *mm) {
@@ -56,7 +56,7 @@ pub BK_SM * SM_create(BK_MM *mm) {
     sm->next_rp = 2;                                               // i.e. pointer to the char after the len prefix
     sm->rp_by_symid = mm->malloc(sm->max_symid * sizeof(RP));
     onOomDie(sm->rp_by_symid, s8("in %s malloc #1 failed"), FN_NAME);
-    sm->sortorder_by_symid = mm->malloc(sm->max_symid * sizeof(SYM_ID_T));
+    sm->sortorder_by_symid = mm->malloc(sm->max_symid * sizeof(symid_t));
     onOomDie(sm->sortorder_by_symid, s8("in %s malloc #2 failed"), FN_NAME);
     sm->symid_by_namehash = ht_create(SM_SYMID_BY_NAMEHASH);
     sm->symid_by_namehash->sm = sm;
@@ -72,7 +72,7 @@ pub int SM_trash(BK_SM *sm) {
     return 0;
 }
 
-pub SYM_ID_T sm_id(BK_SM *sm, char *name) {
+pub symid_t sm_id(BK_SM *sm, char *name) {
     int res, pageSize = 0;
     u32 idx = ht_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
 
@@ -93,12 +93,12 @@ pub SYM_ID_T sm_id(BK_SM *sm, char *name) {
     if (sm->next_symid >= sm->max_symid) {
         // xxx_by_symid arrays need growing
         sm->max_symid += SM_MAX_SYM_ID_INC_SIZE;
-        sm->rp_by_symid = sm->mm->realloc(sm->rp_by_symid, sm->max_symid * sizeof(SYM_ID_T));
+        sm->rp_by_symid = sm->mm->realloc(sm->rp_by_symid, sm->max_symid * sizeof(symid_t));
         onOomDie(sm->sortorder_by_symid, s8("in %s realloc #1 failed"), FN_NAME);
-        sm->sortorder_by_symid = sm->mm->realloc(sm->sortorder_by_symid, sm->max_symid * sizeof(SYM_ID_T));
+        sm->sortorder_by_symid = sm->mm->realloc(sm->sortorder_by_symid, sm->max_symid * sizeof(symid_t));
         onOomDie(sm->sortorder_by_symid, s8("in %s realloc #2 failed"), FN_NAME);
     }
-    SYM_ID_T id = sm->next_symid;
+    symid_t id = sm->next_symid;
     sm->rp_by_symid[id] = sm->next_rp;
     sm->sortorder_by_symid[0] = SM_SYMS_NOT_SORTED;      // OPEN: check if the new syms makes the syms unsorted
     sm->next_symid++;
@@ -116,7 +116,7 @@ pub SYM_ID_T sm_id(BK_SM *sm, char *name) {
     return id;
 }
 
-pub char * sm_name(BK_SM *sm, SYM_ID_T id) {
+pub char * sm_name(BK_SM *sm, symid_t id) {
     return &sm->symname_buf[sm->rp_by_symid[id]];
 }
 
@@ -125,7 +125,7 @@ pvt void _sm_sort_syms(BK_SM *sm) {
     sm->sortorder_by_symid[0] = SM_SYMS_SORTED;
 }
 
-pub bool sm_id_le(BK_SM *sm, SYM_ID_T a, SYM_ID_T b) {
+pub bool sm_id_le(BK_SM *sm, symid_t a, symid_t b) {
     if (sm->sortorder_by_symid == SM_SYMS_NOT_SORTED) _sm_sort_syms(sm);
     return sm->sortorder_by_symid[a] < sm->sortorder_by_symid[b];
 }

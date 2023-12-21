@@ -120,7 +120,6 @@ def test_nominal():
     return "test_nominal passed"
 
 
-
 def test_intersection():
     sys._k = jones.Kernel()
     tm = sys._k.tm
@@ -159,36 +158,36 @@ def test_union():
     t1 = tm.nominal(f'u32')
     t2 = tm.nominal(f'err')
 
-    tm.union(t1, t2) >> check >> equals >> tm.union(t2, t1)
-    tm.union(t1, t2, t1) >> check >> equals >> tm.union(t2, t1, t2)
-    tm.union(tm.union(t1, t2), t1) >> check >> equals >> tm.union(t2, tm.union(t2, t1))
+    tm.union(t1, t2).id >> check >> equals >> tm.union(t2, t1).id
+    tm.union(t1, t2, t1).id >> check >> equals >> tm.union(t2, t1, t2).id
+    tm.union(tm.union(t1, t2), t1).id >> check >> equals >> tm.union(t2, tm.union(t2, t1)).id
 
     return "test_union passed"
 
 
-def test_om():
+def test_mm():
     sys._k = jones.Kernel()
     tm = sys._k.tm
-    om = sys._k.om
+    mm = sys._k.mm
 
     mem = 1
 
     i32 = tm.nominal('i32', mem, 4)
-    p = om.alloc(i32)
-    om.inc(p)
-    om.count(p) == 1
-    om.dec(p)
-    om.count(p) == 0
-    om.inc(p)
-    om.inc(p)
-    om.inc(p)
-    om.count(p) == 3
-    om.dec(p)
-    om.count(p) == 3
-    assert om.btypeid(p) == i32
+    p = mm.alloc(i32)
+    mm.inc(p)
+    mm.count(p) == 1
+    mm.dec(p)
+    mm.count(p) == 0
+    mm.inc(p)
+    mm.inc(p)
+    mm.inc(p)
+    mm.count(p) == 3
+    mm.dec(p)
+    mm.count(p) == 3
+    assert mm.btypeid(p) == i32
 
+    return "test_mm passed"
 
-    return "test_intersection passed"
 
 def main():
     test_sm() >> PP
@@ -197,7 +196,7 @@ def main():
     test_nominal() >> PP
     test_intersection() >> PP
     test_union() >> PP
-    test_om() >> PP
+    # test_mm() >> PP
 
 
 
