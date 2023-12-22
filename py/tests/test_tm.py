@@ -5,7 +5,7 @@ from bones import jones
 import dm.pp
 from groot import PP
 
-import sys
+import sys, itertools
 
 @coppertop(style=binary)
 def apply_(fn, arg):
@@ -36,9 +36,7 @@ class tvfloat(float):
 
 
 def test_sm():
-    1 >> PP
     sys._k = jones.Kernel()
-    2 >> PP
     sm = sys._k.sm
 
     id1 = sm.symid("joe")
@@ -120,6 +118,33 @@ def test_nominal():
     return "test_nominal passed"
 
 
+
+def test_intersection():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    mem = 1
+    ccy = 2
+
+    tCcy = tm.exclusiveNominal('ccy', ccy)
+    print(f'1: tCcy: {sys.getrefcount(tCcy)}')
+
+    GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
+    print(f'2: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)}')
+
+    t = tm.nameAs(GBP, 'GBP')
+    print(f'3: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)}')
+    tm.name(GBP) >> check >> equals >> 'GBP'
+
+    print(f'4: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)}')
+    u32 = tm.exclusiveNominal('u32', mem)
+    print(f'5: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)},  u32: {sys.getrefcount(u32)}')
+    t = tm.intersection(u32, GBP)
+    print(f'6: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)},  u32: {sys.getrefcount(u32)}')
+
+    return "test_intersection passed"
+
+
 def test_intersection():
     sys._k = jones.Kernel()
     tm = sys._k.tm
@@ -143,10 +168,12 @@ def test_intersection():
     u32 = tm.exclusiveNominal('u32', mem)
     u64 = tm.exclusiveNominal('u64', mem)
     tm.intersection >> apply_ >> (u32, u64) >> check >> raises >> TypeError
-
-    t = tm.intersection(GBP, u32)
+    t = tm.intersection(u32, GBP)
     tm.intersection >> apply_ >> (t, u64) >> check >> raises >> TypeError
     # tm.intersection >> apply_ >> (t, EUR) >> check >> raises >> TypeError
+
+    tl = tm.intersectionTl(tm.intersection(GBP, u32))
+    [e.id for e in tl] >> check >> equals >> [tCcy.id, tm.nominal(f'_GBP').id, u32.id]
 
     return "test_intersection passed"
 
@@ -161,6 +188,9 @@ def test_union():
     tm.union(t1, t2).id >> check >> equals >> tm.union(t2, t1).id
     tm.union(t1, t2, t1).id >> check >> equals >> tm.union(t2, t1, t2).id
     tm.union(tm.union(t1, t2), t1).id >> check >> equals >> tm.union(t2, tm.union(t2, t1)).id
+
+    tl = tm.unionTl(tm.union(tm.union(t1, t2), t1))
+    tuple([e.id for e in tl]) >> check >> equals >> (t1.id, t2.id)
 
     return "test_union passed"
 
@@ -203,6 +233,6 @@ def main():
 if __name__ == '__main__':
     sys._k = jones.Kernel()
     main()
-    'passed' >> PP
     sys._k = None
+    'passed' >> PP
 
