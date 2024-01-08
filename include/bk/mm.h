@@ -34,6 +34,14 @@
 #define MM_BLOCK_SIZE _32K
 
 
+// Page Allocator - reserves VM, allocate integer number of pages, keeps track of dropped ones, protecting, reusing or
+// returning then to os when desired, and reserves extra VM as necessary. can't move but could coalesce adjacent pages
+
+// BM - Block Manager
+typedef struct {
+    int fred;
+} BK_BM;
+
 
 typedef struct {
     void *(* malloc)(size_t);
@@ -41,12 +49,8 @@ typedef struct {
     void *(* realloc)(void *, size_t);
 } BK_MM;
 
-// Page Allocator - reserves VM, allocate integer number of pages, keeps track of dropped ones, protecting, reusing or
-// returning then to os when desired, and reserves extra VM as necessary. can't move but could coalesce adjacent pages
 
-//struct PA {
-//
-//};
+
 
 
 pub BK_MM * MM_create();

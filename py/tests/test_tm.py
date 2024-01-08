@@ -155,13 +155,13 @@ def test_intersection():
     tCcy = tm.exclusiveNominal('ccy', ccy)
 
     GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
-    # GBP >> check >> equals >> tm.intersection(tCcy, tm.nominal(f'_GBP'))
+    GBP.id >> check >> equals >> tm.intersection(tm.nominal(f'_GBP'), tCcy).id
     EUR = tm.intersection(tCcy, tm.nominal(f'_EUR'))
 
     # test nameAs
     tm.name(GBP) >> check >> different >> 'GBP'
     t = tm.nameAs(GBP, 'GBP')
-    # GBP >> check >> equals >> t
+    GBP.id >> check >> equals >> t.id
     tm.name(GBP) >> check >> equals >> 'GBP'
 
     # test exclusivity
@@ -170,7 +170,6 @@ def test_intersection():
     tm.intersection >> apply_ >> (u32, u64) >> check >> raises >> TypeError
     t = tm.intersection(u32, GBP)
     tm.intersection >> apply_ >> (t, u64) >> check >> raises >> TypeError
-    # tm.intersection >> apply_ >> (t, EUR) >> check >> raises >> TypeError
 
     tl = tm.intersectionTl(tm.intersection(GBP, u32))
     [e.id for e in tl] >> check >> equals >> [tCcy.id, tm.nominal(f'_GBP').id, u32.id]

@@ -23,17 +23,16 @@ pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
 
     int n = 0;
     BK_TM *tm = k->tm;
-    n += tm_setNominalTo(tm, "m8", _m8) == 0;
-    n += tm_setNominalTo(tm, "m16", _m16) == 0;
-    n += tm_setNominalTo(tm, "m32", _m32) == 0;
-    n += tm_setNominalTo(tm, "m64", _m64) == 0;
-    n += tm_setNominalTo(tm, "p64", _p64) == 0;
-    n += tm_setNominalTo(tm, "litint", _litint) == 0;
-    n += tm_setNominalTo(tm, "i32", _i32) == 0;
+    n += tm_nominal_at(tm, "m8", B_M8) == 0;
+    n += tm_nominal_at(tm, "m16", B_M16) == 0;
+    n += tm_nominal_at(tm, "m32", B_M32) == 0;
+    n += tm_nominal_at(tm, "m64", B_M64) == 0;
+    n += tm_nominal_at(tm, "litint", B_LITINT) == 0;
+    n += tm_nominal_at(tm, "i32", B_I32) == 0;
 
     if (n) {
         mm->free(tm);
-        die("%i conflicts in tm_setNominalTo\n", n);
+        die("%i conflicts in tm_nominal_at\n", n);
     }
     return k;
 }

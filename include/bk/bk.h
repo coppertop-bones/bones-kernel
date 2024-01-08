@@ -135,7 +135,7 @@ typedef unsigned int    usize32;
 
 
 #define sizeof(x)    (ptrdiff_t)sizeof(x)
-#define alignof(x)   (ptrdiff_t)_Alignof(x)
+#define bk_alignof(x)   (ptrdiff_t)_Alignof(x)
 #define countof(a)   (sizeof(a) / sizeof(*(a)))
 #define lengthof(cs)  (countof(cs) - 1)
 
@@ -150,7 +150,7 @@ typedef struct {
 
 #define s8_sz(s) (size)(s.opaque)
 
-typedef unsigned int symid_t;
+typedef u32 symid_t;    // 4 billion syms
 #define SM_NA_SYM 0
 
 

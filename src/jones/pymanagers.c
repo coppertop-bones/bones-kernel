@@ -8,7 +8,7 @@
 #include "../bk/em.c"
 #include "../bk/tm.c"
 #include "../bk/tp.c"
-#include "../bk/kernel.c"
+#include "../bk/k.c"
 #include "lib/pyutils.h"
 
 
@@ -123,18 +123,20 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssiz
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
     if (!PyLong_Check(args[1])) return PyErr_Format(PyExc_TypeError, "exclusionCategory must be an integer");
     btexclusioncat_t excl = PyLong_AsLong(args[1]);
-    if (excl != btmemory &&
-        excl != btuser1 &&
-        excl != btuser2 &&
-        excl != btuser3 &&
-        excl != btuser4 &&
-        excl != btuser5 &&
-        excl != btuser6 &&
-        excl != btuser7) {
+    if (excl != btememory &&
+        excl != bteptr &&
+        excl != bteuser1 &&
+        excl != bteuser2 &&
+        excl != bteuser3 &&
+        excl != bteuser4 &&
+        excl != bteuser5 &&
+        excl != bteuser6) {
         return PyErr_Format(PyExc_TypeError, "invalid exclusion category");
     }
+    // OPEN: add size for btememory
     char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
-    btypeid_t btypeid = tm_exclnominal(self->tm, name, excl);
+    btypesize_t sz = 0;
+    btypeid_t btypeid = tm_exclnominal(self->tm, name, excl, sz);
     if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
         answer->btypeid = btypeid;
@@ -157,7 +159,7 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
     checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // create a type list of the correct length
-    tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), alignof(btypeid_t));
+    tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
     tl[0] = (btypeid_t) nargs;
     for (int i=1; i <= nargs; i++) {
         if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {
@@ -305,7 +307,7 @@ pvt PyObject * PyTM_union(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // create a type list of the correct length
-    btypeid_t *tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), alignof(btypeid_t));
+    btypeid_t *tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
     tl[0] = (btypeid_t) nargs;
     for (int i=1; i <= nargs; i++) {
         if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {

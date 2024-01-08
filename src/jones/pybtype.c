@@ -5,7 +5,7 @@
 #include "../../include/bk/tm.h"
 
 
-// OPEN: for performance could keep track of instances and use ref counting rather than btype creation to answer a btype
+// OPEN: for performance could keep track of instances and use ref counting rather than PyBType creation to answer a btype
 
 pvt PyObject * PyBType_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     struct PyBType *self = (struct PyBType *) type->tp_alloc(type, 0);

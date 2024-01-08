@@ -111,9 +111,11 @@ tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
     return tlid;
 }
 
-tdd btypeid_t _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusioncat_t excl, u32 idx, symid_t symid, btypeid_t id) {
-    btypeid_t btypeid = tm->next_btypeId++;
-    if (btypeid >= tm->max_btypeId) {
+tdd btypeid_t _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusioncat_t excl, u32 idx, symid_t symid, btypeid_t btypeid) {
+    // OPEN: add size
+    if (btypeid == 0) btypeid = tm->next_btypeId++;
+    // OPEN: do we restrict the range of directly assigned btypeids?
+    while (btypeid >= tm->max_btypeId) {
         tm->max_btypeId += TM_MAX_BTYPEID_INC_SIZE;
         _growTo((void **)&tm->summary_by_btypeid, tm->max_btypeId * sizeof(struct btsummary), tm->mm, FN_NAME);
         _growTo((void **)&tm->symid_by_btypeid, tm->max_intid * sizeof(symid_t), tm->mm, FN_NAME);
@@ -121,9 +123,9 @@ tdd btypeid_t _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusionca
     tm->symid_by_btypeid[btypeid] = symid;
     tm->summary_by_btypeid[btypeid].bmtid = bmtid;
     tm->summary_by_btypeid[btypeid].excl = excl;
-    // OPEN switch on bmtid
-    tm->summary_by_btypeid[btypeid].intId = id;
+    tm->summary_by_btypeid[btypeid]._id = btypeid;
     ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
+    if (btypeid >= tm->next_btypeId) tm->next_btypeId = btypeid + 1;
     return btypeid;
 }
 
@@ -201,21 +203,40 @@ pub btypeid_t tm_btypeid(BK_TM *tm, char *name) {
         return 0;
 }
 
-pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl) {
+pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl, btypesize_t sz) {
+    // answers the btypeid corresponding to name, creating a new one if it does not already exist
     int res;  btypeid_t btypeid;  symid_t symid;  u32 idx;
-    symid = sm_id(tm->sm, name);                                        // get symid of name
-    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
+    symid = sm_id(tm->sm, name);                                                        // get symid of name
+    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);   // get index of the btypeid corresponding to symid
     if (res == HT_EXISTS) {
+        // already exists so check it's a nominal with the same exclusion
         btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
-        struct btsummary summary = tm->summary_by_btypeid[btypeid];
-        if (summary.excl != excl || summary.bmtid != bmtnom) return 0;      // check it's a nominal with the same exclusion
+        struct btsummary s = tm->summary_by_btypeid[btypeid];
+        if (s.bmtid != bmtnom || s.excl != excl) return B_NAT;          // OPEN: check size
         return btypeid;
-    }
-    else {
-        // create a new nominal in an exclusive category
-        return _new_type_summary_at(tm, bmtnom, excl, idx, symid, 0);
+    } else {
+        // create a new nominal in the given exclusive category
+        return _new_type_summary_at(tm, bmtnom, excl, idx, symid, 0);   // OPEN: add size
     }
 }
+
+pub btypeid_t tm_exclnominal_at(BK_TM *tm, char *name, btexclusioncat_t excl, btypesize_t sz, btypeid_t btypeid) {
+    // answers the btypeid. if btypedid already exists check name and that it is a nominal. if not create it.
+    int res;  symid_t symid;  u32 idx;  struct btsummary s;
+    if (btypeid == 0) return B_NAT;
+    if (btypeid < tm->next_btypeId && (s = tm->summary_by_btypeid[btypeid]).bmtid != bmterr) {
+        // already exists so check we are referring to the same type
+        if (s.bmtid != bmtnom || s.excl != excl || strcmp(name, tm_name(tm, btypeid)) != 0) return B_NAT;          // OPEN: check size
+        return btypeid;
+    } else {
+        // if name is not already in use create a new nominal
+        symid = sm_id(tm->sm, name);
+        idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
+        if (res == HT_EXISTS) return B_NAT;
+        return _new_type_summary_at(tm, bmtnom, excl, idx, symid, btypeid);
+    }
+}
+
 
 // set of values intersection ((1 2 3) + (4 5)) & ((1 2 3) + (6 7)) = (1 2 3 4 5) & (1 2 3 6 7) = (1 2 3)
 // (int + str) & (int + bool) => (int+int) & (int+bool) & (str+int) & (str+bool)
@@ -223,8 +244,8 @@ pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl) {
 
 
 pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist) {
-    i32 i, j, res, numTypes, hasUnions;  btexclusioncat_t excl = 0;  TM_TLID_T tlid;
-    btypeid_t btypeid, *interTl, *p1, *p2, *p3, *nextTypelist;
+    i32 i, j, res, numTypes, hasUnions;  btypeid_t btypeid;  btexclusioncat_t excl = 0;  TM_TLID_T tlid;
+    btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist;
     TM_XXXID_T intid;  struct btsummary *sum;
     // (A&B) & (C&D)  = A & B & C & D
     // (A&B) & (B&C)  = A & B & C
@@ -368,7 +389,7 @@ pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
     if (res == HT_EXISTS) {
         existingId = ht_entry(tm->btypeid_by_symidhash, idx);
-        return (existingId == btypeid) ? btypeid : 0;
+        return (existingId == btypeid) ? btypeid : B_NAT;
     } else {
         ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
         tm->symid_by_btypeid[btypeid] = symid;
@@ -377,31 +398,38 @@ pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
 }
 
 pub btypeid_t tm_nominal(BK_TM *tm, char *name) {
+    // answers the btypeid corresponding to name, creating a new one if it does not already exist
     int res;  btypeid_t btypeid;  symid_t symid;  u32 idx;
-    symid = sm_id(tm->sm, name);                                        // get symid of name
-    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);      // get index of the btypeid corresponding to symid
+    // if name is already taken
+    symid = sm_id(tm->sm, name);                                                        // get symid of name
+    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);   // get index of the btypeid corresponding to symid
     if (res == HT_EXISTS) {
+        // already exists so check it's a nominal with no exclusion
         btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
-        return (tm->summary_by_btypeid[btypeid].bmtid == bmtnom) ? btypeid : 0;   // check it's a nominal
-    }
-    else {
+        struct btsummary s = tm->summary_by_btypeid[btypeid];
+        if (s.bmtid != bmtnom || s.excl != btenone) return B_NAT;
+        return btypeid;
+    } else {
         // create a new nominal
-        return _new_type_summary_at(tm, bmtnom, 0, idx, symid, 0);
+        return _new_type_summary_at(tm, bmtnom, btenone, idx, symid, 0);
     }
 }
 
-tdd int tm_setNominalTo(BK_TM *tm, char *name, btypeid_t btypeid) {
-     symid_t symid;  int res;  u32 idx;
-    if (tm->summary_by_btypeid[btypeid].bmtid != bmterr) return 0;
-    symid = sm_id(tm->sm, name);
-    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
-    if (res == HT_EXISTS) return 0;
-
-    tm->summary_by_btypeid[btypeid].bmtid = bmtnom;
-    tm->symid_by_btypeid[btypeid] = symid;
-    ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
-    if (btypeid >= tm->next_btypeId) tm->next_btypeId = btypeid + 1;
-    return btypeid;
+pub btypeid_t tm_nominal_at(BK_TM *tm, char *name, btypeid_t btypeid) {
+    // answers the btypeid. if btypedid already exists check name and that it is a nominal. if not create it.
+    int res;  symid_t symid;  u32 idx;  struct btsummary s;
+    if (btypeid == 0) return B_NAT;
+    if (btypeid < tm->next_btypeId && (s = tm->summary_by_btypeid[btypeid]).bmtid != bmterr) {
+        // already exists so check we are referring to the same type
+        if (s.bmtid != bmtnom || s.excl != btenone || strcmp(name, tm_name(tm, btypeid)) != 0) return B_NAT;
+        return btypeid;
+    } else {
+        // if name is not already in use create a new nominal
+        symid = sm_id(tm->sm, name);
+        idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
+        if (res == HT_EXISTS) return B_NAT;
+        return _new_type_summary_at(tm, bmtnom, btenone, idx, symid, btypeid);
+    }
 }
 
 pub size tm_size(BK_TM * tm, btypeid_t btypeid) {

@@ -1,5 +1,5 @@
 #include "../bk/pp.c"
-#include "../bk/kernel.c"
+#include "../bk/k.c"
 #include "../../src/bk/tp.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {

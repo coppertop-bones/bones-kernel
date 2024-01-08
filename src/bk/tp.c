@@ -245,7 +245,7 @@ tdd FILE *tp_open(BK_TP *tp, char const *mode) {
     }
     if (!cv._tp->buf) return 0;
 
-    struct TP_Cookie *c = allocInBuckets(cv._tp->buckets, sizeof(struct TP_Cookie), alignof(struct TP_Cookie));
+    struct TP_Cookie *c = allocInBuckets(cv._tp->buckets, sizeof(struct TP_Cookie), bk_alignof(struct TP_Cookie));
     if (!c) {
         if (bufAllocated) {
 //            cv._tp->mm->free(cv._tp->buf);
@@ -276,7 +276,8 @@ pub int tp_sizeof(TPN tp) {
         int n = tp_nseq(tp);
         for (int i = 1; i <= n; i++) answer += tp_sizeof(tp_at(tp, i));
     } else
-        return tp_sz(tp);
+        answer = tp_sz(tp);
+    return answer;
 }
 
 pvt char * tp_render_(TPN x, char *p) {
@@ -303,7 +304,7 @@ pub S8 tp_render(BK_TP *tp, TPN x) {
 }
 
 pub void tp_printfb(BK_TP *tp, char const *format, ...) {
-    char *buf;  int avail, buf_sz;  size n;  va_list args;
+    char *buf;  int buf_sz;  size n;  va_list args;
     union TP_PTP cv = { .tp = tp };
     buf = cv._tp->buf + cv._tp->end;
     buf_sz = cv._tp->buf_sz - cv._tp->end;
@@ -336,13 +337,13 @@ pub void tp_printfb(BK_TP *tp, char const *format, ...) {
 //        if (count == 1) {
 //            answer = x;
 //        } else if (count == 2) {
-//            buf = allocInBuckets(cv._tp->buckets, sizeof(TPN*) * (count + 1), alignof(TPN*));
+//            buf = allocInBuckets(cv._tp->buckets, sizeof(TPN*) * (count + 1), bk_alignof(TPN*));
 //            memset(buf, 0, sizeof(TPN*) * (count + 1));
 //            buf[0] = count;
 //            buf[1] = answer;
 //            buf[2] = x;
 //        } else {
-//            buf = reallocInBuckets(cv._tp->buckets, buf, sizeof(TPN*) * (count + 1), alignof(TPN*));
+//            buf = reallocInBuckets(cv._tp->buckets, buf, sizeof(TPN*) * (count + 1), bk_alignof(TPN*));
 //        }
 //        x = va_arg(args, TPN);
 //    }

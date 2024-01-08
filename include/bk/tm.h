@@ -2,35 +2,77 @@
 // TM - TYPE MANAGER
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef API_BK_BM_H
-#define API_BK_BM_H "bk/tm.h"
+#ifndef BK_TM_H
+#define BK_TM_H "bk/tm.h"
 
 #include "bk.h"
 #include "sm.h"
 #include "ht.h"
 
 
-// typelist is length prefixed array of btypeid, i.e. a btypeid_t *
-typedef unsigned int TM_TLID_T;
-typedef unsigned int TM_XXXID_T;
-#define TM_RP_BY_TLID_INC_SIZE (0x4000 / sizeof(RP))        /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
+typedef u32 BTYPEID_T_TYPE;         /* currently ls 18 bits for 256k types */
+typedef u8 BMETATYPEID_T_TYPE;      /* currently 4 bits for 16 metatypes */
+typedef u8 BTEXCLUSIONCAST_T_TYPE;  /* currently 3 bits for 8 exclusion categories */
+typedef u16 BTSIZE_TYPE;            /* only allow types up to 64k in size */
 
-typedef unsigned int BTYPEID_T_TYPE;            /* currently ls 18 bits for 256k types */
-typedef unsigned char BMETATYPEID_T_TYPE;       /* currently 4 bits for 16 metatypes */
-typedef unsigned char BTEXCLUSIONCAST_T_TYPE;   /* currently 3 bits for 8 exclusion categories */
+// typelist is length prefixed array of btypeid, i.e. a btypeid_t *
+typedef u32 TM_TLID_T;
+typedef u32 TM_SLID_T;
+typedef u32 TM_XXXID_T;
+#define TM_RP_BY_TLID_INC_SIZE (0x4000 / sizeof(RP))        /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
 
 
 typedef enum : BTYPEID_T_TYPE {
-    _nat = 0,           // not-a-type - i.e. an error code
-    _m8 = 1,
-    _m16 = 2,
-    _m32 = 3,
-    _m64 = 4,
-    _p64 = 5,
-    _i32 = 6,
-    _litint = 7,
-    _null = 8,          // empty set - not the same as not-a-type
+    B_NAT = 0,       // not-a-type - i.e. an error code
+    B_NULL,          // empty set - not the same as not-a-type
+    B_VOID,
+    B_M8,
+    B_M16,
+    B_M32,
+    B_M64,
+    B_CHAR,         // implementation defined (poss with compiler flags)
+    B_U8,
+    B_U16,
+    B_U32,
+    B_U64,
+    B_I8,
+    B_I16,
+    B_I32,
+    B_I64,
+    B_F32,
+    B_F64,
+    B_P,
+    B_PP,
+    B_PPP,
+    B_RP8,
+    B_RP16,
+    B_RP32,
+    B_RP64,
+    B_LITINT,
+    B_LITDEC,
+
+    B_EXTERN,
+    B_STATIC,
+    B_AUTO,
+    B_REGISTER,
+    B_VARARGS,
+    B_CONST,
+    B_CONST_P,
+    B_RESTRICT,
+    B_VOLATILE,
+    B_FN,
+    B_CHAR_STAR,
+    B_CHAR_CONST_STAR,
+    B_CHAR_CONST_STAR_CONST,
+    B_VOID_STAR,
+    B_FN_PTR,
+    B_EXTERN_FN,
+    B_EXTERN_FN_PTR,
+
 } btypeid_t;
+
+
+typedef BTSIZE_TYPE btypesize_t;
 
 
 typedef enum : BMETATYPEID_T_TYPE {
@@ -60,15 +102,15 @@ typedef enum : BMETATYPEID_T_TYPE {
 // actually since exclusion is detected on union creation speed is not that important - so we can have intersections of
 // exclusions but that is a little more involved - use the bitmask for the moment
 typedef enum : BTEXCLUSIONCAST_T_TYPE {
-    btnone = 0,
-    btmemory = 1,
-    btuser1 = 2,
-    btuser2 = 4,
-    btuser3 = 8,
-    btuser4 = 16,
-    btuser5 = 32,
-    btuser6 = 64,
-    btuser7 = 128,
+    btenone = 0,
+    btememory = 1,
+    bteptr = 2,
+    bteuser1 = 4,
+    bteuser2 = 8,
+    bteuser3 = 16,
+    bteuser4 = 32,
+    bteuser5 = 64,
+    bteuser6 = 128,
 } btexclusioncat_t;
 
 
@@ -76,10 +118,10 @@ typedef enum : BTEXCLUSIONCAST_T_TYPE {
 // also will store recursion, exclusivecat
 struct btsummary {
     bmetatypeid_t bmtid;        // 1
-    btexclusioncat_t excl;   // 1
-    unsigned char unused2;      // 1
-    unsigned char unused3;      // 1
+    btexclusioncat_t excl;      // 1
+    btypesize_t unused2;        // 2
     union {
+        btypeid_t _id;
         btypeid_t nomId;
         btypeid_t intId;
         btypeid_t uniId;
@@ -96,12 +138,13 @@ struct btsummary {
 
 #define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by symid_t and vm space is cheap */
 #define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
-#define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(btypeid_t))  /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
+#define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(btypeid_t))    /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
 #define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macos M1, 1 page on windows intel */
 
 // HT_STRUCT2(name, slot_t, extravars)
 HT_STRUCT2(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
 HT_STRUCT2(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
+HT_STRUCT2(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
 HT_STRUCT2(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
 
 typedef struct PVT_TM {
@@ -120,13 +163,22 @@ typedef struct PVT_TM {
     ht_struct(TM_BTYPEID_BY_SYMIDHASH) *btypeid_by_symidhash; 
 
     // type lists
-    btypeid_t *typelist_buf;                           // VM buffer of btypeid (typelist) indexed by RP
+    btypeid_t *typelist_buf;                            // VM buffer of btypeid (typelist) indexed by RP
     RP max_rp;
     RP next_rp;
     RP *rp_by_tlid;  
     TM_TLID_T max_tlid;
     TM_TLID_T next_tlid;
-    ht_struct(TM_TLID_BY_TLHASH) *tlid_by_tlhash;   
+    ht_struct(TM_TLID_BY_TLHASH) *tlid_by_tlhash;
+
+    // sym lists
+    symid_t *symlist_buf;                               // VM buffer of symid (symlist) indexed by RP
+    RP max_symrp;
+    RP next_symrp;
+    RP *symrp_by_tlid;
+    TM_SLID_T max_slid;
+    TM_SLID_T next_slid;
+    ht_struct(TM_SLID_BY_SLHASH) *slid_by_tlhash;
 
     // intersections
     TM_XXXID_T max_intid;
@@ -150,16 +202,27 @@ typedef struct PVT_TM {
     btypeid_t *btypid_by_tupid;
     
     // structs
+    // OPEN: keep structs by tl and by sorted tl?
     TM_XXXID_T max_strid;
     TM_XXXID_T next_strid;
+    ht_struct(TM_XXXID_BY_SLIDTLIDHASH) *strid_by_slidtlidhash;     // OPEN: hash on sl and tl values?
+    TM_TLID_T *tlid_by_strid;
+    TM_TLID_T *slid_by_strid;
+    btypeid_t *btypid_by_strid;
     
     // records - need to have a think about how to do these
     TM_XXXID_T max_recid;
     TM_XXXID_T next_recid;
     
-    // sequences - not much different to any other type
+    // sequences - effectively just a btypeid of the contained type
     TM_XXXID_T max_seqid;
     TM_XXXID_T next_seqid;
+
+    // how do we move a double*? -  mm must keep size or we have to push responsibility for moving onto containing stuct
+    // struct matrix {int N; int M; data double*;} but to create a view we want to share the double* so the double*
+    // must be ref counted and sized
+
+//    8k medium object max is 8192 - 512 * 16 slots - 9 bits
     
     // maps
     TM_XXXID_T max_mapid;
@@ -177,21 +240,33 @@ typedef struct PVT_TM {
 pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, struct TPM *);
 pub int TM_trash(BK_TM *);
 
-pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t);
+pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t, btypesize_t);
+pub btypeid_t tm_exclnominal_at(BK_TM *, char *, btexclusioncat_t, btypesize_t, btypeid_t);
 pub btypeid_t tm_btypeid(BK_TM *, char *);
+pub btypeid_t tm_fn(BK_TM *, btypeid_t tArgs, btypeid_t tRet);
+pub btypeid_t tm_fn_at(BK_TM *, btypeid_t tArgs, btypeid_t tRet, btypeid_t);
 pub btypeid_t tm_inter(BK_TM *, btypeid_t *);
+pub btypeid_t tm_inter_at(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);
+pub btypeid_t tm_map(BK_TM *, btypeid_t tKey, btypeid_t tValue);
+pub btypeid_t tm_map_at(BK_TM *, btypeid_t tKey, btypeid_t tValue, btypeid_t);
 pub char * tm_name(BK_TM *, btypeid_t);
 pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
 pub btypeid_t tm_nominal(BK_TM *, char *);
+pub btypeid_t tm_nominal_at(BK_TM *, char *, btypeid_t);
 pub size tm_size(BK_TM *, btypeid_t);
+pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained);
+pub btypeid_t tm_seq_at(BK_TM *, btypeid_t tContained, btypeid_t);
 pub btypeid_t tm_struct(BK_TM *, symid_t *, btypeid_t *);
+pub btypeid_t tm_struct_at(BK_TM *, symid_t *, btypeid_t *, btypeid_t);
 pub btypeid_t tm_tuple(BK_TM *, btypeid_t *);
+pub btypeid_t tm_tuple_at(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t * tm_tuple_tl(BK_TM *, btypeid_t);
 pub btypeid_t tm_union(BK_TM *, btypeid_t *);
+pub btypeid_t tm_union_at(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 
-#endif // API_BK_BM_H
+#endif // BK_TM_H
 
 
 
@@ -223,7 +298,7 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 //
 //typedef struct {
 //    btypeid_t n;                    // 4
-//    btype ts[];                     // n * 4
+//    btypeid_t ts[];                     // n * 4
 //} BTypeList;
 //
 //struct BTIntersection {
@@ -251,17 +326,17 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 //};
 //
 //struct BTSeq {
-//    btype tElem;                    // 4
+//    btypeid_t tElem;                    // 4
 //};
 //
 //struct BTMap {
-//    btype tKey;                     // 4
-//    btype tValue;                   // 4
+//    btypeid_t tKey;                     // 4
+//    btypeid_t tValue;                   // 4
 //};
 //
 //struct BTFunc {
-//    btype tRet;                     // 4
-//    btype tFn;                      // 4
+//    btypeid_t tRet;                     // 4
+//    btypeid_t tFn;                      // 4
 //    bsymlist *names;                // 8
 //    btypelist *argtypes;            // 4 + n * 4
 //};
@@ -328,7 +403,7 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 //enum managedmode : char {
 //    none = 0,           // nothing (0 bytes) is placed before aligned object
 //    moving = 2,         // stype (2 bytes) is placed before aligned object
-//    multi = 4,          // box by placing the btype (4 bytes) before aligned object
+//    multi = 4,          // box by placing the btypeid_t (4 bytes) before aligned object
 //};
 
 // boxing on stack - a 16 byte struct is passed
@@ -346,7 +421,7 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 
 //struct box8 {
 //    int pad;
-//    btype btype;        // type is held in upper 4 bytes to match heap organisation
+//    btypeid_t btype;        // type is held in upper 4 bytes to match heap organisation
 //    union {
 //        double d;
 //        long l;
@@ -355,7 +430,7 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 //};                      // 16
 
 //struct box4 {
-//    btype btype;        // type is held in upper 4 bytes to match heap organisation
+//    btypeid_t btype;        // type is held in upper 4 bytes to match heap organisation
 //    union {
 //        char c;
 //        short s;
@@ -373,11 +448,11 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 // stack
 // ------- a -------
 // m32 pad
-// m32 btype
+// m32 btypeid
 // double a    <- *a
 // ------- b -------
 // m32 pad
-// m32 btype
+// m32 btypeid
 // double b    <- *b
 // -----------------
 
@@ -398,10 +473,10 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 // stack
 // ------- a -------
 // m32 pad
-// m32 btype
+// m32 btypeid
 // double a    <- *a
 // ------- b -------
 // m32 pad
-// m32 btype
+// m32 btypeid
 // double b    <- *b
 // -----------------

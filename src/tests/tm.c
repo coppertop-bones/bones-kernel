@@ -1,5 +1,5 @@
 #include "../bk/pp.c"
-#include "../bk/kernel.c"
+#include "../bk/k.c"
 #include "../bk/tp.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {
@@ -102,9 +102,9 @@ void test_exclusions() {
     PP(debug, txt.cs);
 
     _GBP = tm_nominal(tm, "_GBP");
-    u32 = tm_exclnominal(tm, "u32", btmemory);
-    u64 = tm_exclnominal(tm, "u64", btmemory);
-    tCcy = tm_exclnominal(tm, "ccy", btuser1);
+    u32 = tm_exclnominal(tm, "u32", btememory, 0, 0);
+    u64 = tm_exclnominal(tm, "u64", btememory, 0, 0);
+    tCcy = tm_exclnominal(tm, "ccy", bteuser1, 0, 0);
 
     GBP = intersect(tm, tCcy, tm_nominal(tm, "_GBP"));
     check(GBP != 0, "t == %i (should not be %i)", GBP, 0);
