@@ -178,7 +178,7 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
         return (PyObject *) answer;
     } else {
         TP_init(&tp, 0, buckets);
-        PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
+        PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", tm_s8_typelist(self->tm, &tp, tl).cs);
         resetToCheckpoint(buckets, &cp);
         return 0;
     }
@@ -326,7 +326,7 @@ pvt PyObject * PyTM_union(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
         return (PyObject *) answer;
     } else {
         TP_init(&tp, 0, buckets);
-        PyErr_Format(PyExc_TypeError, "There are conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
+        PyErr_Format(PyExc_TypeError, "There are conflicts within (%s)", tm_s8_typelist(self->tm, &tp, tl).cs);
         resetToCheckpoint(buckets, &cp);
         return 0;
     }

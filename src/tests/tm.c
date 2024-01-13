@@ -98,7 +98,7 @@ void test_exclusions() {
     BK_K *k = K_create(mm, &buckets);
     BK_TM *tm = k->tm;
     TP_init(&tp, 0, &buckets);
-    S8 txt = tp_render(&tp, tp_printftp(&tp, "kernel created"));
+    S8 txt = tp_s8(&tp, tp_printf(&tp, "kernel created"));
     PP(debug, txt.cs);
 
     _GBP = tm_nominal(tm, "_GBP");
@@ -116,7 +116,7 @@ void test_exclusions() {
     check(tm_btypeid(tm, "EUR") != EUR, "t == %i (should not be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
     tm_name_as(tm, EUR, "EUR");
     check(tm_btypeid(tm, "EUR") == EUR, "t == %i (should be %i) @ %i", tm_btypeid(tm, "EUR"), EUR, __LINE__);
-    check(strcmp(tm_pp(tm, &tp, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_pp(tm, &tp, EUR).cs, __LINE__);
+    check(strcmp(tm_s8(tm, &tp, EUR).cs, "EUR") == 0, "pp(EUR) != \"EUR\" but got \"%s\" @ %i", tm_s8(tm, &tp, EUR).cs, __LINE__);
 
     // check construction returns identical objects
     t7 = intersect(tm, GBP, u32);
@@ -149,8 +149,8 @@ int main() {
     TP_init(&tp, 0, &buckets);
 
 
-    TPN fred = (TPN) {.p = cv._tp->buf + start, .opaque = tp_as_s8((end - start))};
-    S8 txt = tp_render(&tp, tp_printftp(&tp, "kernel created"));
+    TPN fred = (TPN) {.p = cv._tp->buf + start, .vtsz = tp_as_s8((end - start))};
+    S8 txt = tp_s8(&tp, tp_printf(&tp, "kernel created"));
 
 
     PP(debug, "%i", countArgs(1));

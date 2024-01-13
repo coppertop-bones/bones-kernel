@@ -20,16 +20,17 @@
 // - automatic region based memory management and user apis to initiate earlier collection (including unmanaged arenas)
 //
 // FUTURE DIRECTIONS
-// - may move RST here, together with tooling such as interactive debugging, profiling, type inference, code gen etc
+// - tooling such as interactive debugging, profiling, type inference, code gen etc
 // - support itanium exception handling
 //
 // COMPONENTS
-// BUCKETS - unmanaged arena (may move to MM)
 // EM - ENUM MANAGER - sets of symbols
 // HT - HASH TABLE - utils for building hash tables, i.e. maps, sets etc
 // K - KERNEL - global singleton
-// MM - MEMORY MANAGER - api for automatic and manual management
+// MM - MEMORY MANAGER - automatic and manual management
 // OS - OPERATING SYSTEM APIs
+// QBE - RST to QBE generator
+// RST - REDUCED SYNTAX TREE
 // SM - SYMBOL MANAGER - i.e. interned strings with fast sorting
 // TM - TYPE MANAGER
 // TP - TEXT PAD - composable api for string manipulation
@@ -143,12 +144,16 @@ typedef unsigned int    usize32;
 #define s8(cs) (S8){(lengthof(cs)), (void *)cs}
 
 typedef struct {
-    size opaque;
+    size sz;
     char *cs;
 } S8;
 
+typedef struct {
+    size vtsz;    // 62 bits of length and 2 bits of meta
+    void *p;
+} TPN;
 
-#define s8_sz(s) (size)(s.opaque)
+#define s8_sz(s) (size)(s.sz)
 
 typedef u32 symid_t;    // 4 billion syms
 #define SM_NA_SYM 0

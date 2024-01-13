@@ -5,7 +5,6 @@
 #include "jones.h"
 #include "pyfns.c"
 #include "../bk/lib/os.c"
-#include "../bk/buckets.c"
 #include "pybtype.c"
 #include "pymanagers.c"
 #include "fs.c"

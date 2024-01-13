@@ -18,48 +18,27 @@
 
 #define TP_BUF_INC 1024
 
-
-#define tp_as_s8(n) (n << 32 | tpvt_s8)
-#define tp_as_seq(n) (n << 32 | tpvt_s8)
-#define tp_t(x) (enum tpvt)(x.opaque & 0x00000000FFFFFFFF)
-#define tp_sz(x) (size)((x.opaque & 0xFFFFFFFF00000000) >> 32)
+#define tp_as_s8(n) (n | tpvt_s8)
+#define tp_as_seq(n) (n | tpvt_seq)
+#define tp_t(x) (enum tpvt)(x.vtsz & 0xFFFFFFFF00000000)
+#define tp_sz(x) (size)((x.vtsz & 0x00000000FFFFFFFF))
 #define tp_at(x, i) (((TPN*) x.p)[i])
 #define tp_nseq(tp) (*((int *)tp.p))
 
 
 enum tpvt {
-    tpvt_err = 0,
-    tpvt_s8 = 1,
-    tpvt_seq = 2,
-    tpvt_empty = 3,
+    tpvt_s8 = 0x0000000000000000,           // S8
+    tpvt_seq = 0x4000000000000000,          // 4 -> 0100 - sequence of nodes
+    tpvt_slice = 0x8000000000000000,        // 8 -> 1000 - slice
+    tpvt_reserved = 0xC000000000000000,     // C -> 1100
 };
 
-struct TP_ {
-    Buckets *buckets;   // 8
-    char *buf;          // 8
-    size buf_sz;        // 8
-    size32 start;       // 4
-    size32 end;         // 4
-};
-
-union TP_PTP {
+typedef struct {
     BK_TP *tp;
-    struct TP_ *_tp;
-};
-
-struct TP_pub {
-    char reserved[sizeof(struct TP_)];
-};
-
-struct TP_Cookie {
-    struct TP_ *ptp;
     size cursor;
-};
+} TP_Cookie;
 
-typedef struct szbuf {
-    size sz;
-    char *p;
-} szbuf;
+
 
 pvt inline size tp_new_size(size n) {
     /* This effectively is a return ceil(n * φ).
@@ -72,37 +51,37 @@ pvt inline size tp_new_size(size n) {
     return n;
 }
 
-pvt int tp_grow_buf_if_needed(struct TP_Cookie *cookie, size required) {
+pvt int tp_grow_buf_if_needed(TP_Cookie *cookie, size required) {
     if (cookie->cursor > SIZE_MAX - required) {
         errno = EOVERFLOW;
         return -1;
     }
     required += cookie->cursor;
 
-    size newsize = cookie->ptp->buf_sz;
+    size newsize = cookie->tp->buf_sz;
     if (required <= newsize) return 0;
 
     while (required > newsize) newsize = tp_new_size(newsize);
 
     // OPEN: reallocInBuckets does not copy - handle this
-    char *p = reallocInBuckets(cookie->ptp->buckets, cookie->ptp->buf, newsize, 1);
+    char *p = reallocInBuckets(cookie->tp->buckets, cookie->tp->buf, newsize, 1);
     if (!p) return -1;
 
-    cookie->ptp->buf = p;
-    cookie->ptp->buf_sz = newsize;
+    cookie->tp->buf = p;
+    cookie->tp->buf_sz = newsize;
     return 0;
 }
 
-pvt int tp_apply_cursor(struct szbuf *buf, struct TP_Cookie *c) {
-    if (c->ptp->buf_sz < c->cursor) return -1;
-    buf->p = c->ptp->buf + c->cursor;
-    buf->sz = c->ptp->buf_sz - c->cursor;
+pvt int tp_apply_cursor(S8 *buf, TP_Cookie *c) {
+    if (c->tp->buf_sz < c->cursor) return -1;
+    buf->cs = c->tp->buf + c->cursor;
+    buf->sz = c->tp->buf_sz - c->cursor;
     return 0;
 }
 
-pvt size tp_copy(struct szbuf *to, struct szbuf *from) {
+pvt size tp_copy(S8 *from, S8 *to) {
     size copied = from->sz < to->sz ? from->sz : to->sz;
-    memcpy(to->p, from->p, copied);
+    memcpy(to->cs, from->cs, copied);
     return copied;
 }
 
@@ -116,17 +95,17 @@ pvt int tp_write(void *p, char const *buf, int sz) {
         errno = EINVAL;
         return -1;
     }
-    struct TP_Cookie *c = p;
+    TP_Cookie *c = p;
 
-    struct szbuf from = { sz, (char *) buf };
-    struct szbuf to;
+    S8 from = { sz, (char *) buf };
+    S8 to;
 
     if (tp_grow_buf_if_needed(c, sz) < 0) return -1;
     if (tp_apply_cursor(&to, c) < 0) return 0;
 
-    size copied = tp_copy(&to, &from);
+    size copied = tp_copy(&from, &to);
     c->cursor += copied;
-    if (c->ptp->end < c->cursor) c->ptp->end = c->cursor;
+    if (c->tp->end < c->cursor) c->tp->end = c->cursor;
     if (copied > INT_MAX) {
         errno = EOVERFLOW;
         return -1;
@@ -139,13 +118,13 @@ pvt int tp_read(void *p, char *buf, int sz) {
         errno = EINVAL;
         return -1;
     }
-    struct TP_Cookie *c = p;
-    struct szbuf from;
-    struct szbuf to = { sz, buf };
+    TP_Cookie *c = p;
+    S8 from;
+    S8 to = { sz, buf };
 
     if (tp_apply_cursor(&from, c) < 0) return 0;
 
-    size copied = tp_copy(&to, &from);
+    size copied = tp_copy(&from, &to);
     c->cursor += copied;
     if (copied > INT_MAX) {
         errno = EOVERFLOW;
@@ -155,15 +134,15 @@ pvt int tp_read(void *p, char *buf, int sz) {
 }
 
 pvt off_t tp_seek(void *p, off_t off, int whence) {
-    struct TP_Cookie *c = p;
+    TP_Cookie *c = p;
     size newoff;
     switch (whence) {
         case SEEK_SET: newoff = off; break;
         case SEEK_CUR: newoff = c->cursor + off; break;
-        case SEEK_END: newoff = c->ptp->end + off; break;
+        case SEEK_END: newoff = c->tp->end + off; break;
         default: errno = EINVAL; return -1;
     }
-    if (newoff > c->ptp->end || (off_t)newoff < 0 || newoff > (size)OFF_MAX) {
+    if (newoff > c->tp->end || (off_t)newoff < 0 || newoff > (size)OFF_MAX) {
         errno = EOVERFLOW;
         return -1;
     }
@@ -171,7 +150,7 @@ pvt off_t tp_seek(void *p, off_t off, int whence) {
     return newoff;
 }
 
-pvt int tp_close(void *p) {
+pvt int tp_close(__attribute__((unused)) void *p) {
 //    free(p);
     return 0;
 }
@@ -182,20 +161,18 @@ pvt int tp_close(void *p) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 pub void TP_init(BK_TP *tp, size initSz, Buckets *buckets) {
-    union TP_PTP cv = { .tp = tp };
-    cv._tp->start = 0;
-    cv._tp->end = 0;
-    cv._tp->buckets = buckets;
+    tp->start = 0;
+    tp->end = 0;
+    tp->buckets = buckets;
     int buf_sz = 0;
     while (buf_sz < initSz) buf_sz += TP_BUF_INC;
-    cv._tp->buf_sz = buf_sz;
-    void *buf = allocInBuckets(cv._tp->buckets, buf_sz, 1);     // OPEN: if 0 return an error code?
-    cv._tp->buf = buf_sz ? buf : 0;
+    tp->buf_sz = buf_sz;
+    void *buf = allocInBuckets(tp->buckets, buf_sz, 1);     // OPEN: if 0 return an error code?
+    tp->buf = buf_sz ? buf : 0;
 }
 
 pub void TP_free(BK_TP *tp) {
-    union TP_PTP cv = { .tp =  tp };
-    cv._tp->buf_sz = 0;
+    tp->buf_sz = 0;
 }
 
 
@@ -205,7 +182,6 @@ pub void TP_free(BK_TP *tp) {
 
 tdd FILE *tp_open(BK_TP *tp, char const *mode) {
     b32 bufAllocated = 0;  size pos;
-    union TP_PTP cv = {.tp = tp};
 
     if (strcmp(mode, "r") == 0) {
         // Open text file for reading.  The stream is positioned at the
@@ -229,121 +205,125 @@ tdd FILE *tp_open(BK_TP *tp, char const *mode) {
         // stream is positioned at the end of the file.  Subsequent writes
         // to the file will always end up at the then current end of file,
         // irrespective of any intervening fseek(3) or similar.
-        pos = cv._tp->end;
+        pos = tp->end;
     } else if (strcmp(mode, "a+") == 0) {
         // Open for reading and writing.  The file is created if it does not
         // exist.  The stream is positioned at the end of the file.  Subse-
         // quent writes to the file will always end up at the then current
         // end of file, irrespective of any intervening fseek(3) or similar.
-        pos = cv._tp->end;
+        pos = tp->end;
     } else return 0;
 
-    if (!cv._tp->buf) {
-        cv._tp->buf_sz = 128;
-        cv._tp->buf = allocInBuckets(cv._tp->buckets, cv._tp->buf_sz, 1);
+    if (!tp->buf) {
+        tp->buf_sz = 128;
+        tp->buf = allocInBuckets(tp->buckets, tp->buf_sz, 1);
         bufAllocated = 1;
     }
-    if (!cv._tp->buf) return 0;
+    if (!tp->buf) return 0;
 
-    struct TP_Cookie *c = allocInBuckets(cv._tp->buckets, sizeof(struct TP_Cookie), bk_alignof(struct TP_Cookie));
+    TP_Cookie *c = allocInBuckets(tp->buckets, sizeof(TP_Cookie), bk_alignof(TP_Cookie));
     if (!c) {
         if (bufAllocated) {
-//            cv._tp->mm->free(cv._tp->buf);
-            cv._tp->buf = 0;
-            cv._tp->buf_sz = 0;
+//            tp->mm->free(tp->buf);
+            tp->buf = 0;
+            tp->buf_sz = 0;
         }
         return 0;
     }
-    c->ptp = cv._tp;
+    c->tp = tp;
     c->cursor = pos;
 
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/funopen.3.html
     FILE *f = funopen(c, tp_read, tp_write, tp_seek, tp_close);
     if (!f) {
         if (bufAllocated) {
-//            cv._tp->mm->free(cv._tp->buf);
-            cv._tp->buf = 0;
-            cv._tp->buf_sz = 0;
+//            tp->mm->free(tp->buf);
+            tp->buf = 0;
+            tp->buf_sz = 0;
         }
-//        cv._tp->mm->free(c);
+//        tp->mm->free(c);
     }
     return f;
 }
 
-pub int tp_sizeof(TPN tp) {
+pub int tp_sizeof(TPN x) {
     int answer = 0;
-    if (tp_t(tp) == tpvt_seq) {
-        int n = tp_nseq(tp);
-        for (int i = 1; i <= n; i++) answer += tp_sizeof(tp_at(tp, i));
+    if (tp_t(x) == tpvt_seq) {
+        int n = tp_nseq(x);
+        for (int i = 1; i <= n; i++) answer += tp_sizeof(tp_at(x, i));
     } else
-        answer = tp_sz(tp);
+        answer = tp_sz(x);
     return answer;
 }
 
-pvt char * tp_render_(TPN x, char *p) {
+pvt char * _tp_s8(TPN x, char *p) {
     if (tp_t(x) == tpvt_s8) {
         size n = tp_sz(x);
         memcpy(p, x.p, n);
         return p + n;
     } else {
         size n = tp_nseq(x);
-        for (int i = 1; i <= n; i++) p = tp_render_(tp_at(x, i), p);
+        for (int i = 1; i <= n; i++) p = _tp_s8(tp_at(x, i), p);
         return p;
     }
 }
 
-pub S8 tp_render(BK_TP *tp, TPN x) {
-    union TP_PTP cv = { .tp = tp };
+pub S8 tp_s8(BK_TP *tp, TPN x) {
     if (tp_t(x) == tpvt_seq) {
         // OPEN: rather than traversing twice we could reallocInBuckets (except it doesn't work yet)
         size32 n = tp_sizeof(x);
-        char *buf = allocInBuckets(cv._tp->buckets, n, 1);
-        return (S8) {.opaque = n, .cs = tp_render_(x, buf)};
+        char *buf = allocInBuckets(tp->buckets, n, 1);
+        return (S8) {.sz = n, .cs = _tp_s8(x, buf)};
     } else
-        return (S8) {.opaque = tp_sz(x), .cs = x.p};
+        return (S8) {.sz = tp_sz(x), .cs = x.p};
 }
 
-pub void tp_printfb(BK_TP *tp, char const *format, ...) {
+pub void tp_buf_printf(BK_TP *tp, char const *format, ...) {
     char *buf;  int buf_sz;  size n;  va_list args;
-    union TP_PTP cv = { .tp = tp };
-    buf = cv._tp->buf + cv._tp->end;
-    buf_sz = cv._tp->buf_sz - cv._tp->end;
+    buf = tp->buf + tp->end;
+    buf_sz = tp->buf_sz - tp->end;
     va_start(args, format);
     n = vsnprintf(buf, buf_sz, format, args);
     if (n > buf_sz) {
         // create a new buffer from buckets, forgetting the location of the old one
         buf_sz = TP_BUF_INC;
         while (n > buf_sz) buf_sz += TP_BUF_INC;
-        buf = allocInBuckets(cv._tp->buckets, buf_sz, 1);
+        buf = allocInBuckets(tp->buckets, buf_sz, 1);
         if (buf == 0) return;
-        cv._tp->buf = buf;
-        cv._tp->buf_sz = buf_sz;
-        cv._tp->end = 0;
+        tp->buf = buf;
+        tp->buf_sz = buf_sz;
+        tp->end = 0;
         n = vsnprintf(buf, buf_sz, format, args);
     }
-    cv._tp->end += n;
+    tp->end += n;
     va_end(args);
+}
+
+pub TPN tp_buf_flush(BK_TP *tp) {
+    size start = tp->start, end = tp->end;
+    tp->start = tp->end;
+    return (TPN) {.p = tp->buf + start, .vtsz = tp_as_s8((end - start))};
 }
 
 // BK_TP *tp -> TPC ctx, ... ?
 //pub void tp_concat(BK_TP *tp, ...) {
 //    TPN *buf;  int avail, buf_sz;  size n;  va_list args;  TPN answer, x;  size count = 0;
-//    union TP_PTP cv = { .tp = tp };
 //    va_start(args, tp);
 //    x = va_arg(args, TPN);
-//    x.opaque = tpvt_empty;
+
+//    x.vtsz = tpvt_empty;
 //    while (tp_t(x) != tpvt_err) {
 //        count ++;
 //        if (count == 1) {
 //            answer = x;
 //        } else if (count == 2) {
-//            buf = allocInBuckets(cv._tp->buckets, sizeof(TPN*) * (count + 1), bk_alignof(TPN*));
+//            buf = allocInBuckets(tp->buckets, sizeof(TPN*) * (count + 1), bk_alignof(TPN*));
 //            memset(buf, 0, sizeof(TPN*) * (count + 1));
 //            buf[0] = count;
 //            buf[1] = answer;
 //            buf[2] = x;
 //        } else {
-//            buf = reallocInBuckets(cv._tp->buckets, buf, sizeof(TPN*) * (count + 1), bk_alignof(TPN*));
+//            buf = reallocInBuckets(tp->buckets, buf, sizeof(TPN*) * (count + 1), bk_alignof(TPN*));
 //        }
 //        x = va_arg(args, TPN);
 //    }
@@ -352,31 +332,24 @@ pub void tp_printfb(BK_TP *tp, char const *format, ...) {
 //        // create a new buffer from buckets, forgetting the location of the old one
 //        buf_sz = TP_BUF_INC;
 //        while (n > buf_sz) buf_sz += TP_BUF_INC;
-//        buf = allocInBuckets(cv._tp->buckets, buf_sz, 1);
+//        buf = allocInBuckets(tp->buckets, buf_sz, 1);
 //        if (buf == 0) return;
-//        cv._tp->buf = buf;
-//        cv._tp->buf_sz = buf_sz;
-//        cv._tp->end = 0;
+//        tp->buf = buf;
+//        tp->buf_sz = buf_sz;
+//        tp->end = 0;
 //        n = vsnprintf(buf, buf_sz, format, args);
 //    }
-//    cv._tp->end += n;
+//    tp->end += n;
 //    va_end(args);
 //}
 
-pub TPN tp_printftp(BK_TP *tp, char const *format, ...) {
+pub TPN tp_printf(BK_TP *tp, char const *format, ...) {
     // OPEN: split format into chunks, adding %tp as a valid format and maybe %s8
     va_list args;
     va_start(args, format);
-    tp_printfb(tp, format, args);
+    tp_buf_printf(tp, format, args);
     va_end(args);
-    return tp_flush(tp);
-}
-
-pub TPN tp_flush(BK_TP *tp) {
-    union TP_PTP cv = { .tp = tp };
-    size start = cv._tp->start;  size end = cv._tp->end;
-    cv._tp->start = cv._tp->end;
-    return (TPN) {.p = cv._tp->buf + start, .opaque = tp_as_s8((end - start))};
+    return tp_buf_flush(tp);
 }
 
 

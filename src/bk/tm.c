@@ -6,7 +6,6 @@
 #define __BK_TM_C "bk/tm.c"
 
 
-#include "buckets.c"
 #include "../../include/bk/mm.h"
 #include "../../include/bk/tm.h"
 #include "../../include/bk/tp.h"
@@ -135,41 +134,37 @@ tdd btypeid_t _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusionca
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt void tm_pb(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {
-    struct btsummary *sum;
-    symid_t symid;
-    btypeid_t *tl;
-    i32 i;
-    char sep;
+    struct btsummary *sum;  symid_t symid;  btypeid_t *tl;  i32 i;  char sep;
     if ((symid = tm->symid_by_btypeid[btypeid])) {
-        tp_printfb(tp, "%s", sm_name(tm->sm, symid));
+        tp_buf_printf(tp, "%s", sm_name(tm->sm, symid));
     } else {
         sum = tm->summary_by_btypeid + btypeid;
         switch (sum->bmtid) {
             case bmtnom:
-                tp_printfb(tp, "%s", sm_name(tm->sm, symid));
+                tp_buf_printf(tp, "%s", sm_name(tm->sm, symid));
                 break;
             case bmtint:
                 tl = tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
                 sep = 0;
                 for (i = 1; i <= (i32) tl[0]; i++) {
-                    if (sep) tp_printfb(tp, " & ");
+                    if (sep) tp_buf_printf(tp, " & ");
                     sep = 1;
                     tm_pb(tm, tp, tl[i]);
                 }
                 break;
             case bmttup:
-                tp_printfb(tp, "tup");
+                tp_buf_printf(tp, "tup");
                 break;
             case bmtuni:
-                tp_printfb(tp, "uni");
+                tp_buf_printf(tp, "uni");
                 break;
             default:
-                tp_printfb(tp, "NAT");
+                tp_buf_printf(tp, "NAT");
         }
     }
 }
-pvt inline TPN tm_tp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_flush(tp);}
-pvt inline S8 tm_pp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_render(tp, tp_flush(tp));}
+pvt inline TPN tm_pp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_buf_flush(tp);}
+pvt inline S8 tm_s8(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_s8(tp, tp_buf_flush(tp));}
 
 
 pvt void tm_pb_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {
@@ -180,13 +175,14 @@ pvt void tm_pb_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {
             tm_pb(tm, tp, typelist[i]);
         }
         else {
-            tp_printfb(tp, ", ");
+            tp_buf_printf(tp, ", ");
             tm_pb(tm, tp, typelist[i]);
         }
     }
 }
-pvt inline TPN tm_tp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_flush(tp);}
-pvt inline S8 tm_pp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_render(tp, tp_flush(tp));}
+
+pvt inline TPN tm_pp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_buf_flush(tp);}
+pvt inline S8 tm_s8_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_s8(tp, tp_buf_flush(tp));}
 
 
 
