@@ -7,7 +7,7 @@
 // Region based management. Blocks (32KB) may contain small (<= 1 line sized, 1 to 16 slots) and medium (<= 8KB)
 // objects. Although we use the term object we don't mean it in the sense of OO.
 //
-// Memory may be used in several modes. Untracked and tracked. Arena (bump) style allocation. Tracing, evaculatoin
+// Memory may be used in several modes. Untracked and tracked. Arena (bump) style allocation. Tracing, evacuation
 //
 // Features include:
 //  - born dead optimisation

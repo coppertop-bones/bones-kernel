@@ -1,22 +1,22 @@
 // ---------------------------------------------------------------------------------------------------------------------
-//                                                     Sym Manager
+// SM - SYM MANAGER
 //
-// DESCRIPTION: Bones uses symbols (a q/kdb term for strings that have been interned) extensively. Symbols are not
-//              intended for general strings usage, and it is probably performant to create less rather than more
-//              symbols. Symbols are used as type names and in enums and are dictionary presorted for fast sorting.
+// DESCRIPTION:
+// Bones uses symbols (a q/kdb term for strings that have been interned) extensively. Symbols are not intended for
+// general strings usage, and it is probably performant to create less rather than more symbols. Symbols are used as
+// type names and in enums and are dictionary presorted for faster sorting.
 //
-//              BK_SM is effectively a hash map that maps a char *name to an id, and vice versa. Symbols exist
-//              for the duration of the kernel, so the memory holding the names is grow-only (we allocate a large
-//              chunk of NO ACCESS VM, pages are made R/W on demand, and pages that no longer not need writing to
-//              are made R/O).
+// BK_SM is effectively a hash map that maps a char *name to an id, and vice versa. Symbols exist for the duration of
+// the kernel, so the memory holding the names is grow-only (we allocate a large chunk of NO ACCESS VM, pages are
+// made R/W on demand, and pages that no longer not need writing to are made R/O).
 //
-//              We sort the symbols lazily, sorting symbols added since the last sort (typically a small set) and
-//              merging that with the presorted set.
+// We sort the symbols lazily, sorting symbols added since the last sort (typically a small set) and merging that with
+// the presorted set.
 //
-//              If necessary it may be possible to increase lookup performance
-//                  better hashing for less probes
-//                  access count ordered rehashing to less frequently used symbols occur later in the prob sequence
-//                  could compare linear, quadratic, random and dual hashing
+// If necessary it may be possible to increase lookup performance
+// - better hashing for less probes
+// - access count ordered rehashing to less frequently used symbols occur later in the prob sequence
+// - could compare linear, quadratic, random and dual hashing
 // ---------------------------------------------------------------------------------------------------------------------
 
 

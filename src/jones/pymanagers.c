@@ -136,7 +136,7 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssiz
     // OPEN: add size for btememory
     char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
     btypesize_t sz = 0;
-    btypeid_t btypeid = tm_exclnominal(self->tm, name, excl, sz);
+    btypeid_t btypeid = tm_exclnominal(self->tm, name, excl, sz, 0);
     if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
         answer->btypeid = btypeid;
@@ -169,7 +169,7 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
         tl[i] = ((struct PyBType *) args[i-1])->btypeid;
     }
 
-    btypeid_t btypeid = tm_inter(self->tm, tl);
+    btypeid_t btypeid = tm_inter(self->tm, tl, 0);
 
     if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
@@ -239,7 +239,7 @@ pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject **args, Py_ssize_t nargs
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
     char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
-    btypeid_t btypeid = tm_nominal(self->tm, name);
+    btypeid_t btypeid = tm_nominal(self->tm, name, 0);
     if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
         answer->btypeid = btypeid;
@@ -317,7 +317,7 @@ pvt PyObject * PyTM_union(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
         tl[i] = ((struct PyBType *) args[i-1])->btypeid;
     }
 
-    btypeid_t btypeid = tm_union(self->tm, tl);
+    btypeid_t btypeid = tm_union(self->tm, tl, 0);
 
     if (btypeid) {
         struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));

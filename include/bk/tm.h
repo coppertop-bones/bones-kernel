@@ -122,7 +122,6 @@ struct btsummary {
     btypesize_t unused2;        // 2
     union {
         btypeid_t _id;
-        btypeid_t nomId;
         btypeid_t intId;
         btypeid_t uniId;
         btypeid_t tupId;
@@ -240,30 +239,22 @@ typedef struct PVT_TM {
 pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, struct TPM *);
 pub int TM_trash(BK_TM *);
 
-pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t, btypesize_t);
-pub btypeid_t tm_exclnominal_at(BK_TM *, char *, btexclusioncat_t, btypesize_t, btypeid_t);
+pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t, btypesize_t, btypeid_t);
 pub btypeid_t tm_btypeid(BK_TM *, char *);
 pub btypeid_t tm_fn(BK_TM *, btypeid_t tArgs, btypeid_t tRet);
 pub btypeid_t tm_fn_at(BK_TM *, btypeid_t tArgs, btypeid_t tRet, btypeid_t);
-pub btypeid_t tm_inter(BK_TM *, btypeid_t *);
-pub btypeid_t tm_inter_at(BK_TM *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_inter(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);
-pub btypeid_t tm_map(BK_TM *, btypeid_t tKey, btypeid_t tValue);
-pub btypeid_t tm_map_at(BK_TM *, btypeid_t tKey, btypeid_t tValue, btypeid_t);
+pub btypeid_t tm_map(BK_TM *, btypeid_t tKey, btypeid_t tValue, btypeid_t);
 pub char * tm_name(BK_TM *, btypeid_t);
 pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
-pub btypeid_t tm_nominal(BK_TM *, char *);
-pub btypeid_t tm_nominal_at(BK_TM *, char *, btypeid_t);
+pub btypeid_t tm_nominal(BK_TM *, char *, btypeid_t);
 pub size tm_size(BK_TM *, btypeid_t);
-pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained);
-pub btypeid_t tm_seq_at(BK_TM *, btypeid_t tContained, btypeid_t);
-pub btypeid_t tm_struct(BK_TM *, symid_t *, btypeid_t *);
-pub btypeid_t tm_struct_at(BK_TM *, symid_t *, btypeid_t *, btypeid_t);
-pub btypeid_t tm_tuple(BK_TM *, btypeid_t *);
-pub btypeid_t tm_tuple_at(BK_TM *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained, btypeid_t);
+pub btypeid_t tm_struct(BK_TM *, symid_t *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_tuple(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t * tm_tuple_tl(BK_TM *, btypeid_t);
-pub btypeid_t tm_union(BK_TM *, btypeid_t *);
-pub btypeid_t tm_union_at(BK_TM *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_union(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 
 #endif // BK_TM_H

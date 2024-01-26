@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
-//                                                  Kernel
+// K - KERNEL
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_KERNEL_C
-#define __BK_KERNEL_C "bk/kernel.c"
+#ifndef __BK_K_C
+#define __BK_K_C "bk/k.c"
 
 #include "../../include/bk/k.h"
 #include "mm.c"
@@ -23,16 +23,16 @@ pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
 
     int n = 0;
     BK_TM *tm = k->tm;
-    n += tm_nominal_at(tm, "m8", B_M8) == 0;
-    n += tm_nominal_at(tm, "m16", B_M16) == 0;
-    n += tm_nominal_at(tm, "m32", B_M32) == 0;
-    n += tm_nominal_at(tm, "m64", B_M64) == 0;
-    n += tm_nominal_at(tm, "litint", B_LITINT) == 0;
-    n += tm_nominal_at(tm, "i32", B_I32) == 0;
+    n += tm_nominal(tm, "m8", B_M8) == 0;
+    n += tm_nominal(tm, "m16", B_M16) == 0;
+    n += tm_nominal(tm, "m32", B_M32) == 0;
+    n += tm_nominal(tm, "m64", B_M64) == 0;
+    n += tm_nominal(tm, "litint", B_LITINT) == 0;
+    n += tm_nominal(tm, "i32", B_I32) == 0;
 
     if (n) {
         mm->free(tm);
-        die("%i conflicts in tm_nominal_at\n", n);
+        die("%i conflicts in tm_nominal\n", n);
     }
     return k;
 }
@@ -45,4 +45,4 @@ pub int K_trash(BK_K *k) {
     return 0;
 }
 
-#endif // __BK_KERNEL_C
+#endif // __BK_K_C

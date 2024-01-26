@@ -57,6 +57,8 @@ pub int SM_trash(BK_SM *);
 pub symid_t sm_id(BK_SM *, char *);
 pub char * sm_name(BK_SM *, RP);
 pub bool sm_id_le(BK_SM *, symid_t a, symid_t b);
-pub inline RP sm_id_2_RP(BK_SM *, symid_t);
+pvt inline RP sm_id_2_RP(BK_SM *sm, symid_t symid) {
+    return sm->rp_by_symid[symid];
+};
 
 #endif // API_BK_SM_H

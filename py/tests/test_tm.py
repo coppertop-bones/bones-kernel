@@ -184,6 +184,9 @@ def test_union():
     t1 = tm.nominal(f'u32')
     t2 = tm.nominal(f'err')
 
+    t3 = tm.union(t1, t2)
+    print(t3.id)
+
     tm.union(t1, t2).id >> check >> equals >> tm.union(t2, t1).id
     tm.union(t1, t2, t1).id >> check >> equals >> tm.union(t2, t1, t2).id
     tm.union(tm.union(t1, t2), t1).id >> check >> equals >> tm.union(t2, tm.union(t2, t1)).id

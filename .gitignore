@@ -9,3 +9,7 @@ __pycache__/
 bk.xcodeproj/
 
 src/play/setjmp_play
+
+src/tests/tdd_tm
+
+tdd_tm.dSYM/
