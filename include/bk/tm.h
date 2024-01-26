@@ -72,7 +72,10 @@ typedef enum : BTYPEID_T_TYPE {
 } btypeid_t;
 
 
-typedef BTSIZE_TYPE btypesize_t;
+typedef enum : BTSIZE_TYPE {
+    NOSZ = 0,
+} btypesize_t;
+
 
 
 typedef enum : BMETATYPEID_T_TYPE {
@@ -105,12 +108,12 @@ typedef enum : BTEXCLUSIONCAST_T_TYPE {
     btenone = 0,
     btememory = 1,
     bteptr = 2,
-    bteuser1 = 4,
-    bteuser2 = 8,
-    bteuser3 = 16,
-    bteuser4 = 32,
-    bteuser5 = 64,
-    bteuser6 = 128,
+    bteccy = 4,
+    bteuser1 = 8,
+    bteuser2 = 16,
+    bteuser3 = 32,
+    bteuser4 = 64,
+    bteuser5 = 128,
 } btexclusioncat_t;
 
 
@@ -239,8 +242,9 @@ typedef struct PVT_TM {
 pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, struct TPM *);
 pub int TM_trash(BK_TM *);
 
-pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t, btypesize_t, btypeid_t);
 pub btypeid_t tm_btypeid(BK_TM *, char *);
+pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t, btypesize_t, btypeid_t);
+pub btexclusioncat_t tm_exclusion_cat(BK_TM *, char *, btexclusioncat_t);
 pub btypeid_t tm_fn(BK_TM *, btypeid_t tArgs, btypeid_t tRet);
 pub btypeid_t tm_fn_at(BK_TM *, btypeid_t tArgs, btypeid_t tRet, btypeid_t);
 pub btypeid_t tm_inter(BK_TM *, btypeid_t *, btypeid_t);

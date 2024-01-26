@@ -115,7 +115,20 @@ pvt PyObject * PyTM_exists(struct PyTM *self, PyObject **args, Py_ssize_t nargs)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// exclusiveNominal: (name:str, exclusion:int) -> PyBType + PyException
+// exclusionCat: (name:str) -> PyLong + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_exclusionCat(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer the exclusion category for the given name, creating if necessary
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
+    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    btexclusioncat_t res = tm_exclusion_cat(self->tm, name, 0);
+    if (res == 0) return PyErr_Format(PyExc_TypeError, "Couldn't create exclusion category for name = \"%s\"", name);
+    return PyLong_FromLong(res);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// exclusiveNominal: (name:str, exclusionCat:int) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answer a new nominal with the given exclusion
@@ -125,12 +138,12 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssiz
     btexclusioncat_t excl = PyLong_AsLong(args[1]);
     if (excl != btememory &&
         excl != bteptr &&
+        excl != bteccy &&
         excl != bteuser1 &&
         excl != bteuser2 &&
         excl != bteuser3 &&
         excl != bteuser4 &&
-        excl != bteuser5 &&
-        excl != bteuser6) {
+        excl != bteuser5) {
         return PyErr_Format(PyExc_TypeError, "invalid exclusion category");
     }
     // OPEN: add size for btememory
@@ -356,6 +369,10 @@ pvt PyObject * PyTM_unionTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs
 
 pvt PyMethodDef PyTM_methods[] = {
     {"btype",               (PyCFunction) PyTM_btype, METH_FASTCALL, "btype(name)\n\nanswers the btype called 'name' or None"},
+    {"exclusionCat",        (PyCFunction) PyTM_exclusionCat, METH_FASTCALL,
+     "exclusionCat(name, exclusionCat)\n\n"
+     "Answers the exclusionCat with name, creating it if it doesn't exist, or throws an error if it already does and exclusionCat is different"
+    },
     {"exclusiveNominal",    (PyCFunction) PyTM_exclusiveNominal, METH_FASTCALL,
         "exclusiveNominal(t)\n\n"
         "answers the exclusive nominal called 'name', creating it if it doesn't exist, or raises an error if the "

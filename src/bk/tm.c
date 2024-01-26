@@ -222,6 +222,20 @@ pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl, btype
     }
 }
 
+pub btexclusioncat_t tm_exclusion_cat(BK_TM *tm, char *name, btexclusioncat_t excl) {
+    // answers the exclusion category for the name creating if necessary. if excl is given checks for consistency
+    if (excl == 0) {
+        if (strcmp(name, "mem") == 0) return btememory;
+        if (strcmp(name, "ptr") == 0) return bteptr;
+        if (strcmp(name, "ccy") == 0) return bteccy;
+    }
+    else {
+        if (strcmp(name, "mem") == 0 && excl == btememory) return btememory;
+        if (strcmp(name, "ptr") == 0 && excl == bteptr) return bteptr;
+        if (strcmp(name, "ccy") == 0 && excl == bteccy) return bteccy;
+    }
+    return btenone;
+}
 
 // set of values intersection ((1 2 3) + (4 5)) & ((1 2 3) + (6 7)) = (1 2 3 4 5) & (1 2 3 6 7) = (1 2 3)
 // (int + str) & (int + bool) => (int+int) & (int+bool) & (str+int) & (str+bool)

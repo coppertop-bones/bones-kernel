@@ -2,6 +2,7 @@ from coppertop.pipe import *
 from dm.core.types import pylist, pytuple
 from dm.testing import check, raises, equals, gt, different
 from bones import jones
+from bones.core.errors import NotYetImplemented
 import dm.pp
 from groot import PP
 
@@ -118,51 +119,18 @@ def test_nominal():
     return "test_nominal passed"
 
 
-
 def test_intersection():
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    mem = 1
-    ccy = 2
-
-    tCcy = tm.exclusiveNominal('ccy', ccy)
-    print(f'1: tCcy: {sys.getrefcount(tCcy)}')
-
-    GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
-    print(f'2: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)}')
-
-    t = tm.nameAs(GBP, 'GBP')
-    print(f'3: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)}')
-    tm.name(GBP) >> check >> equals >> 'GBP'
-
-    print(f'4: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)}')
-    u32 = tm.exclusiveNominal('u32', mem)
-    print(f'5: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)},  u32: {sys.getrefcount(u32)}')
-    t = tm.intersection(u32, GBP)
-    print(f'6: tCcy: {sys.getrefcount(tCcy)},  GBP: {sys.getrefcount(GBP)},  t: {sys.getrefcount(t)},  u32: {sys.getrefcount(u32)}')
-
-    return "test_intersection passed"
-
-
-def test_intersection():
-    sys._k = jones.Kernel()
-    tm = sys._k.tm
-
-    mem = 1
-    ccy = 2
+    mem = tm.exclusionCat('mem')
+    ccy = tm.exclusionCat('ccy')
 
     tCcy = tm.exclusiveNominal('ccy', ccy)
 
     GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
     GBP.id >> check >> equals >> tm.intersection(tm.nominal(f'_GBP'), tCcy).id
     EUR = tm.intersection(tCcy, tm.nominal(f'_EUR'))
-
-    # test nameAs
-    tm.name(GBP) >> check >> different >> 'GBP'
-    t = tm.nameAs(GBP, 'GBP')
-    GBP.id >> check >> equals >> t.id
-    tm.name(GBP) >> check >> equals >> 'GBP'
 
     # test exclusivity
     u32 = tm.exclusiveNominal('u32', mem)
@@ -174,7 +142,27 @@ def test_intersection():
     tl = tm.intersectionTl(tm.intersection(GBP, u32))
     [e.id for e in tl] >> check >> equals >> [tCcy.id, tm.nominal(f'_GBP').id, u32.id]
 
+    # OPEN: intersections of unions
+
     return "test_intersection passed"
+
+
+def test_name_as():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    mem = tm.exclusionCat('mem')
+
+    tCcy = tm.exclusiveNominal('f8', mem)
+    GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
+
+    # test nameAs
+    tm.name(GBP) >> check >> different >> 'GBP'
+    t = tm.nameAs(GBP, 'GBP')
+    GBP.id >> check >> equals >> t.id
+    tm.name(GBP) >> check >> equals >> 'GBP'
+
+    return "test_name_as passed"
 
 
 def test_union():
@@ -184,9 +172,6 @@ def test_union():
     t1 = tm.nominal(f'u32')
     t2 = tm.nominal(f'err')
 
-    t3 = tm.union(t1, t2)
-    print(t3.id)
-
     tm.union(t1, t2).id >> check >> equals >> tm.union(t2, t1).id
     tm.union(t1, t2, t1).id >> check >> equals >> tm.union(t2, t1, t2).id
     tm.union(tm.union(t1, t2), t1).id >> check >> equals >> tm.union(t2, tm.union(t2, t1)).id
@@ -195,6 +180,30 @@ def test_union():
     tuple([e.id for e in tl]) >> check >> equals >> (t1.id, t2.id)
 
     return "test_union passed"
+
+
+def test_tuple():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    raise NotYetImplemented()
+    return "test_tuple passed"
+
+
+def test_sequence():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    raise NotYetImplemented()
+    return "test_tuple passed"
+
+
+def test_function():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    raise NotYetImplemented()
+    return "test_function passed"
 
 
 def test_mm():
@@ -221,13 +230,27 @@ def test_mm():
     return "test_mm passed"
 
 
+# TODO
+#   check sizes
+#   add python BTypeError (subclass of TypeError)
+#   once all types can be created rework bones.lang.metatypes
+#   add names for exclusive groups reserving 'mem' and 'ptr' - thus allowing extensibility
+
+
 def main():
     test_sm() >> PP
     # test_sm_sort_order()
     # test_em()
     test_nominal() >> PP
     test_intersection() >> PP
+    test_name_as() >> PP
     test_union() >> PP
+    test_tuple() >> PP
+    # test_struct()
+    test_sequence() >> PP
+    # test_map()
+    test_function() >> PP
+
     # test_mm() >> PP
 
 
