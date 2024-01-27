@@ -165,3 +165,9 @@ to one possible type by using partial annotation.
 
 
 
+NOTES
+
+// is a tuple of 1 element the same type as the element?
+// no
+// 1) tuple unpacking should be clear e.g. (A): fn() is not the same as A: fn()
+// 2) tuples can be indexed e.g. fn()[1]

@@ -267,7 +267,7 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         }
     }
 
-    // grow tm->typelist_buf if necessary
+    // make next page of tm->typelist_buf writable if necessary
     if (tm->next_rp + numTypes >= tm->max_rp) {
         if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
@@ -376,17 +376,17 @@ pub btypeid_t * tm_inter_tl(BK_TM *tm, btypeid_t btypeid) {
 }
 
 pub char * tm_name(BK_TM *tm, btypeid_t btypeid) {
-    symid_t symid;
+
+    // answers the name of the given type or a null pointer it has no name
     if (btypeid <= 0 || btypeid >= tm->next_btypeId) return 0;
-    symid = tm->symid_by_btypeid[btypeid];
-    if (symid)
-        return sm_name(tm->sm, symid);
-    else
-        return 0;
+    symid_t symid = tm->symid_by_btypeid[btypeid];
+    return symid ? sm_name(tm->sm, symid) : 0;
 }
 
 pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
     int res;  symid_t symid;  u32 idx;
+
+    // assigns name to the unnamed btypedid, checking that name is not already used
     if (btypeid <= 0 || btypeid >= tm->next_btypeId)
         return B_NAT;
     else {
@@ -409,8 +409,9 @@ pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
 }
 
 pub btypeid_t tm_nominal(BK_TM *tm, char *name, btypeid_t btypeid) {
-    // answers the btypeid. if btypedid already exists check name and that it is a nominal. if not create it.
     int res;  symid_t symid;  u32 idx;  struct btsummary sum;
+
+    // answers the validated nominal type corresponding to name, creating if necessary
     if (btypeid && btypeid < tm->next_btypeId && (sum = tm->summary_by_btypeid[btypeid]).bmtid != bmterr) {
         // there is already a type with id btypeid so check we are referring to the same type
         if (sum.bmtid != bmtnom || sum.excl != btenone || strcmp(name, tm_name(tm, btypeid)) != 0) return B_NAT;
@@ -439,12 +440,83 @@ pub size tm_size(BK_TM * tm, btypeid_t btypeid) {
 }
 
 pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
-    // OPEN: implement
-    return 0;
+    i32 i, res, numTypes;  struct btsummary *sum;  TM_XXXID_T tupid;  TM_TLID_T tlid;  btypeid_t *p1, *nextTypelist;
+
+    // answers the validated tuple type corresponding to typelist, creating if necessary
+    if (!(numTypes = typelist[0])) return 0;
+
+    // check each typeid in the list is valid
+    // OPEN: can this loop be merged with the copying loop?
+    for (i = 1; i <= (i32)typelist[0]; i++) {
+        if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
+        sum = tm->summary_by_btypeid + typelist[i];
+        if (sum->bmtid == bmterr) return 0;
+    }
+
+    // make next page of tm->typelist_buf writable if necessary
+    if (tm->next_rp + numTypes >= tm->max_rp) {
+        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+        size_t pageSize = os_page_size();
+        os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
+    }
+
+    nextTypelist = tm->typelist_buf + tm->next_rp;
+
+    // copy typelist into typelist_buf
+    p1 = nextTypelist;
+    *p1++ = numTypes;
+    for (i = 1; i <= (i32)typelist[0]; i++) {
+        *p1++ = typelist[i];
+    }
+
+    // get the tlid for the typelist - adding if missing, returning 0 if invalid
+    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &res);
+    switch (res) {
+        default:
+            die("%s:%i: HT_TOMBSTONE1!", FN_NAME, __LINE__);
+        case HT_EXISTS:
+            tlid = tm->tlid_by_tlhash->slots[idx];
+            break;
+        case HT_EMPTY:
+            tlid = _commit_typelist_buf_at(tm, numTypes, idx);
+            if (!tlid) return 0;       // an error occurred OPEN handle properly
+    }
+
+    // get the btypeid for the tlid
+    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash, tlid, &res);
+    switch (res) {
+        default:
+            die("%s:%i: HT_TOMBSTONE2!", FN_NAME, __LINE__);
+        case HT_EXISTS:
+            tupid = tm->tupid_by_tlidhash->slots[idx];
+            if (btypeid == 0) return tm->btypid_by_tupid[tupid];
+            else if (btypeid == tm->btypid_by_tupid[tupid]) return btypeid;
+            else return 0;
+        case HT_EMPTY:
+            // missing so commit the tuple type for tlid
+            if (btypeid == 0)
+                btypeid = tm->next_btypeId;
+            else if (btypeid < tm->next_btypeId && tm->summary_by_btypeid[btypeid].bmtid != bmterr)
+                // btypeid is already in use so given the type list lookup above we cannot be referring to the same btype
+                return B_NAT;
+            tupid = tm->next_tupid++;
+            if (tupid >= tm->max_tupid) {
+                tm->max_tupid += TM_MAX_ID_INC_SIZE;
+                _growTo((void **)&tm->tlid_by_tupid, tm->max_tupid * sizeof(TM_TLID_T), tm->mm, FN_NAME);
+                _growTo((void **)&tm->btypid_by_tupid, tm->max_tupid * sizeof(btypeid_t), tm->mm, FN_NAME);
+            }
+            tm->tlid_by_tupid[tupid] = tlid;
+            _new_type_summary_at(tm, bmttup, btenone, idx, 0, btypeid, tupid);
+            tm->btypid_by_tupid[tupid] = btypeid;
+            ht_replace_empty(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash, idx, tupid);
+            return btypeid;
+    }
 }
 
 pub btypeid_t * tm_tuple_tl(BK_TM *tm, btypeid_t btypeid) {
     struct btsummary *sum;
+    // OPEN: do we bounds check btypeid here?
     sum = tm->summary_by_btypeid + btypeid;
     if (sum->bmtid == bmttup) {
         return tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_tupid[sum->tupId]];
@@ -468,7 +540,7 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         }
     }
 
-    // grow tm->typelist_buf if necessary
+    // make next page of tm->typelist_buf writable if necessary
     if (tm->next_rp + numTypes >= tm->max_rp) {
         if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();

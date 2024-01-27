@@ -273,19 +273,45 @@ pvt PyObject * PyTM_struct(struct PyTM *self, PyObject **args, Py_ssize_t nargs)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// structTl: btype -> (PyBType1, ...) + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_structTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    Py_RETURN_NONE;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // tuple: (btype1, btype2, ...) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_tuple(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    // is a tuple of 1 element the same type as the element?
-    // no
-    // 1) tuple unpacking should be clear e.g. (A): fn() is not the same as A: fn()
-    // 2) tuples can be indexed e.g. fn()[1]
+    // answers a new tuple type of the given btypes
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl;
+    if (nargs == 0) return PyErr_Format(PyExc_TypeError, "Must provide at least one type");
+    checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // create a type list of the correct length
-    // call sm_tuple which will return a btypeid
-    // free the typelist
-    // return btype
-    Py_RETURN_NONE;
+    tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
+    tl[0] = (btypeid_t) nargs;
+    for (int i=1; i <= nargs; i++) {
+        if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {
+            resetToCheckpoint(buckets, &cp);
+            return PyErr_Format(PyExc_TypeError, "arg%i is not a BType", i);
+        }
+        tl[i] = ((struct PyBType *) args[i-1])->btypeid;
+    }
+
+    btypeid_t btypeid = tm_tuple(self->tm, tl, 0);
+
+    if (btypeid) {
+        struct PyBType *answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+        answer->btypeid = btypeid;
+        resetToCheckpoint(buckets, &cp);
+        return (PyObject *) answer;
+    } else {
+        TP_init(&tp, 0, buckets);
+        PyErr_Format(PyExc_TypeError, "Error creating tuple (%s)", tm_s8_typelist(self->tm, &tp, tl).cs);
+        resetToCheckpoint(buckets, &cp);
+        return 0;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -405,6 +431,10 @@ pvt PyMethodDef PyTM_methods[] = {
     {"struct",              (PyCFunction) PyTM_struct, METH_FASTCALL,
             "struct(f1, t1, f2, t2, ...)\n\n"
             "answers the struct {f1:t1, f2:t2, ...}"
+    },
+    {"structTl",             (PyCFunction) PyTM_structTl, METH_FASTCALL,
+            "structTl(t)\n\n"
+            "answers a tuple of the names and types in the struct t"
     },
     {"tuple",               (PyCFunction) PyTM_tuple, METH_FASTCALL,
             "tuple(t1, t2, ...)\n\n"

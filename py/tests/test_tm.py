@@ -186,23 +186,55 @@ def test_tuple():
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    raise NotYetImplemented()
+    t1 = tm.nominal(f'u32')
+    t2 = tm.nominal(f'err')
+
+    tm.tuple(t1, t2).id >> check >> equals >> tm.tuple(t1, t2).id
+    tm.tuple(t1, t2).id >> check >> different >> tm.tuple(t2, t1).id
+
     return "test_tuple passed"
+
+
+def test_struct():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    t1 = tm.nominal(f'f64')
+
+    tm.struct(('x', 'y'), (t1, t2)).id >> check >> equals >> tm.struct(('x', 'y'), (t1, t2)).id
+    tm.struct(('x', 'y'), (t1, t2)).id >> check >> different >> tm.struct(('y', 'x'), (t1, t2)).id
+
+    return "test_struct passed"
 
 
 def test_sequence():
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    raise NotYetImplemented()
-    return "test_tuple passed"
+    t1 = tm.union(tm.nominal(f'u32'), tm.nominal(f'err'))
+    tm.seq(t1).id >> check >> equals >> tm.seq(t1).id
+
+    return "test_sequence passed"
+
+
+def test_map():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    t1 = tm.nominal(f'txt')
+    t2 = tm.nominal(f'f64')
+    tm.map(t1, t2).id >> check >> equals >> tm.map(t1, t2).id
+
+    return "test_map passed"
 
 
 def test_function():
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    raise NotYetImplemented()
+    t1 = tm.union(tm.nominal(f'u32'), tm.nominal(f'err'))
+    tm.fn((t1, t1), t1).id >> check >> equals >> tm.fn((t1, t1), t1)
+
     return "test_function passed"
 
 
@@ -234,7 +266,6 @@ def test_mm():
 #   check sizes
 #   add python BTypeError (subclass of TypeError)
 #   once all types can be created rework bones.lang.metatypes
-#   add names for exclusive groups reserving 'mem' and 'ptr' - thus allowing extensibility
 
 
 def main():
@@ -246,9 +277,9 @@ def main():
     test_name_as() >> PP
     test_union() >> PP
     test_tuple() >> PP
-    # test_struct()
+    # test_struct() >> PP
     test_sequence() >> PP
-    # test_map()
+    # test_map() >> PP
     test_function() >> PP
 
     # test_mm() >> PP
