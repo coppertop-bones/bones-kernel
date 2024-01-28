@@ -17,7 +17,7 @@ pvt inline int keyFromEntry(ht_struct(ht_i32) *h, int entry) {
     return entry;
 }
 
-// HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __key_from_entry_fn)
 HT_IMPL(ht_i32, int, int, ht_int32_hash, matchesKey, keyFromEntry)
 
 
@@ -25,27 +25,27 @@ int main() {
     int res, is_missing, idx, sum, obj, key;
 
     ht_struct(ht_i32) *h = ht_create(ht_i32);
-    check(h->n_slots == 0, "n_slots == %i (should be 0)", h->n_slots);
+    check(h->sz == 0, "sz == %i (should be 0)", h->sz);
 
     idx = ht_put_idx(ht_i32, h, 5, &res);
-    check(h->n_slots == 4, "n_slots == %i (should be 4)", h->n_slots);
-    check(idx == 1, "n_slots == %i (should be 1)", h->n_slots);
+    check(h->sz == 4, "sz == %i (should be 4)", h->sz);
+    check(idx == 1, "sz == %i (should be 1)", h->sz);
     check(res == HT_EMPTY, "res != HT_EMPTY");
 
     idx = ht_put_idx(ht_i32, h, 6, &res);
-    check(h->n_slots == 4, "n_slots == %i (should be 4)", h->n_slots);
-    check(idx == 2, "n_slots == %i (should be 2)", h->n_slots);
+    check(h->sz == 4, "sz == %i (should be 4)", h->sz);
+    check(idx == 2, "sz == %i (should be 2)", h->sz);
     check(res == HT_EMPTY, "res != HT_EMPTY");
 
     idx = ht_put_idx(ht_i32, h, 7, &res);
-    check(h->n_slots == 4, "n_slots == %i (should be 4)", h->n_slots);
-    check(idx == 3, "n_slots == %i (should be 3)", h->n_slots);
+    check(h->sz == 4, "sz == %i (should be 4)", h->sz);
+    check(idx == 3, "sz == %i (should be 3)", h->sz);
     check(res == HT_EMPTY, "res != HT_EMPTY");
 
     obj = 8;
     idx = ht_put_idx(ht_i32, h, obj, &res);
-    check(h->n_slots == 4, "n_slots == %i (should be 4)", h->n_slots);
-    check(idx == 0, "n_slots == %i (should be 0)", h->n_slots);
+    check(h->sz == 4, "sz == %i (should be 4)", h->sz);
+    check(idx == 0, "sz == %i (should be 0)", h->sz);
     check(res == HT_EMPTY, "res != HT_EMPTY");
 
     check(h->slots[idx] == 0, "pre put == %i (should be 0)", h->slots[idx]);

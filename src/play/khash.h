@@ -249,7 +249,7 @@ static const double __ac_HASH_UPPER = 0.77;
     }                                                                                                                   \
                                                                                                                         \
     SCOPE int kh_resize_##name(struct kh_##name *h, khint_t new_n_buckets) {                                            \
-        /* This function uses 0.25*n_buckets bytes of working space instead of [sizeof(key_t+val_t)+.25]*n_buckets. */  \
+        /* This function uses 0.25*n_buckets bytes of working space instead of [sizeof(hashable_t+val_t)+.25]*n_buckets. */  \
         khint32_t *new_flags;                                                                                       \
         khint_t j = 1;                                                                                                  \
         {                                                                                                               \

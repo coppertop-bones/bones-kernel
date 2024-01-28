@@ -9,7 +9,7 @@
 
 
 
-// 1 u32 flag per 16 slots (2 bits per slot) - 0b10 -> empty and not a tombstone
+// 1 u32 flag per 16 entries (2 bits per entry) - 0b10 -> empty and not a tombstone
 #define __ht_fsize(m) ((m) < 16? 1 : (m)>>4)
 #define __ht_is_tomb(flags, idx) ( (flags[idx>>4]>> ((idx&0xfU)<<1) ) & 1 )
 #define __ht_is_empty(flags, idx) ( (flags[idx>>4]>>((idx&0xfU)<<1)) & 2 )
@@ -31,154 +31,154 @@ static const double __ht_HASH_UPPER = 0.77;
 #define RESIZE_NOT_NEEDED 0
 
 
-// u32 __hash_fn(key_t key);
-// bool __found_fn(ht_struct(name)* h, slot_t entry, key_t key)
-// key_t __key_from_entry_fn(ht_struct(name)* h, slot_t entry)
+// u32 __hash_fn(hashable_t h);
+// bool __found_fn(ht_struct(name)* ht, entry_t entry, hashable_t h)
+// hashable_t __hashable_from_entry_fn(ht_struct(name)* ht, entry_t entry)
 
 
-#define __HT_IMPL(name, SCOPE, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)                               \
+#define __HT_IMPL(name, SCOPE, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_entry_fn)                    \
                                                                                                                         \
     SCOPE struct ht_##name *ht_create_##name(void) {                                                                    \
         return (struct ht_##name*) calloc(1, sizeof(struct ht_##name));                                                 \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE void ht_trash_##name(struct ht_##name *h) {                                                                   \
-        if (h) { free((void *)h->slots); free(h->flags); free(h); }                                                     \
+    SCOPE void ht_trash_##name(struct ht_##name *ht) {                                                                  \
+        if (ht) { free((void *)ht->entries); free(ht->flags); free(ht); }                                               \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE void ht_clear_##name(struct ht_##name *h) {                                                                   \
-        if (h && h->flags) {                                                                                            \
-            memset(h->flags, 0xaa, __ht_fsize(h->n_slots) * sizeof(u32));                                               \
-            h->n_entries = h->n_slots_used = 0;                                                                         \
+    SCOPE void ht_clear_##name(struct ht_##name *ht) {                                                                  \
+        if (ht && ht->flags) {                                                                                          \
+            memset(ht->flags, 0xaa, __ht_fsize(ht->sz) * sizeof(u32));                                                  \
+            ht->n_live = ht->n_used = 0;                                                                                \
         }                                                                                                               \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE u32 ht_get_idx_##name(struct ht_##name *h, key_t key) {                                                       \
-        u32 k, idx, last, mask, step = 0;                                                                               \
-        if (!h->n_slots) return 0;                                                                                      \
-        mask = h->n_slots - 1;                                                                                          \
-        k = __hash_fn(key);                                                                                             \
-        idx = k & mask;                                                                                                 \
+    SCOPE u32 ht_get_idx_##name(struct ht_##name *ht, hashable_t h) {                                                   \
+        u32 hash, idx, last, mask, step = 0;                                                                            \
+        if (!ht->sz) return 0;                                                                                          \
+        mask = ht->sz - 1;                                                                                              \
+        hash = __hash_fn(h);                                                                                            \
+        idx = hash & mask;                                                                                              \
         last = idx;                                                                                                     \
-        while (!__ht_is_empty(h->flags, idx) && (__ht_is_tomb(h->flags, idx) || !__found_fn(h, h->slots[idx], key))) {  \
+        while (!__ht_is_empty(ht->flags, idx) && (__ht_is_tomb(ht->flags, idx) || !__found_fn(ht, ht->entries[idx], h))) {\
             idx = (idx + (++step)) & mask;                                                                              \
-            if (idx == last) return h->n_slots;                                                                         \
+            if (idx == last) return ht->sz;                                                                             \
         }                                                                                                               \
-        return __ht_is_occupied(h->flags, idx) ? idx : h->n_slots;                                                      \
+        return __ht_is_occupied(ht->flags, idx) ? idx : ht->sz;                                                         \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE int ht_resize_##name(struct ht_##name *h, u32 new_n_slots) {                                                  \
-        /* Uses 0.25*n_slots bytes of working space. */                                                                 \
+    SCOPE int ht_resize_##name(struct ht_##name *ht, u32 new_sz) {                                                      \
+        /* Uses 0.25*sz bytes of working space. */                                                                      \
         u32 *new_flags;                                                                                                 \
-        kroundup32(new_n_slots);                                                                                        \
-        if (new_n_slots < 4) new_n_slots = 4;                                                                           \
-        if (h->n_entries >= (u32)(new_n_slots * __ht_HASH_UPPER + 0.5)) return RESIZE_NOT_NEEDED;                       \
-        new_flags = (u32*)malloc(__ht_fsize(new_n_slots) * sizeof(u32));                                                \
+        kroundup32(new_sz);                                                                                             \
+        if (new_sz < 4) new_sz = 4;                                                                                     \
+        if (ht->n_live >= (u32)(new_sz * __ht_HASH_UPPER + 0.5)) return RESIZE_NOT_NEEDED;                              \
+        new_flags = (u32*)malloc(__ht_fsize(new_sz) * sizeof(u32));                                                     \
         if (!new_flags) return RESIZE_FAILED;                                                                           \
-        memset(new_flags, 0xaa, __ht_fsize(new_n_slots) * sizeof(u32));                                                 \
-        if (h->n_slots < new_n_slots) { /* expand */                                                                    \
-            slot_t *new_slots = (slot_t*)realloc((void *)h->slots, new_n_slots * sizeof(slot_t));                       \
+        memset(new_flags, 0xaa, __ht_fsize(new_sz) * sizeof(u32));                                                      \
+        if (ht->sz < new_sz) { /* expand */                                                                             \
+            entry_t *new_slots = (entry_t*)realloc((void *)ht->entries, new_sz * sizeof(entry_t));                      \
             if (!new_slots) { free(new_flags); return RESIZE_FAILED; }                                                  \
-            h->slots = new_slots;                                                                                       \
+            ht->entries = new_slots;                                                                                    \
         }                                                                                                               \
         else { /* shrink */                                                                                             \
         }                                                                                                               \
         /* rehash */                                                                                                    \
-        for (u32 j = 0; j != h->n_slots; ++j) {                                                                         \
-            if (__ht_is_occupied(h->flags, j)) {                                                                        \
-                slot_t entry = h->slots[j];                                                                             \
+        for (u32 j = 0; j != ht->sz; ++j) {                                                                             \
+            if (__ht_is_occupied(ht->flags, j)) {                                                                       \
+                entry_t entry = ht->entries[j];                                                                         \
                 u32 new_mask;                                                                                           \
-                new_mask = new_n_slots - 1;                                                                             \
-                __ht_set_tomb(h->flags, j);                                                                             \
+                new_mask = new_sz - 1;                                                                                  \
+                __ht_set_tomb(ht->flags, j);                                                                            \
                 while (1) { /* kick-out process; sort of like in Cuckoo hashing */                                      \
-                    u32 k, i, step = 0;                                                                                 \
-                    k = __hash_fn(__key_from_entry_fn(h, entry));                                                       \
-                    i = k & new_mask;                                                                                   \
+                    u32 hash, i, step = 0;                                                                              \
+                    hash = __hash_fn(__hashable_from_entry_fn(ht, entry));                                              \
+                    i = hash & new_mask;                                                                                \
                     while (!__ht_is_empty(new_flags, i)) i = (i + (++step)) & new_mask;                                 \
                     __ht_set_not_empty(new_flags, i);                                                                   \
-                    if (i < h->n_slots && __ht_is_occupied(h->flags, i)) {                                              \
+                    if (i < ht->sz && __ht_is_occupied(ht->flags, i)) {                                                 \
                         /* kick out the existing element */                                                             \
-                        { slot_t tmp = h->slots[i]; h->slots[i] = entry; entry = tmp; }                                 \
-                        __ht_set_tomb(h->flags, i); /* mark as deleted in the old hash table */                         \
+                        { entry_t tmp = ht->entries[i]; ht->entries[i] = entry; entry = tmp; }                          \
+                        __ht_set_tomb(ht->flags, i); /* mark as deleted in the old hash table */                        \
                     }                                                                                                   \
                     else { /* write the element and jump out of the loop */                                             \
-                        h->slots[i] = entry;                                                                            \
+                        ht->entries[i] = entry;                                                                         \
                         break;                                                                                          \
                     }                                                                                                   \
                 }                                                                                                       \
             }                                                                                                           \
         }                                                                                                               \
-        if (h->n_slots > new_n_slots) { /* shrink hash table */                                                         \
-            h->slots = (slot_t *) realloc((void *)h->slots, new_n_slots * sizeof(slot_t));                              \
+        if (ht->sz > new_sz) { /* shrink hash table */                                                                  \
+            ht->entries = (entry_t *) realloc((void *)ht->entries, new_sz * sizeof(entry_t));                           \
         }                                                                                                               \
-        free(h->flags);                                                                                                 \
-        h->flags = new_flags;                                                                                           \
-        h->n_slots = new_n_slots;                                                                                       \
-        h->n_slots_used = h->n_entries;                                                                                 \
-        h->n_slots_used_threshold = (u32)(h->n_slots * __ht_HASH_UPPER + 0.5);                                          \
+        free(ht->flags);                                                                                                \
+        ht->flags = new_flags;                                                                                          \
+        ht->sz = new_sz;                                                                                                \
+        ht->n_used = ht->n_live;                                                                                        \
+        ht->n_used_threshold = (u32)(ht->sz * __ht_HASH_UPPER + 0.5);                                                   \
         return RESIZED_OK;                                                                                              \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE u32 ht_put_idx_##name(struct ht_##name *h, key_t key, int *ret) {                                             \
+    SCOPE u32 ht_put_idx_##name(struct ht_##name *ht, hashable_t h, int *outcome) {                                     \
         u32 idx;                                                                                                        \
-        if (h->n_slots_used >= h->n_slots_used_threshold) { /* update the hash table */                                 \
-            if (h->n_slots > (h->n_entries<<1)) {                                                                       \
-                if (ht_resize_##name(h, h->n_slots - 1) == RESIZE_FAILED) { /* clear "deleted" elements */              \
-                    *ret = RESIZE_FAILED; return h->n_slots;                                                            \
+        if (ht->n_used >= ht->n_used_threshold) { /* update the hash table */                                           \
+            if (ht->sz > (ht->n_live<<1)) {                                                                             \
+                if (ht_resize_##name(ht, ht->sz - 1) == RESIZE_FAILED) { /* clear "deleted" elements */                 \
+                    *outcome = RESIZE_FAILED; return ht->sz;                                                            \
                 }                                                                                                       \
-            } else if (ht_resize_##name(h, h->n_slots + 1) == RESIZE_FAILED) { /* expand the hash table */              \
-                *ret = RESIZE_FAILED; return h->n_slots;                                                                \
+            } else if (ht_resize_##name(ht, ht->sz + 1) == RESIZE_FAILED) { /* expand the hash table */                 \
+                *outcome = RESIZE_FAILED; return ht->sz;                                                                \
             }                                                                                                           \
         } /* TODO: to implement automatically shrinking; resize() already support shrinking */                          \
         {                                                                                                               \
-            u32 k, i, site, last, mask = h->n_slots - 1, step = 0;                                                      \
-            idx = site = h->n_slots; k = __hash_fn(key); i = k & mask;                                                  \
-            if (__ht_is_empty(h->flags, i)) idx = i; /* for speed up */                                                 \
+            u32 hash, i, site, last, mask = ht->sz - 1, step = 0;                                                       \
+            idx = site = ht->sz; hash = __hash_fn(h); i = hash & mask;                                                  \
+            if (__ht_is_empty(ht->flags, i)) idx = i; /* for speed up */                                                \
             else {                                                                                                      \
                 last = i;                                                                                               \
-                while (!__ht_is_empty(h->flags, i) && (__ht_is_tomb(h->flags, i) || !__found_fn(h, h->slots[i], key))) {\
-                    if (__ht_is_tomb(h->flags, i)) site = i;                                                            \
+                while (!__ht_is_empty(ht->flags, i) && (__ht_is_tomb(ht->flags, i) || !__found_fn(ht, ht->entries[i], h))) {\
+                    if (__ht_is_tomb(ht->flags, i)) site = i;                                                           \
                     i = (i + (++step)) & mask;                                                                          \
                     if (i == last) { idx = site; break; }                                                               \
                 }                                                                                                       \
-                if (idx == h->n_slots) {                                                                                \
-                    if (__ht_is_empty(h->flags, i) && site != h->n_slots) idx = site;                                   \
+                if (idx == ht->sz) {                                                                                    \
+                    if (__ht_is_empty(ht->flags, i) && site != ht->sz) idx = site;                                      \
                     else idx = i;                                                                                       \
                 }                                                                                                       \
             }                                                                                                           \
         }                                                                                                               \
-        if (__ht_is_empty(h->flags, idx)) *ret = HT_EMPTY;                                                              \
-        else if (__ht_is_tomb(h->flags, idx)) *ret = HT_TOMBSTONE;                                                      \
-        else *ret = HT_EXISTS;                                                                                          \
+        if (__ht_is_empty(ht->flags, idx)) *outcome = HT_EMPTY;                                                         \
+        else if (__ht_is_tomb(ht->flags, idx)) *outcome = HT_TOMBSTONE;                                                 \
+        else *outcome = HT_LIVE;                                                                                        \
         return idx;                                                                                                     \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE void ht_replace_empty_##name(struct ht_##name *h, u32 idx, slot_t entry) {                                    \
-        h->slots[idx] = entry;                                                                                          \
-        __ht_set_occupied(h->flags, idx);                                                                               \
-        ++h->n_entries;                                                                                                 \
-        ++h->n_slots_used;                                                                                              \
+    SCOPE void ht_replace_empty_##name(struct ht_##name *ht, u32 idx, entry_t entry) {                                  \
+        ht->entries[idx] = entry;                                                                                       \
+        __ht_set_occupied(ht->flags, idx);                                                                              \
+        ++ht->n_live;                                                                                                   \
+        ++ht->n_used;                                                                                                   \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE void ht_replace_tombstone_##name(struct ht_##name *h, u32 idx, slot_t entry) {                                \
-        h->slots[idx] = entry;                                                                                          \
-        __ht_set_occupied(h->flags, idx);                                                                               \
-        ++h->n_entries;                                                                                                 \
+    SCOPE void ht_replace_tombstone_##name(struct ht_##name *ht, u32 idx, entry_t entry) {                              \
+        ht->entries[idx] = entry;                                                                                       \
+        __ht_set_occupied(ht->flags, idx);                                                                              \
+        ++ht->n_live;                                                                                                   \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE void ht_replace_existing_##name(struct ht_##name *h, u32 idx, slot_t entry) {                                 \
-        h->slots[idx] = entry;                                                                                          \
+    SCOPE void ht_replace_value_##name(struct ht_##name *ht, u32 idx, entry_t entry) {                                  \
+        ht->entries[idx] = entry;                                                                                       \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE void ht_del_##name(struct ht_##name *h, u32 idx) {                                                            \
-        if (idx != h->n_slots && __ht_is_occupied(h->flags, idx)) {                                                     \
-            __ht_set_tomb(h->flags, idx);                                                                               \
-            --h->n_entries;                                                                                             \
+    SCOPE void ht_del_##name(struct ht_##name *ht, u32 idx) {                                                           \
+        if (idx != ht->sz && __ht_is_occupied(ht->flags, idx)) {                                                        \
+            __ht_set_tomb(ht->flags, idx);                                                                              \
+            --ht->n_live;                                                                                               \
         }                                                                                                               \
     }
     
-#define HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)                                        \
-    __HT_IMPL(name, static bk_inline bk_unused, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
+#define HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_entry_fn)                             \
+    __HT_IMPL(name, static bk_inline bk_unused, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_entry_fn)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -186,47 +186,47 @@ static const double __ht_HASH_UPPER = 0.77;
 // ---------------------------------------------------------------------------------------------------------------------
 
 /*! @function
-  @abstract     Integer hash function
-  @param  key   The integer [u32 or i32]
+  @abstract     32-bit hash function
+  @param  h     The hashable integer [u32 or i32]
   @return       The hash value [u32]
  */
-#define ht_int32_hash(key) (u32)(key)
+#define ht_int32_hash(h) (u32)(h)
 
 /*! @function
   @abstract     64-bit integer hash function
-  @param  key   The integer [khint64_t]
+  @param  h     The hashable 64 bit integer [u64 or i64]
   @return       The hash value [u32]
  */
-#define ht_int64_hash(h, key) (u32)((key)>>33^(key)^(key)<<11)
+#define ht_int64_hash(h) (u32)((h)>>33^(h)^(h)<<11)
 
 /*! @function
   @abstract     char* hash function
-  @param  key   Pointer to a null terminated string
-  @return       The hash value
+  @param  h     Pointer to the hashable null terminated string
+  @return       The hash value [u32]
  */
-static bk_inline u32 __ht_X31_hash_string(char * key) {
-    u32 hash = (u32)*key;
-    if (hash) for (++key ; *key; ++key) hash = (hash << 5) - hash + (u32)*key;
-    return hash;
+static bk_inline u32 __ht_X31_hash_string(char * h) {
+    u32 answer = (u32)*h;
+    if (answer) for (++h ; *h; ++h) answer = (answer << 5) - answer + (u32)*h;
+    return answer;
 }
 
 /*! @function
   @abstract     Another interface to char * hash function
-  @param  key   Pointer to a null terminated string [char *]
+  @param  h     Pointer to a hashable null terminated string [char *]
   @return       The hash value [u32]
  */
-#define ht_str_hash(key) __ht_X31_hash_string(key)
+#define ht_str_hash(h) __ht_X31_hash_string(h)
 
-static bk_inline u32 __ht_Wang_hash(u32 key) {
-    key += ~(key << 15);
-    key ^=  (key >> 10);
-    key +=  (key << 3);
-    key ^=  (key >> 6);
-    key += ~(key << 11);
-    key ^=  (key >> 16);
-    return key;
+static bk_inline u32 __ht_Wang_hash(u32 h) {
+    h += ~(h << 15);
+    h ^=  (h >> 10);
+    h +=  (h << 3);
+    h ^=  (h >> 6);
+    h += ~(h << 11);
+    h ^=  (h >> 16);
+    return h;
 }
-#define ht_int32_wang_hash(h, key) __ht_Wang_hash((u32) key)
+#define ht_int32_wang_hash(h) __ht_Wang_hash((u32) h)
 
 
 #endif // __BK_HT_IMPL_H

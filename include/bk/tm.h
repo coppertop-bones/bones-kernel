@@ -82,7 +82,7 @@ typedef enum : BMETATYPEID_T_TYPE {
     bmterr = 0,
     bmtnom = 1, // nominal - atomic type with a given name
 
-                // set relations
+                // relations
     bmtint = 2, // intersection - sorted list of other types
     bmtuni = 3, // union - sorted list of other types
 
@@ -91,7 +91,7 @@ typedef enum : BMETATYPEID_T_TYPE {
     bmtstr = 5, // struct - ordered and named list of other types
     bmtrec = 6, // record - sorted named list of other types
 
-                // arrows - aka exponentials - variable size, elements all the same size
+                // arrows - aka exponentials - variable length, elements all the same
     bmtseq = 7, // sequence - tElement
     bmtmap = 8, // map / dictionary - tKey, tValue
     bmtfnc = 9, // function - argnames, tArgs, tRet, tFunc, num args
@@ -143,11 +143,12 @@ struct btsummary {
 #define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(btypeid_t))    /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
 #define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macos M1, 1 page on windows intel */
 
-// HT_STRUCT2(name, slot_t, extravars)
-HT_STRUCT2(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
-HT_STRUCT2(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
-HT_STRUCT2(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
-HT_STRUCT2(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
+// HT_STRUCT_EXTRA(name, entry_t, extravars)
+HT_STRUCT_EXTRA(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
+HT_STRUCT_EXTRA(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
+HT_STRUCT_EXTRA(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
+HT_STRUCT_EXTRA(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
+HT_STRUCT_EXTRA(TM_SEQID_BY_BTYPEIDHASH, TM_XXXID_T, btypeid_t *btypeid;)
 
 typedef struct PVT_TM {
     BK_MM *mm;
@@ -160,83 +161,81 @@ typedef struct PVT_TM {
     btypeid_t max_btypeId;
     btypeid_t next_btypeId;
     
-    // type names - colder than type summaries
+    // type names - kept separately as they don't need to be as hot as type summaries
     symid_t *symid_by_btypeid;
-    ht_struct(TM_BTYPEID_BY_SYMIDHASH) *btypeid_by_symidhash; 
+    ht_struct(TM_BTYPEID_BY_SYMIDHASH) *btypeid_by_symidhash;
 
-    // type lists
+    // type lists - all type lists are shared by tuples, structs, records and functions
     btypeid_t *typelist_buf;                            // VM buffer of btypeid (typelist) indexed by RP
-    RP max_rp;
-    RP next_rp;
-    RP *rp_by_tlid;  
+    RP max_tlrp;
+    RP next_tlrp;
+    RP *tlrp_by_tlid;
     TM_TLID_T max_tlid;
     TM_TLID_T next_tlid;
     ht_struct(TM_TLID_BY_TLHASH) *tlid_by_tlhash;
 
-    // sym lists
+    // sym lists - all sym lists are shared by structs, records and functions
     symid_t *symlist_buf;                               // VM buffer of symid (symlist) indexed by RP
-    RP max_symrp;
-    RP next_symrp;
-    RP *symrp_by_tlid;
+    RP max_slrp;
+    RP next_slrp;
+    RP *slrp_by_slid;
     TM_SLID_T max_slid;
     TM_SLID_T next_slid;
-    ht_struct(TM_SLID_BY_SLHASH) *slid_by_tlhash;
+    ht_struct(TM_SLID_BY_SLHASH) *slid_by_slhash;
 
     // intersections
     TM_XXXID_T max_intid;
     TM_XXXID_T next_intid;
-    ht_struct(TM_XXXID_BY_TLIDHASH) *intid_by_tlidhash;
     TM_TLID_T *tlid_by_intid;
+    ht_struct(TM_XXXID_BY_TLIDHASH) *intid_by_tlidhash;     // tl hash -> tupid -> btypeid
     btypeid_t *btypid_by_intid;
 
     // unions
     TM_XXXID_T max_uniid;
     TM_XXXID_T next_uniid;
-    ht_struct(TM_XXXID_BY_TLIDHASH) *uniid_by_tlidhash;
     TM_TLID_T *tlid_by_uniid;
+    ht_struct(TM_XXXID_BY_TLIDHASH) *uniid_by_tlidhash;     // tl hash -> tupid -> btypeid
     btypeid_t *btypid_by_uniid;
     
     // tuples
     TM_XXXID_T max_tupid;
     TM_XXXID_T next_tupid;
-    ht_struct(TM_XXXID_BY_TLIDHASH) *tupid_by_tlidhash;
     TM_TLID_T *tlid_by_tupid;
+    ht_struct(TM_XXXID_BY_TLIDHASH) *tupid_by_tlidhash;     // tl hash -> tupid -> btypeid
     btypeid_t *btypid_by_tupid;
     
     // structs
-    // OPEN: keep structs by tl and by sorted tl?
     TM_XXXID_T max_strid;
     TM_XXXID_T next_strid;
-    ht_struct(TM_XXXID_BY_SLIDTLIDHASH) *strid_by_slidtlidhash;     // OPEN: hash on sl and tl values?
     TM_TLID_T *tlid_by_strid;
     TM_TLID_T *slid_by_strid;
+    ht_struct(TM_XXXID_BY_SLIDTLIDHASH) *strid_by_slidtlidhash;     // OPEN: hash on tl and sl values?
     btypeid_t *btypid_by_strid;
     
-    // records - need to have a think about how to do these
-    TM_XXXID_T max_recid;
-    TM_XXXID_T next_recid;
+    // records - replicate the same structure as for structs
+//    TM_XXXID_T max_recid;
+//    TM_XXXID_T next_recid;
     
-    // sequences - effectively just a btypeid of the contained type
+    // sequences
     TM_XXXID_T max_seqid;
     TM_XXXID_T next_seqid;
+    ht_struct(TM_SEQID_BY_BTYPEIDHASH) *seqid_by_btypeidhash;
+    btypeid_t *btypeid_by_seqid;
 
-    // how do we move a double*? -  mm must keep size or we have to push responsibility for moving onto containing stuct
-    // struct matrix {int N; int M; data double*;} but to create a view we want to share the double* so the double*
-    // must be ref counted and sized
-
-//    8k medium object max is 8192 - 512 * 16 slots - 9 bits
-    
-    // maps
+    // maps - could be a type list of two types
     TM_XXXID_T max_mapid;
     TM_XXXID_T next_mapid;
+    // OPEN: TBC§
     
     // functions
     TM_XXXID_T max_fncid;
     TM_XXXID_T next_fncid;
+    // OPEN: TBC
     
     // schema variables
     TM_XXXID_T max_svrid;
     TM_XXXID_T next_svrid;
+    // OPEN: TBC
 } BK_TM;
 
 pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, struct TPM *);
@@ -265,84 +264,11 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 
 
 
-
-
-
-
-// NTS
-//
-// OPEN: add aliases so can do - typedef can automatically add aliased
-//<:Symb> lval(<:Node&ptr> n) {
-//<:Symb> lval(<:pNode> n) {
-// could we do <:unsigned int>
-//
-// addressOf and deref - may create new types
-//
-// need exclusions for M8, M16, M32, M64 -> i8: m8 & i8_ or poss i8: m8_ & i & signed, etc
-// ptr1, const1, ptr2, const2, ptr3, const3, extern, the basic c types
-
-
-
-//#define DESC_ID unsigned int
-
-
-//struct BType {
-//    bmetatypeid_t meta;             // 1 + 3 pad OPEN: could do 4 bits + 28 bits (250k) for type
-//    DESC_ID descId;                 // 4
-//};
-//
-//typedef struct {
-//    btypeid_t n;                    // 4
-//    btypeid_t ts[];                     // n * 4
-//} BTypeList;
-//
-//struct BTIntersection {
-//    BTypeList types;                // 4 + n * 4
-//};
-//
-//struct BTUnion {
-//    BTypeList types;                // 4 + n * 4
-//};
-//
-//struct BTTuple {
-//    BTypeList types;                // 4 + n * 4
-//};
-//
-//typedef int bsym;
-//
-//struct BTStruct {
-//    bsymlist *names;                // 8
-//    btypelist typelist;             // length prefix array of btypeid
-//};
-//
-//struct BTRec {
-//    bsymlist *names;                // 8
-//    btypelist types;                // 4 + n * 4
-//};
-//
-//struct BTSeq {
-//    btypeid_t tElem;                    // 4
-//};
-//
-//struct BTMap {
-//    btypeid_t tKey;                     // 4
-//    btypeid_t tValue;                   // 4
-//};
-//
-//struct BTFunc {
-//    btypeid_t tRet;                     // 4
-//    btypeid_t tFn;                      // 4
-//    bsymlist *names;                // 8
-//    btypelist *argtypes;            // 4 + n * 4
-//};
-//
-//
 //// ---------------------------------------------------------------------------------------------------------------------
 //// SType - StructuralType
 //// ---------------------------------------------------------------------------------------------------------------------
 //// the following is a reduced physical description of structs / tuples and c arrays for tracing and copying - can be
 //// generated for ctypes and btypes - there will be less stypes than btypes / ctypes but don't know how many
-//
 //
 //enum fieldtype : char {
 //    ptrToShallow = 1,       // offset to ptr to an object that contains no pointers

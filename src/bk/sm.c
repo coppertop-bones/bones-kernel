@@ -38,7 +38,7 @@ pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, cha
     return strcmp(h->sm->symname_buf + h->sm->rp_by_symid[entry], key) == 0;
 }
 
-// HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __key_from_entry_fn)
 HT_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char *, ht_str_hash, nameFound, nameFromEntry)
 
 
@@ -76,7 +76,7 @@ pub symid_t sm_id(BK_SM *sm, char *name) {
     int res, pageSize = 0;
     u32 idx = ht_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
 
-    if (res == HT_EXISTS) return sm->symid_by_namehash->slots[idx];
+    if (res == HT_LIVE) return sm->symid_by_namehash->entries[idx];
     if (res == HT_TOMBSTONE) die("TOMBSTONE");
 
     // add the symbol

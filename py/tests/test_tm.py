@@ -238,28 +238,22 @@ def test_function():
     return "test_function passed"
 
 
-def test_mm():
+def test_schemavars():
     sys._k = jones.Kernel()
     tm = sys._k.tm
-    mm = sys._k.mm
 
-    mem = 1
+    raise NotYetImplemented()
 
-    i32 = tm.nominal('i32', mem, 4)
-    p = mm.alloc(i32)
-    mm.inc(p)
-    mm.count(p) == 1
-    mm.dec(p)
-    mm.count(p) == 0
-    mm.inc(p)
-    mm.inc(p)
-    mm.inc(p)
-    mm.count(p) == 3
-    mm.dec(p)
-    mm.count(p) == 3
-    assert mm.btypeid(p) == i32
+    return "test_schemavars passed"
 
-    return "test_mm passed"
+
+def test_recursion():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    raise NotYetImplemented()
+
+    return "test_function passed"
 
 
 # TODO
@@ -281,8 +275,8 @@ def main():
     test_sequence() >> PP
     # test_map() >> PP
     test_function() >> PP
-
-    # test_mm() >> PP
+    # test_schemavars() >> PP
+    # test_recursion() >> PP
 
 
 

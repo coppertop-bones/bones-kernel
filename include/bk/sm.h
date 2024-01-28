@@ -48,8 +48,8 @@ typedef struct {
 } BK_SM;
 
 
-// HT_STRUCT2(name, slot_t, extravars)
-HT_STRUCT2(SM_SYMID_BY_NAMEHASH, u32, BK_SM* sm;)
+// HT_STRUCT_EXTRA(name, entry_t, extravars)
+HT_STRUCT_EXTRA(SM_SYMID_BY_NAMEHASH, symid_t, BK_SM* sm;)
 
 
 pub BK_SM * SM_create(BK_MM*);

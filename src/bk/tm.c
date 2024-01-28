@@ -17,27 +17,27 @@ KRADIX_SORT_INIT(btypeid_t, btypeid_t, ,sizeof(btypeid_t))
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// symid_by_btypeid hash fns
+// TM_BTYPEID_BY_SYMIDHASH fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline symid_t symIdFromEntry(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, symid_t entry) {
-    return ht->tm->symid_by_btypeid[entry];
+pvt inline symid_t symidFromBtypeid(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, symid_t slot) {
+    return ht->tm->symid_by_btypeid[slot];
 }
 
-pvt bool inline found(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, symid_t entry, btypeid_t key) {
-    return ht->tm->symid_by_btypeid[entry] == key;
+pvt bool inline symidHashableFound(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, btypeid_t entry, symid_t hashable) {
+    return ht->tm->symid_by_btypeid[entry] == hashable;
 }
 
-// HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, symid_t, ht_int32_hash, found, symIdFromEntry)
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_slot_fn)
+HT_IMPL(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, symid_t, ht_int32_hash, symidHashableFound, symidFromBtypeid)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// rp_by_tlid hash fns
+// TM_TLID_BY_TLHASH fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline btypeid_t * tlFromEntry(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry) {
-    return ht->tm->typelist_buf + ht->tm->rp_by_tlid[entry];
+pvt inline btypeid_t * tlFromTlid(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T tlid) {
+    return ht->tm->typelist_buf + ht->tm->tlrp_by_tlid[tlid];
 }
 
 pvt inline bool tlCompare(btypeid_t *a, btypeid_t *b) {
@@ -56,28 +56,28 @@ pvt u32 tl_hash(btypeid_t *tl) {
     return hash;
 }
 
-pvt bool inline tlFound(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry, btypeid_t *key) {
-    return tlCompare(tlFromEntry(ht, entry), key);
+pvt bool inline tlFound(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T value, btypeid_t *key) {
+    return tlCompare(tlFromTlid(ht, value), key);
 }
 
-// HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, btypeid_t *, tl_hash, tlFound, tlFromEntry)
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_slot_fn)
+HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, btypeid_t *, tl_hash, tlFound, tlFromTlid)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // TM_XXXID_BY_TLIDHASH fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline TM_TLID_T tlidFromEntry(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T entry) {
-    return ht->tlid_by_xxxid[entry];
+pvt inline TM_TLID_T tlidFromSlot(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T slot) {
+    return ht->tlid_by_xxxid[slot];
 }
 
-pvt bool inline tlidFound(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T entry, TM_TLID_T key) {
-    return ht->tlid_by_xxxid[entry] == key;
+pvt bool inline tlidFound(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T slot, TM_TLID_T key) {
+    return ht->tlid_by_xxxid[slot] == key;
 }
 
-// HT_IMPL(name, slot_t, key_t, __hash_fn, __found_fn, __key_from_entry_fn)
-HT_IMPL(TM_XXXID_BY_TLIDHASH, u32, u32, ht_int32_hash, tlidFound, tlidFromEntry)
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_slot_fn)
+HT_IMPL(TM_XXXID_BY_TLIDHASH, u32, u32, ht_int32_hash, tlidFound, tlidFromSlot)
 
 
 
@@ -96,17 +96,17 @@ tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
     TM_TLID_T tlid;
     if ((tlid = tm->next_tlid++) >= tm->max_tlid) {
         tm->max_tlid += TM_RP_BY_TLID_INC_SIZE;
-        _growTo((void **)&tm->rp_by_tlid, tm->max_tlid * sizeof(RP), tm->mm, FN_NAME);
+        _growTo((void **)&tm->tlrp_by_tlid, tm->max_tlid * sizeof(RP), tm->mm, FN_NAME);
         tm->intid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_intid;
     }
-    tm->rp_by_tlid[tlid] = tm->next_rp;
+    tm->tlrp_by_tlid[tlid] = tm->next_tlrp;
     ht_replace_empty(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, idx, tlid);
-    if (tm->next_rp + numTypes + 1 >= tm->max_rp) {
+    if (tm->next_tlrp + numTypes + 1 >= tm->max_tlrp) {
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_rp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
-        tm->max_rp += pageSize / sizeof(TM_TLID_T);
+        os_mprotect(tm->typelist_buf + tm->max_tlrp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
+        tm->max_tlrp += pageSize / sizeof(TM_TLID_T);
     }
-    tm->next_rp += numTypes + 1;
+    tm->next_tlrp += numTypes + 1;
     return tlid;
 }
 
@@ -142,7 +142,7 @@ pvt void tm_pb(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {
                 tp_buf_printf(tp, "%s", sm_name(tm->sm, symid));
                 break;
             case bmtint:
-                tl = tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
+                tl = tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_intid[sum->intId]];
                 sep = 0;
                 for (i = 1; i <= (i32) tl[0]; i++) {
                     if (sep) tp_buf_printf(tp, " & ");
@@ -189,17 +189,17 @@ pvt inline S8 tm_s8_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_t
 // ---------------------------------------------------------------------------------------------------------------------
 
 pub btypeid_t tm_btypeid(BK_TM *tm, char *name) {
-    int res;  u32 idx;
-    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &res);
-    if (res == HT_EXISTS)
-        return tm->btypeid_by_symidhash->slots[idx];
+    int outcome;  u32 idx;
+    idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &outcome);
+    if (outcome == HT_LIVE)
+        return tm->btypeid_by_symidhash->entries[idx];
     else
         return 0;
 }
 
 pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl, btypesize_t sz, btypeid_t btypeid) {
     // answers the btypeid. if btypedid already exists check name and that it is a nominal. if not create it.
-    int res;  symid_t symid;  u32 idx;  struct btsummary sum;
+    int outcome;  symid_t symid;  u32 idx;  struct btsummary sum;
     if (btypeid && btypeid < tm->next_btypeId && (sum = tm->summary_by_btypeid[btypeid]).bmtid != bmterr) {
         // already exists so check we are referring to the same type
         if (sum.bmtid != bmtnom || sum.excl != excl || strcmp(name, tm_name(tm, btypeid)) != 0) return B_NAT;          // OPEN: check size too
@@ -207,10 +207,10 @@ pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl, btype
     } else {
         // if name is not already in use create a new nominal
         symid = sm_id(tm->sm, name);
-        idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
-        if (res == HT_EXISTS) {
+        idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &outcome);
+        if (outcome == HT_LIVE) {
             // already exists so check it's a nominal with the same exclusion
-            btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
+            btypeid = ht_value(tm->btypeid_by_symidhash, idx);
             struct btsummary s = tm->summary_by_btypeid[btypeid];
             if (s.bmtid != bmtnom || s.excl != excl) return B_NAT;          // OPEN: check size
             return btypeid;
@@ -243,7 +243,7 @@ pub btexclusioncat_t tm_exclusion_cat(BK_TM *tm, char *name, btexclusioncat_t ex
 
 
 pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
-    i32 i, j, res, numTypes, hasUnions;  btexclusioncat_t excl = 0;  TM_TLID_T tlid;
+    i32 i, j, outcome, numTypes, hasUnions;  btexclusioncat_t excl = 0;  TM_TLID_T tlid;
     btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist;
     TM_XXXID_T intid;  struct btsummary *sum;
     // (A&B) & (C&D)  = A & B & C & D
@@ -263,19 +263,19 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtint) {
             tlid = tm->tlid_by_intid[sum->intId];
-            numTypes += (tm->typelist_buf + tm->rp_by_tlid[tlid])[0] - 1;
+            numTypes += (tm->typelist_buf + tm->tlrp_by_tlid[tlid])[0] - 1;
         }
     }
 
     // make next page of tm->typelist_buf writable if necessary
-    if (tm->next_rp + numTypes >= tm->max_rp) {
-        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+    if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
+        if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
+        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
     }
 
-    nextTypelist = tm->typelist_buf + tm->next_rp;
+    nextTypelist = tm->typelist_buf + tm->next_tlrp;
 
     // copy typelist into typelist_buf unpacking any intersections
     p1 = nextTypelist;
@@ -285,7 +285,7 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         if (sum->bmtid == bmtint) {
             // we have an intersection type - expand it
             tlid = tm->tlid_by_intid[sum->intId];
-            interTl = (tm->typelist_buf + tm->rp_by_tlid[tlid]);
+            interTl = (tm->typelist_buf + tm->tlrp_by_tlid[tlid]);
             for (j = 1; j <= (i32)interTl[0]; j++) *p1++ = interTl[j];
         }
         else
@@ -321,12 +321,12 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     }
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
-    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &res);
-    switch (res) {
+    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &outcome);
+    switch (outcome) {
         default:
             die("%s: HT_TOMBSTONE1!", FN_NAME);
-        case HT_EXISTS:
-            tlid = tm->tlid_by_tlhash->slots[idx];
+        case HT_LIVE:
+            tlid = tm->tlid_by_tlhash->entries[idx];
             break;
         case HT_EMPTY:
             tlid = _commit_typelist_buf_at(tm, numTypes, idx);
@@ -334,13 +334,13 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     }
 
     // get the btypeid for the tlid
-    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->intid_by_tlidhash, tlid, &res);
-    switch (res) {
+    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->intid_by_tlidhash, tlid, &outcome);
+    switch (outcome) {
         default:
             die("%s: HT_TOMBSTONE2!", FN_NAME);
-        case HT_EXISTS:
+        case HT_LIVE:
             // typelist already exists
-            intid = tm->intid_by_tlidhash->slots[idx];
+            intid = tm->intid_by_tlidhash->entries[idx];
             if (btypeid == 0) return tm->btypid_by_intid[intid];
             else if (btypeid == tm->btypid_by_intid[intid]) return btypeid;
             else return 0;
@@ -369,7 +369,7 @@ pub btypeid_t * tm_inter_tl(BK_TM *tm, btypeid_t btypeid) {
     struct btsummary *sum;
     sum = tm->summary_by_btypeid + btypeid;
     if (sum->bmtid == bmtint) {
-        return tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_intid[sum->intId]];
+        return tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_intid[sum->intId]];
     } else {
         return 0;
     }
@@ -384,7 +384,7 @@ pub char * tm_name(BK_TM *tm, btypeid_t btypeid) {
 }
 
 pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
-    int res;  symid_t symid;  u32 idx;
+    int outcome;  symid_t symid;  u32 idx;
 
     // assigns name to the unnamed btypedid, checking that name is not already used
     if (btypeid <= 0 || btypeid >= tm->next_btypeId)
@@ -396,8 +396,8 @@ pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
         else {
             // not named so check name is not already in use
             symid = sm_id(tm->sm, name);
-            idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
-            if (res == HT_EXISTS)
+            idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &outcome);
+            if (outcome == HT_LIVE)
                 return B_NAT;
             else {
                 ht_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
@@ -409,7 +409,7 @@ pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
 }
 
 pub btypeid_t tm_nominal(BK_TM *tm, char *name, btypeid_t btypeid) {
-    int res;  symid_t symid;  u32 idx;  struct btsummary sum;
+    int outcome;  symid_t symid;  u32 idx;  struct btsummary sum;
 
     // answers the validated nominal type corresponding to name, creating if necessary
     if (btypeid && btypeid < tm->next_btypeId && (sum = tm->summary_by_btypeid[btypeid]).bmtid != bmterr) {
@@ -419,10 +419,10 @@ pub btypeid_t tm_nominal(BK_TM *tm, char *name, btypeid_t btypeid) {
     } else {
         // if name is not already in use create a new nominal
         symid = sm_id(tm->sm, name);
-        idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &res);
-        if (res == HT_EXISTS) {
+        idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &outcome);
+        if (outcome == HT_LIVE) {
             // already exists so check it's a nominal with no exclusion
-            btypeid = ht_entry(tm->btypeid_by_symidhash, idx);
+            btypeid = ht_value(tm->btypeid_by_symidhash, idx);
             sum = tm->summary_by_btypeid[btypeid];
             if (sum.bmtid != bmtnom || sum.excl != btenone) return B_NAT;
             return btypeid;
@@ -440,7 +440,7 @@ pub size tm_size(BK_TM * tm, btypeid_t btypeid) {
 }
 
 pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
-    i32 i, res, numTypes;  struct btsummary *sum;  TM_XXXID_T tupid;  TM_TLID_T tlid;  btypeid_t *p1, *nextTypelist;
+    i32 i, outcome, numTypes;  struct btsummary *sum;  TM_XXXID_T tupid;  TM_TLID_T tlid;  btypeid_t *p1, *nextTypelist;
 
     // answers the validated tuple type corresponding to typelist, creating if necessary
     if (!(numTypes = typelist[0])) return 0;
@@ -454,14 +454,14 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     }
 
     // make next page of tm->typelist_buf writable if necessary
-    if (tm->next_rp + numTypes >= tm->max_rp) {
-        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+    if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
+        if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
+        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
     }
 
-    nextTypelist = tm->typelist_buf + tm->next_rp;
+    nextTypelist = tm->typelist_buf + tm->next_tlrp;
 
     // copy typelist into typelist_buf
     p1 = nextTypelist;
@@ -471,12 +471,12 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     }
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
-    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &res);
-    switch (res) {
+    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &outcome);
+    switch (outcome) {
         default:
             die("%s:%i: HT_TOMBSTONE1!", FN_NAME, __LINE__);
-        case HT_EXISTS:
-            tlid = tm->tlid_by_tlhash->slots[idx];
+        case HT_LIVE:
+            tlid = tm->tlid_by_tlhash->entries[idx];
             break;
         case HT_EMPTY:
             tlid = _commit_typelist_buf_at(tm, numTypes, idx);
@@ -484,12 +484,12 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     }
 
     // get the btypeid for the tlid
-    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash, tlid, &res);
-    switch (res) {
+    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash, tlid, &outcome);
+    switch (outcome) {
         default:
             die("%s:%i: HT_TOMBSTONE2!", FN_NAME, __LINE__);
-        case HT_EXISTS:
-            tupid = tm->tupid_by_tlidhash->slots[idx];
+        case HT_LIVE:
+            tupid = tm->tupid_by_tlidhash->entries[idx];
             if (btypeid == 0) return tm->btypid_by_tupid[tupid];
             else if (btypeid == tm->btypid_by_tupid[tupid]) return btypeid;
             else return 0;
@@ -519,14 +519,14 @@ pub btypeid_t * tm_tuple_tl(BK_TM *tm, btypeid_t btypeid) {
     // OPEN: do we bounds check btypeid here?
     sum = tm->summary_by_btypeid + btypeid;
     if (sum->bmtid == bmttup) {
-        return tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_tupid[sum->tupId]];
+        return tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_tupid[sum->tupId]];
     } else {
         return 0;
     }
 }
 
 pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
-    i32 i, j, res, numTypes;  struct btsummary *sum;  TM_XXXID_T uniid;  TM_TLID_T tlid;
+    i32 i, j, outcome, numTypes;  struct btsummary *sum;  TM_XXXID_T uniid;  TM_TLID_T tlid;
     btypeid_t *uniTl, *p1, *p2, *p3, *nextTypelist;
     if (!(numTypes = typelist[0])) return 0;
 
@@ -536,19 +536,19 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtuni) {
             tlid = tm->tlid_by_uniid[sum->uniId];
-            numTypes += (tm->typelist_buf + tm->rp_by_tlid[tlid])[0] - 1;
+            numTypes += (tm->typelist_buf + tm->tlrp_by_tlid[tlid])[0] - 1;
         }
     }
 
     // make next page of tm->typelist_buf writable if necessary
-    if (tm->next_rp + numTypes >= tm->max_rp) {
-        if (tm->next_rp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+    if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
+        if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_rp, pageSize, BK_AD_RANDOM);
+        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
     }
 
-    nextTypelist = tm->typelist_buf + tm->next_rp;
+    nextTypelist = tm->typelist_buf + tm->next_tlrp;
 
     // copy typelist into typelist_buf unpacking any unions
     p1 = nextTypelist;
@@ -558,7 +558,7 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         if (sum->bmtid == bmtuni) {
             // we have a union type - expand it
             tlid = tm->tlid_by_uniid[sum->uniId];
-            uniTl = (tm->typelist_buf + tm->rp_by_tlid[tlid]);
+            uniTl = (tm->typelist_buf + tm->tlrp_by_tlid[tlid]);
             for (j = 1; j <= (i32)uniTl[0]; j++) *p1++ = uniTl[j];
         }
         else
@@ -581,12 +581,12 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     numTypes = *nextTypelist = p1 - nextTypelist;
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
-    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &res);
-    switch (res) {
+    u32 idx = ht_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &outcome);
+    switch (outcome) {
         default:
             die("%s: HT_TOMBSTONE1!", FN_NAME);
-        case HT_EXISTS:
-            tlid = tm->tlid_by_tlhash->slots[idx];
+        case HT_LIVE:
+            tlid = tm->tlid_by_tlhash->entries[idx];
             break;
         case HT_EMPTY:
             tlid = _commit_typelist_buf_at(tm, numTypes, idx);
@@ -594,12 +594,12 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     }
 
     // get the btypeid for the tlid
-    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->uniid_by_tlidhash, tlid, &res);
-    switch (res) {
+    idx = ht_put_idx(TM_XXXID_BY_TLIDHASH, tm->uniid_by_tlidhash, tlid, &outcome);
+    switch (outcome) {
         default:
             die("%s: HT_TOMBSTONE2!", FN_NAME);
-        case HT_EXISTS:
-            uniid = tm->uniid_by_tlidhash->slots[idx];
+        case HT_LIVE:
+            uniid = tm->uniid_by_tlidhash->entries[idx];
             if (btypeid == 0) return tm->btypid_by_uniid[uniid];
             else if (btypeid == tm->btypid_by_uniid[uniid]) return btypeid;
             else return 0;
@@ -629,7 +629,7 @@ pub btypeid_t * tm_union_tl(BK_TM *tm, btypeid_t btypeid) {
     struct btsummary *sum;
     sum = tm->summary_by_btypeid + btypeid;
     if (sum->bmtid == bmtuni) {
-        return tm->typelist_buf + tm->rp_by_tlid[tm->tlid_by_uniid[sum->uniId]];
+        return tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_uniid[sum->uniId]];
     } else {
         return 0;
     }
@@ -650,15 +650,15 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     tm->typelist_buf = os_vm_reserve(0, TM_MAX_TL_STORAGE);
 
     // typelists
-    tm->max_rp = os_page_size() / sizeof(TM_TLID_T);
-    os_mprotect(tm->typelist_buf, tm->max_rp * sizeof(TM_TLID_T), BK_M_READ | BK_M_WRITE);      // make first page of typelist storage R/W
-    os_madvise(tm->typelist_buf, tm->max_rp * sizeof(TM_TLID_T), BK_AD_RANDOM);                 // and advise as randomly accessed
-    tm->next_rp = 0;
+    tm->max_tlrp = os_page_size() / sizeof(TM_TLID_T);
+    os_mprotect(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_M_READ | BK_M_WRITE);      // make first page of typelist storage R/W
+    os_madvise(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_AD_RANDOM);                 // and advise as randomly accessed
+    tm->next_tlrp = 0;
 
     tm->max_tlid = TM_MAX_TLID_INC_SIZE;
     tm->next_tlid = 1;
-    tm->rp_by_tlid = (RP *) mm->malloc(tm->max_tlid * sizeof(RP));
-    memset(tm->rp_by_tlid, 0, tm->max_tlid * sizeof(RP));
+    tm->tlrp_by_tlid = (RP *) mm->malloc(tm->max_tlid * sizeof(RP));
+    memset(tm->tlrp_by_tlid, 0, tm->max_tlid * sizeof(RP));
     tm->tlid_by_tlhash = ht_create(TM_TLID_BY_TLHASH);
     tm->tlid_by_tlhash->tm = tm;
 
@@ -680,7 +680,7 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     tm->tlid_by_intid = (TM_TLID_T *) mm->malloc(tm->max_intid * sizeof(TM_TLID_T));
     memset(tm->tlid_by_intid, 0, tm->max_intid * sizeof(TM_TLID_T));
     tm->btypid_by_intid = (TM_TLID_T *) mm->malloc(tm->max_intid * sizeof(btypeid_t));
-    memset(tm->summary_by_btypeid, 0, tm->max_intid * sizeof(btypeid_t));
+    memset(tm->btypid_by_intid, 0, tm->max_intid * sizeof(btypeid_t));
     tm->intid_by_tlidhash = ht_create(TM_XXXID_BY_TLIDHASH);
     tm->intid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_intid;
 
@@ -690,7 +690,7 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     tm->tlid_by_uniid = (TM_TLID_T *) mm->malloc(tm->max_uniid * sizeof(TM_TLID_T));
     memset(tm->tlid_by_uniid, 0, tm->max_uniid * sizeof(TM_TLID_T));
     tm->btypid_by_uniid = (TM_TLID_T *) mm->malloc(tm->max_uniid * sizeof(btypeid_t));
-    memset(tm->summary_by_btypeid, 0, tm->max_uniid * sizeof(btypeid_t));
+    memset(tm->btypid_by_uniid, 0, tm->max_uniid * sizeof(btypeid_t));
     tm->uniid_by_tlidhash = ht_create(TM_XXXID_BY_TLIDHASH);
     tm->uniid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_uniid;
 
@@ -700,7 +700,7 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     tm->tlid_by_tupid = (TM_TLID_T *) mm->malloc(tm->max_tupid * sizeof(TM_TLID_T));
     memset(tm->tlid_by_tupid, 0, tm->max_tupid * sizeof(TM_TLID_T));
     tm->btypid_by_tupid = (TM_TLID_T *) mm->malloc(tm->max_tupid * sizeof(btypeid_t));
-    memset(tm->summary_by_btypeid, 0, tm->max_tupid * sizeof(btypeid_t));
+    memset(tm->btypid_by_tupid, 0, tm->max_tupid * sizeof(btypeid_t));
     tm->tupid_by_tlidhash = ht_create(TM_XXXID_BY_TLIDHASH);
     tm->tupid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_tupid;
 
@@ -709,12 +709,16 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     tm->next_strid = 1;
 
     // records
-    tm->max_recid = TM_MAX_ID_INC_SIZE;
-    tm->next_recid = 1;
+//    tm->max_recid = TM_MAX_ID_INC_SIZE;
+//    tm->next_recid = 1;
 
     // sequences
     tm->max_seqid = TM_MAX_ID_INC_SIZE;
     tm->next_seqid = 1;
+//    tm->seqid_by_btypeidhash = ht_create(TM_SEQID_BY_BTYPEIDHASH);
+//    tm->btypeid_by_seqid = (TM_TLID_T *) mm->malloc(tm->max_seqid * sizeof(TM_TLID_T));
+//    memset(tm->btypeid_by_seqid, 0, tm->max_seqid * sizeof(TM_TLID_T));
+
 
     // maps
     tm->max_mapid = TM_MAX_ID_INC_SIZE;
@@ -733,7 +737,7 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
 
 pub int TM_trash(BK_TM *tm) {
     // typelists
-    tm->mm->free(tm->rp_by_tlid);
+    tm->mm->free(tm->tlrp_by_tlid);
     ht_trash(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash);
 
     // type names
