@@ -13,7 +13,7 @@
 #include "bk.h"
 
 
-// hash table is a sparce array (with size of power of 2), each entry may contain a value, a tombstone or be empty
+// hash table is a sparce array of entries (with size of power of 2), each entry may contain a value, a tombstone or be empty
 
 #define __HT_STRUCT(name, entry_t, extravars)                                                                           \
     struct ht_##name {                                                                                                  \
@@ -43,7 +43,7 @@
     extern u32 ht_put_idx_##name(struct ht_##name *, hashable_t, int *ret);                                             \
     extern void ht_replace_empty_##name(struct ht_##name *, u32 idx, entry_t);                                          \
     extern void ht_replace_tombstone_##name(struct ht_##name *, u32 idx, entry_t);                                      \
-    extern void ht_replace_value_##name(struct ht_##name *, u32 idx, entry_t);                                          \
+    extern void ht_replace_entry_##name(struct ht_##name *, u32 idx, entry_t);                                          \
     extern int ht_resize_##name(struct ht_##name *, u32 sz);                                                            \
     extern void ht_del_##name(struct ht_##name *, u32 idx);                                                             \
 
@@ -135,7 +135,7 @@
   @param  idx   Idx of slot [u32]
   @param  entry Entry [entry_t]
  */
-#define ht_replace_value(name, ht, idx, entry) ht_replace_value_##name(ht, idx, entry)
+#define ht_replace_value(name, ht, idx, entry) ht_replace_entry_##name(ht, idx, entry)
 
 /*! @function
   @abstract     Delete an entry in the hash table.

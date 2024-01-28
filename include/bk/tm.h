@@ -148,7 +148,7 @@ HT_STRUCT_EXTRA(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
 HT_STRUCT_EXTRA(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
 HT_STRUCT_EXTRA(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
 HT_STRUCT_EXTRA(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
-HT_STRUCT_EXTRA(TM_SEQID_BY_BTYPEIDHASH, TM_XXXID_T, btypeid_t *btypeid;)
+HT_STRUCT_EXTRA(TM_SEQID_BY_BTYPEIDHASH, TM_XXXID_T, btypeid_t *btypeid_by_seqid; struct PVT_TM *tm;)
 
 typedef struct PVT_TM {
     BK_MM *mm;
@@ -237,6 +237,7 @@ typedef struct PVT_TM {
     TM_XXXID_T next_svrid;
     // OPEN: TBC
 } BK_TM;
+
 
 pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, struct TPM *);
 pub int TM_trash(BK_TM *);

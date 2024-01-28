@@ -20,8 +20,8 @@ KRADIX_SORT_INIT(btypeid_t, btypeid_t, ,sizeof(btypeid_t))
 // TM_BTYPEID_BY_SYMIDHASH fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline symid_t symidFromBtypeid(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, symid_t slot) {
-    return ht->tm->symid_by_btypeid[slot];
+pvt inline symid_t symidFromBtypeid(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, btypeid_t btypeid) {
+    return ht->tm->symid_by_btypeid[btypeid];
 }
 
 pvt bool inline symidHashableFound(ht_struct(TM_BTYPEID_BY_SYMIDHASH) *ht, btypeid_t entry, symid_t hashable) {
@@ -56,29 +56,50 @@ pvt u32 tl_hash(btypeid_t *tl) {
     return hash;
 }
 
-pvt bool inline tlFound(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T value, btypeid_t *key) {
-    return tlCompare(tlFromTlid(ht, value), key);
+pvt bool inline tlHashableFound(ht_struct(TM_TLID_BY_TLHASH) *ht, TM_TLID_T entry, btypeid_t *hashable) {
+    return tlCompare(tlFromTlid(ht, entry), hashable);
 }
 
 // HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_slot_fn)
-HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, btypeid_t *, tl_hash, tlFound, tlFromTlid)
+HT_IMPL(TM_TLID_BY_TLHASH, TM_TLID_T, btypeid_t *, tl_hash, tlHashableFound, tlFromTlid)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // TM_XXXID_BY_TLIDHASH fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline TM_TLID_T tlidFromSlot(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T slot) {
-    return ht->tlid_by_xxxid[slot];
+pvt inline TM_TLID_T tlidFromXxxid(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T xxxid) {
+    return ht->tlid_by_xxxid[xxxid];
 }
 
-pvt bool inline tlidFound(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T slot, TM_TLID_T key) {
-    return ht->tlid_by_xxxid[slot] == key;
+pvt bool inline tlidHashableFound(ht_struct(TM_XXXID_BY_TLIDHASH) *ht, TM_XXXID_T entry, TM_TLID_T hashable) {
+    return ht->tlid_by_xxxid[entry] == hashable;
 }
 
 // HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_slot_fn)
-HT_IMPL(TM_XXXID_BY_TLIDHASH, u32, u32, ht_int32_hash, tlidFound, tlidFromSlot)
+HT_IMPL(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T, ht_int32_hash, tlidHashableFound, tlidFromXxxid)
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TM_SEQID_BY_BTYPEIDHASH fns
+// ---------------------------------------------------------------------------------------------------------------------
+
+pvt inline btypeid_t btypeIdFromSeqid(ht_struct(TM_SEQID_BY_BTYPEIDHASH) *ht, TM_XXXID_T seqid) {
+    return ht->btypeid_by_seqid[seqid];
+}
+
+pvt bool inline btyepidHashableFound(ht_struct(TM_SEQID_BY_BTYPEIDHASH) *ht, TM_XXXID_T entry, btypeid_t hashable) {
+    return ht->btypeid_by_seqid[entry] == hashable;
+}
+
+pvt bool inline btyepidHashableFound2(ht_struct(TM_SEQID_BY_BTYPEIDHASH) *ht, TM_XXXID_T entry, btypeid_t hashable) {
+    // keeps summary hotter - good idea? slightly less memory and no need to maintain btypeid_by_seqid array
+    struct btsummary sum = ht->tm->summary_by_btypeid[entry];
+    return sum.bmtid == bmtseq && sum.seqId == hashable;
+}
+
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_slot_fn)
+HT_IMPL(TM_SEQID_BY_BTYPEIDHASH, TM_XXXID_T, btypeid_t, ht_int32_hash, btyepidHashableFound, btypeIdFromSeqid)
 
 
 // ---------------------------------------------------------------------------------------------------------------------

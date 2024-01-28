@@ -166,7 +166,7 @@ static const double __ht_HASH_UPPER = 0.77;
         ++ht->n_live;                                                                                                   \
     }                                                                                                                   \
                                                                                                                         \
-    SCOPE void ht_replace_value_##name(struct ht_##name *ht, u32 idx, entry_t entry) {                                  \
+    SCOPE void ht_replace_entry_##name(struct ht_##name *ht, u32 idx, entry_t entry) {                                  \
         ht->entries[idx] = entry;                                                                                       \
     }                                                                                                                   \
                                                                                                                         \
