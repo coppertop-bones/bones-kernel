@@ -64,7 +64,7 @@ int countArgsImpl(int x, ...) {
 
 
 void test_tm() {
-    btypeid_t t, expected;
+    btypeid_t t, t2, expected;
     BK_MM *mm = MM_create();
     Buckets buckets;
     initBuckets(&buckets, 64);
@@ -78,8 +78,8 @@ void test_tm() {
     t = tm_btypeid(k->tm, "sally");
     check(t == 0, "%s @ %i: id == %i (should be %i)", __FILE__, __LINE__, t, 0);
 
-    expected =  k->tm->next_btypeId;
-    t = tm_nominal(k->tm, "fred", 0);
+    expected =  B_EXTERN_FN_PTR + 1;
+    t = tm_nominal(k->tm, "fred", expected);
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
     t = tm_nominal(k->tm, "joe", 0);
@@ -92,6 +92,8 @@ void test_tm() {
     typelist[0] = 2;
     typelist[1] = 1;
     typelist[2] = 2;
+
+    // intersection
     t = tm_inter(k->tm, typelist, 0);
     expected ++;
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
@@ -99,11 +101,20 @@ void test_tm() {
     t = tm_inter(k->tm, typelist, 0);
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
+    // union
     t = tm_union(k->tm, typelist, 0);
     expected ++;
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
-    t = tm_union(k->tm, typelist, 0);
+    t2 = tm_union(k->tm, typelist, 0);
+    check(t2 == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t2, expected);
+
+    // sequence
+    t = tm_seq(k->tm, t2, 0);
+    expected ++;
+    check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
+
+    t = tm_seq(k->tm, t2, 0);
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
 

@@ -147,8 +147,8 @@ struct btsummary {
 HT_STRUCT_EXTRA(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
 HT_STRUCT_EXTRA(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
 HT_STRUCT_EXTRA(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
-HT_STRUCT_EXTRA(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)
-HT_STRUCT_EXTRA(TM_SEQID_BY_BTYPEIDHASH, TM_XXXID_T, btypeid_t *btypeid_by_seqid; struct PVT_TM *tm;)
+HT_STRUCT_EXTRA(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)   // OPEN check we grow the tlid_by_xxxid
+HT_STRUCT_EXTRA(TM_BTYPID_BY_SEQIDHASH, TM_XXXID_T, struct PVT_TM *tm;)
 
 typedef struct PVT_TM {
     BK_MM *mm;
@@ -216,11 +216,8 @@ typedef struct PVT_TM {
 //    TM_XXXID_T max_recid;
 //    TM_XXXID_T next_recid;
     
-    // sequences
-    TM_XXXID_T max_seqid;
-    TM_XXXID_T next_seqid;
-    ht_struct(TM_SEQID_BY_BTYPEIDHASH) *seqid_by_btypeidhash;
-    btypeid_t *btypeid_by_seqid;
+    // sequences -> need hash map keyed by underlying type mapping to containing type - tmsummary_by_typeid[contining
+    ht_struct(TM_BTYPID_BY_SEQIDHASH) *containerid_by_containedidhash;
 
     // maps - could be a type list of two types
     TM_XXXID_T max_mapid;

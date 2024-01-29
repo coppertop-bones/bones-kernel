@@ -38,7 +38,7 @@ pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, cha
     return strcmp(h->sm->symname_buf + h->sm->rp_by_symid[entry], key) == 0;
 }
 
-// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __key_from_entry_fn)
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_entry_fn)
 HT_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char *, ht_str_hash, nameFound, nameFromEntry)
 
 

@@ -17,7 +17,7 @@ pvt inline int keyFromEntry(ht_struct(ht_i32) *h, int entry) {
     return entry;
 }
 
-// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __key_from_entry_fn)
+// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_entry_fn)
 HT_IMPL(ht_i32, int, int, ht_int32_hash, matchesKey, keyFromEntry)
 
 

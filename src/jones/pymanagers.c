@@ -262,6 +262,52 @@ pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject **args, Py_ssize_t nargs
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// seq: (constained:btype) -> PyBType + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_seq(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  struct PyBType *answer;
+
+    // answer a new sequence for the given contained btype
+    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "Must provide just one BType");
+    checkpointBuckets((buckets = self->tm->buckets), &cp);
+
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) {
+        resetToCheckpoint(buckets, &cp);
+        return PyErr_Format(PyExc_TypeError, "arg1 is not a BType");
+    }
+
+    btypeid_t btypeid = tm_seq(self->tm, ((struct PyBType *) args[0])->btypeid, 0);
+
+    if (btypeid) {
+        answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+        answer->btypeid = btypeid;
+        resetToCheckpoint(buckets, &cp);
+        return (PyObject *) answer;
+    } else {
+        TP_init(&tp, 0, buckets);
+        PyErr_Format(PyExc_TypeError, "Undertermined error");
+        resetToCheckpoint(buckets, &cp);
+        return 0;
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// seqT: (seq:btype) -> (PyBType1,...) + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_seqT(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    btypeid_t btypeid;  struct PyBType *answer;
+
+    // answer a new PyBType which is the type list of the given union
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
+    btypeid = tm_seq_t(self->tm, ((struct PyBType *) args[0])->btypeid);
+    if (btypeid == 0) return PyErr_Format(PyExc_TypeError, "btype is not a union type");
+    answer = (struct PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+    answer->btypeid = btypeid;
+    return (PyObject *) answer;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // struct: (str, btype1, str, btype2...) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_struct(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
@@ -336,7 +382,7 @@ pvt PyObject * PyTM_tupleTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs
 // union: (btype1, btype2, ...) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_union(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    // answer a new intersection of the given btypes
+    // answer a new union of the given btypes
     BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;
     if (nargs == 0) return PyErr_Format(PyExc_TypeError, "Must provide at least one type");
     if (nargs == 1) {
@@ -396,61 +442,68 @@ pvt PyObject * PyTM_unionTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs
 pvt PyMethodDef PyTM_methods[] = {
     {"btype",               (PyCFunction) PyTM_btype, METH_FASTCALL, "btype(name)\n\nanswers the btype called 'name' or None"},
     {"exclusionCat",        (PyCFunction) PyTM_exclusionCat, METH_FASTCALL,
-     "exclusionCat(name, exclusionCat)\n\n"
-     "Answers the exclusionCat with name, creating it if it doesn't exist, or throws an error if it already does and exclusionCat is different"
+        "exclusionCat(name, exclusionCat)\n\n"
+        "Answers the exclusionCat with name, creating it if it doesn't exist, or throws an error if it already does and exclusionCat is different."
     },
     {"exclusiveNominal",    (PyCFunction) PyTM_exclusiveNominal, METH_FASTCALL,
         "exclusiveNominal(t)\n\n"
-        "answers the exclusive nominal called 'name', creating it if it doesn't exist, or raises an error if the "
-        "name is used by another type"
+        "Answers the exclusive nominal called 'name', creating it if it doesn't exist, or raises an error if the name is used by another type."
     },
     {"exists",              (PyCFunction) PyTM_exists, METH_FASTCALL,
         "exists(name)\n\n"
-        "answers if the type with <name> exists or not"
+        "Answers if the type with <name> exists or not."
     },
     {"intersection",        (PyCFunction) PyTM_intersection, METH_FASTCALL,
         "intersection(t1, t2, ...)\n\n"
-        "answers the intersection t1 & t2 & ..."
+        "Answers the intersection t1 & t2 & ... type."
     },
     {"intersectionTl",      (PyCFunction) PyTM_intersectionTl, METH_FASTCALL,
-            "intersectionTl(t)\n\n"
-            "answers a tuple of the types in the intersection t"
+        "intersectionTl(t)\n\n"
+        "Answers a tuple of the types in the intersection t."
     },
     {"name",                (PyCFunction) PyTM_name, METH_FASTCALL,
         "name(t)\n\n"
-        "answers the name of the type if it exists else throws an error"
+        "Answers the name of the type if it exists else throws an error."
     },
     {"nameAs",              (PyCFunction) PyTM_nameAs, METH_FASTCALL,
         "nameAs(t, name)\n\n"
-        "Names a type, raising an error if <name> has already been taken"},
+        "Names a type, raising an error if <name> has already been taken."},
     {"nominal",             (PyCFunction) PyTM_nominal, METH_FASTCALL,
         "nominal(name)\n\n"
-        "answers the nominal called <name>, creating it if it doesn't exist, or raising an error if "
-        "<name> is used by another type"
+        "Answers the nominal called <name>, creating it if it doesn't exist, or raising an error if "
+        "<name> is used by another type."
+    },
+    {"seq",                 (PyCFunction) PyTM_seq, METH_FASTCALL,
+        "seq(t)\n\n"
+        "Answers the sequence of t type."
+    },
+    {"seqT",                (PyCFunction) PyTM_seqT, METH_FASTCALL,
+        "structTl(t)\n\n"
+        "Answers the contained type."
     },
     {"struct",              (PyCFunction) PyTM_struct, METH_FASTCALL,
-            "struct(f1, t1, f2, t2, ...)\n\n"
-            "answers the struct {f1:t1, f2:t2, ...}"
+        "struct(f1, t1, f2, t2, ...)\n\n"
+        "Answers the struct {f1:t1, f2:t2, ...} type."
     },
     {"structTl",             (PyCFunction) PyTM_structTl, METH_FASTCALL,
-            "structTl(t)\n\n"
-            "answers a tuple of the names and types in the struct t"
+        "structTl(t)\n\n"
+        "Answers a tuple of the names and types in the struct t."
     },
     {"tuple",               (PyCFunction) PyTM_tuple, METH_FASTCALL,
-            "tuple(t1, t2, ...)\n\n"
-            "answers the tuple (t1, t2, ...)"
+        "tuple(t1, t2, ...)\n\n"
+        "Answers the tuple (t1, t2, ...) type."
     },
     {"tupleTl",             (PyCFunction) PyTM_tupleTl, METH_FASTCALL,
-            "tupleTl(t)\n\n"
-            "answers a tuple of the types in the tuple t"
+        "tupleTl(t)\n\n"
+        "Answers a tuple of the types in the tuple t."
     },
     {"union",               (PyCFunction) PyTM_union, METH_FASTCALL,
-            "union(t1, t2, ...)\n\n"
-            "answers the union t1 + t2 + ..."
+        "union(t1, t2, ...)\n\n"
+        "Answers the union t1 + t2 + ... type."
     },
     {"unionTl",             (PyCFunction) PyTM_unionTl, METH_FASTCALL,
-            "unionTl(t)\n\n"
-            "answers a tuple of the types in the union t"
+        "unionTl(t)\n\n"
+        "Answers a tuple of the types in the union t."
     },
     {0}
 };
