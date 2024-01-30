@@ -46,10 +46,10 @@ struct Partial {
     PyObject *args[];
 };
 
-struct PyBType {
+typedef struct {
     PyObject_HEAD;
     btypeid_t btypeid;
-};
+} PyBType;
 
 struct PySM {
     PyObject_HEAD;

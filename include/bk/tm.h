@@ -137,6 +137,20 @@ struct btsummary {
     };                          // 4
 };
 
+typedef struct {
+    union {
+        btypeid_t tArgs;
+        btypeid_t tK;
+    };
+    union {
+        btypeid_t tRet;
+        btypeid_t tV;
+    };
+} TM_Fn;
+
+typedef TM_Fn TM_KV;
+typedef TM_Fn TM_T1T2;
+
 
 #define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by symid_t and vm space is cheap */
 #define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
@@ -147,8 +161,9 @@ struct btsummary {
 HT_STRUCT_EXTRA(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
 HT_STRUCT_EXTRA(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
 HT_STRUCT_EXTRA(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
-HT_STRUCT_EXTRA(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)   // OPEN check we grow the tlid_by_xxxid
+HT_STRUCT_EXTRA(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)    // for intersections, unions and tuples, OPEN: check we grow the tlid_by_xxxid
 HT_STRUCT_EXTRA(TM_BTYPID_BY_SEQIDHASH, TM_XXXID_T, struct PVT_TM *tm;)
+HT_STRUCT_EXTRA(TM_XXIDID_BY_T1T2HASH, TM_XXXID_T, TM_T1T2 *t1t2_by_xxid;)      // for fns and maps, OPEN: check we grow the t1t2_by_xxid
 
 typedef struct PVT_TM {
     BK_MM *mm;
@@ -222,12 +237,13 @@ typedef struct PVT_TM {
     // maps - could be a type list of two types
     TM_XXXID_T max_mapid;
     TM_XXXID_T next_mapid;
-    // OPEN: TBC§
+    // OPEN: TBC
     
     // functions
     TM_XXXID_T max_fncid;
     TM_XXXID_T next_fncid;
     // OPEN: TBC
+    TM_Fn *fn_by_fncid;
     
     // schema variables
     TM_XXXID_T max_svrid;
@@ -239,18 +255,21 @@ typedef struct PVT_TM {
 pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, struct TPM *);
 pub int TM_trash(BK_TM *);
 
+pub bmetatypeid_t tm_bmetatypeid(BK_TM *, btypeid_t);
 pub btypeid_t tm_btypeid(BK_TM *, char *);
 pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t, btypesize_t, btypeid_t);
 pub btexclusioncat_t tm_exclusion_cat(BK_TM *, char *, btexclusioncat_t);
-pub btypeid_t tm_fn(BK_TM *, btypeid_t tArgs, btypeid_t tRet);
-pub btypeid_t tm_fn_at(BK_TM *, btypeid_t tArgs, btypeid_t tRet, btypeid_t);
+pub btypeid_t tm_fn(BK_TM *, btypeid_t tArgs, btypeid_t tRet, btypeid_t);
+pub TM_Fn tm_Fn(BK_TM *, btypeid_t);
 pub btypeid_t tm_inter(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);
 pub btypeid_t tm_map(BK_TM *, btypeid_t tKey, btypeid_t tValue, btypeid_t);
-pub char * tm_name(BK_TM *, btypeid_t);
+pub TM_KV tm_Map(BK_TM *, btypeid_t);
+pub char * tm_name(BK_TM *, btypeid_t);                 // OPEN: return symid instead
 pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
 pub btypeid_t tm_nominal(BK_TM *, char *, btypeid_t);
 pub size tm_size(BK_TM *, btypeid_t);
+pub btypeid_t tm_size_as(BK_TM *, btypeid_t, size);
 pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained, btypeid_t);
 pub btypeid_t tm_struct(BK_TM *, symid_t *, btypeid_t *, btypeid_t);
 pub btypeid_t tm_tuple(BK_TM *, btypeid_t *, btypeid_t);

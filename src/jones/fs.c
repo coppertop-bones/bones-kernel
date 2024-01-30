@@ -64,7 +64,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
     //        types.append(tArg)
     //    tArgs = builtins.tuple(types)
 
-    PyObject *maybe;  struct PyBType *t;
+    PyObject *maybe;  PyBType *t;
     // (pSc : SC&ptr, args : N**py, BTypeByType : pydict)
     if (npyargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 4, npyargs);
 
@@ -108,10 +108,10 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
             maybe = PyDict_GetItem(PyBTypeByType, arg);
             if (maybe != 0) {
                 if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "The mapping of args[%l] is not a BType", o);
-                t = (struct PyBType *) maybe;
+                t = (PyBType *) maybe;
             }
             else
-                t = (struct PyBType *) py;
+                t = (PyBType *) py;
             lower = t->btypeid & LOWER_TYPE_MASK;
             upper = t->btypeid & UPPER_TYPE_MASK;
             query[o_slot] = lower;  o_slot++;
@@ -120,7 +120,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
 
         // otherwise, is it a BType?
         else if (PyObject_IsInstance(arg, (PyObject *) &PyBTypeCls)) {
-            t = (struct PyBType *) arg;
+            t = (PyBType *) arg;
             lower = t->btypeid & LOWER_TYPE_MASK;
             upper = (t->btypeid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
@@ -135,7 +135,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
             if (!PyCallable_Check(d)) return PyErr_Format(PyExc_TypeError, "args[%l].d is not a callable", 0); // this should be defended in the Fn setter of d
             maybe = PyObject_GetAttrString(d, "_t");
             if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._t didn't answer a BType", o);
-            t = (struct PyBType *) maybe;
+            t = (PyBType *) maybe;
             lower = t->btypeid & LOWER_TYPE_MASK;
             upper = (t->btypeid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
@@ -160,7 +160,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
             );
             if (result == 0) return 0;    // the call attempt will have set an exception
             if (!PyObject_IsInstance(result, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "args[%l].d._tPartial didn't answer a BType", o);
-            t = (struct PyBType *) result;
+            t = (PyBType *) result;
             lower = t->btypeid & LOWER_TYPE_MASK;
             upper = (t->btypeid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
@@ -172,7 +172,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
             maybe = PyObject_GetAttrString(arg, "_t");
             if (maybe != 0) {
                 if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "The _t attribute of args[%l] is not a BType", o);
-                t = (struct PyBType *) maybe;
+                t = (PyBType *) maybe;
                 lower = t->btypeid & LOWER_TYPE_MASK;
                 upper = (t->btypeid & UPPER_TYPE_MASK);
                 query[o_slot] = lower;  o_slot++;
@@ -192,10 +192,10 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
             maybe = PyDict_GetItem(PyBTypeByType, (PyObject *) argCls);
             if (maybe != 0) {
                 if (!PyObject_IsInstance(maybe, (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "BTypeByType[args[%l]] is not a BType", o);
-                t = (struct PyBType *) maybe;
+                t = (PyBType *) maybe;
             }
             else
-                t = (struct PyBType *) py;
+                t = (PyBType *) py;
             lower = t->btypeid & LOWER_TYPE_MASK;
             upper = (t->btypeid & UPPER_TYPE_MASK);
             query[o_slot] = lower;  o_slot++;
@@ -368,7 +368,7 @@ pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
 
     for (uint_fast8_t o = 0; o < num_args; o++) {
         // get the id from each tArg
-        struct PyBType *tArg = (struct PyBType *) PyTuple_GetItem(tArgs, o);
+        PyBType *tArg = (PyBType *) PyTuple_GetItem(tArgs, o);
         if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(PyJonesError, "Arg is not a BType");
         lower = tArg->btypeid & LOWER_TYPE_MASK;
         upper = (tArg->btypeid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;

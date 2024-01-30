@@ -8,16 +8,16 @@
 // OPEN: for performance could keep track of instances and use ref counting rather than PyBType creation to answer a btype
 
 pvt PyObject * PyBType_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    struct PyBType *self = (struct PyBType *) type->tp_alloc(type, 0);
+    PyBType *self = (PyBType *) type->tp_alloc(type, 0);
     return (PyObject *) self;
 }
 
-pvt void PyBType_trash(struct PyBType *self) {
+pvt void PyBType_trash(PyBType *self) {
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 pvt PyMemberDef PyBType_members[] = {
-    {"id", Py_T_UINT, offsetof(struct PyBType, btypeid), 0, "bones type id"},
+    {"id", Py_T_UINT, offsetof(PyBType, btypeid), 0, "bones type id"},
     {0}
 };
 
@@ -29,7 +29,7 @@ pvt PyTypeObject PyBTypeCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_name = "jones.BType",
     .tp_doc = PyDoc_STR("A bones type"),
-    .tp_basicsize = sizeof(struct PyBType),
+    .tp_basicsize = sizeof(PyBType),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_new = PyBType_create,

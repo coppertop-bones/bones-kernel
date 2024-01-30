@@ -233,7 +233,7 @@ def test_function():
     tm = sys._k.tm
 
     t1 = tm.union(tm.nominal(f'u32'), tm.nominal(f'err'))
-    tm.fn((t1, t1), t1).id >> check >> equals >> tm.fn((t1, t1), t1)
+    tm.fn((t1, t1), t1).id >> check >> equals >> tm.fn((t1, t1), t1).id
 
     return "test_function passed"
 

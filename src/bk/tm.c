@@ -203,6 +203,12 @@ pvt inline S8 tm_s8_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_t
 // type accessing / creation fns
 // ---------------------------------------------------------------------------------------------------------------------
 
+pub bmetatypeid_t tm_bmetatypeid(BK_TM *tm, btypeid_t btypeid) {
+    int outcome;  u32 idx;
+    if (btypeid < 1 || btypeid >= tm->next_btypeId) return 0;
+    return tm->summary_by_btypeid[btypeid].bmtid;
+}
+
 pub btypeid_t tm_btypeid(BK_TM *tm, char *name) {
     int outcome;  u32 idx;
     idx = ht_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &outcome);
@@ -237,6 +243,18 @@ pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl, btype
             return btypeid;
         }
     }
+}
+
+pub btypeid_t tm_fn(BK_TM *tm, btypeid_t tArgs, btypeid_t tRet, btypeid_t btypeid) {
+    // OPEN: implement - similar to intersection but with just 2 types to hash rather than a typelist
+    return 0;
+}
+
+pub TM_Fn tm_Fn(BK_TM *tm, btypeid_t btypeid) {
+    if (btypeid < 1 || btypeid >= tm->next_btypeId) return (TM_Fn) {0, 0};
+    struct btsummary *sum = tm->summary_by_btypeid + btypeid;       // OPEN: in general use pointer to summary rather than copying the struct
+    if (sum->bmtid != bmtfnc) return (TM_Fn) {0, 0};
+    return tm->fn_by_fncid[sum->fncId];
 }
 
 pub btexclusioncat_t tm_exclusion_cat(BK_TM *tm, char *name, btexclusioncat_t excl) {
