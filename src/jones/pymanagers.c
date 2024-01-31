@@ -162,31 +162,32 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssiz
 // fn: ((btype1, btype2, ...), tRet) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_fn(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl, tArgs, tRet;  PyObject *tup;  int n;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl, tArgs, tRet;  PyObject *tup, *e;  int n;
 
     // answer the fn type corresponding to tArgs and tRet
     if (nargs != 2) return PyErr_Format(PyExc_TypeError, "Must provide tArgs and tRet");
     checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // check tArgs
-    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) {
+    if (PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) {
         tArgs = ((PyBType *) args[0])->btypeid;
         if (tm_bmetatypeid(self->tm, tArgs) != bmttup) {
             resetToCheckpoint(buckets, &cp);
             return PyErr_Format(PyExc_TypeError, "tArgs is not a BType nor a tuple of BTypes");
         }
     }
-    else if (!PyObject_IsInstance(args[0], (PyObject *) &PyTuple_Type)) {
+    else if (PyObject_IsInstance(args[0], (PyObject *) &PyTuple_Type)) {
         tup = args[0];
         n = PyTuple_Size(tup);
         tl = allocInBuckets(buckets, ((1 + n) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
         tl[0] = (btypeid_t) n;
-        for (int i=1; i <= n; i++) {
-            if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {
+        for (int i=0; i < n; i++) {
+            e = PyTuple_GetItem(tup, i);
+            if (!PyObject_IsInstance(e, (PyObject *) &PyBTypeCls)) {
                 resetToCheckpoint(buckets, &cp);
-                return PyErr_Format(PyExc_TypeError, "element %i of tuple is not a BType", i-1);
+                return PyErr_Format(PyExc_TypeError, "element %i of tuple is not a BType", i);
             }
-            tl[i]  = ((PyBType *) PyTuple_GetItem(tup, i-1))->btypeid;
+            tl[i+1] = ((PyBType *) e)->btypeid;
         }
         tArgs = tm_tuple(self->tm, tl, 0);
         if (!tArgs) {
@@ -204,6 +205,7 @@ pvt PyObject * PyTM_fn(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
         resetToCheckpoint(buckets, &cp);
         return PyErr_Format(PyExc_TypeError, "tRet is not a BType");
     }
+    tRet = ((PyBType *) args[1])->btypeid;
 
     btypeid_t btypeid = tm_fn(self->tm, tArgs, tRet, 0);
 
@@ -214,7 +216,7 @@ pvt PyObject * PyTM_fn(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
         return (PyObject *) answer;
     } else {
         TP_init(&tp, 0, buckets);
-        PyErr_Format(PyExc_TypeError, "Error creating (%s) -> %s", tm_s8_typelist(self->tm, &tp, tl).cs, tm_s8(self->tm, tRet));
+        PyErr_Format(PyExc_TypeError, "Error creating (%s) -> %s", tm_s8_typelist(self->tm, &tp, tl).cs, tm_s8(self->tm, &tp, tRet).cs);
         resetToCheckpoint(buckets, &cp);
         return 0;
     }
@@ -224,12 +226,10 @@ pvt PyObject * PyTM_fn(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
 // fnArgT: (tFn) -> tArgs + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_fnTArgs(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    PyBType *btype;  btypeid_t *tl, tArgs, tFn;
-
     // answer tArgs of the given tFn
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
-    tFn = ((PyBType *) args[0])->btypeid;
+    btypeid_t tFn = ((PyBType *) args[0])->btypeid;
     if (tm_bmetatypeid(self->tm, tFn) != bmtfnc) return PyErr_Format(PyExc_TypeError, "btype is not a fn type");
     PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
     answer->btypeid = tm_Fn(self->tm, tFn).tArgs;
@@ -240,12 +240,10 @@ pvt PyObject * PyTM_fnTArgs(struct PyTM *self, PyObject **args, Py_ssize_t nargs
 // fnRetT: (tFn) -> tRet + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_fnTRet(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    PyBType *btype;  btypeid_t *tl, tArgs, tFn;
-
     // answer tRet of the given tFn
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
-    tFn = ((PyBType *) args[0])->btypeid;
+    btypeid_t tFn = ((PyBType *) args[0])->btypeid;
     if (tm_bmetatypeid(self->tm, tFn) != bmtfnc) return PyErr_Format(PyExc_TypeError, "btype is not a fn type");
     PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
     answer->btypeid = tm_Fn(self->tm, tFn).tRet;
@@ -551,11 +549,11 @@ pvt PyMethodDef PyTM_methods[] = {
         "fn((t1, t2, ...), tRet)\n\n"
         "Answers the fn(t1 & t2 & ...) -> tRet type."
     },
-    {"fnArgT",      (PyCFunction) PyTM_fnArgT, METH_FASTCALL,
+    {"fnArgT",      (PyCFunction) PyTM_fnTArgs, METH_FASTCALL,
         "fnArgT(t)\n\n"
         "Answers a tuple of the argument types of a function."
     },
-    {"fnRetT",      (PyCFunction) PyTM_fnRetT, METH_FASTCALL,
+    {"fnRetT",      (PyCFunction) PyTM_fnTRet, METH_FASTCALL,
         "fnRetT(t)\n\n"
         "Answers return type of a function."
     },

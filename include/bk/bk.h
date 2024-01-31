@@ -50,8 +50,8 @@
 // structs are either 'struct lowercase' or PascalCase
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef API_BK_BK_H
-#define API_BK_BK_H "bk/bk.h"
+#ifndef INC_BK_BK_H
+#define INC_BK_BK_H "bk/bk.h"
 
 
 #include <stdlib.h>
@@ -174,4 +174,4 @@ typedef char* err;
 #endif
 
 
-#endif   // API_BK_BK_H
+#endif   // INC_BK_BK_H

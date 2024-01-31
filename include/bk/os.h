@@ -2,8 +2,8 @@
 // OS - OPERATING SYSTEM API
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef API_BK_OS_H
-#define API_BK_OS_H "bk/os.h"
+#ifndef INC_BK_OS_H
+#define INC_BK_OS_H "bk/os.h"
 
 
 #include "bk.h"
@@ -32,4 +32,4 @@ pub int os_madvise(void *addr, size_t len, int advice);
 pub int os_mfree(void *addr, size_t len);
 
 
-#endif // API_BK_OS_H
+#endif // INC_BK_OS_H

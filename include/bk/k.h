@@ -2,8 +2,8 @@
 // K - KERNEL
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef API_BK_K_H
-#define API_BK_K_H "bk/k.h"
+#ifndef INC_BK_K_H
+#define INC_BK_K_H "bk/k.h"
 
 #include "mm.h"
 #include "sm.h"
@@ -24,5 +24,5 @@ typedef struct {
 pub BK_K * K_create(BK_MM *mm, Buckets *buckets);
 pub int K_trash(BK_K *k);
 
-#endif // API_BK_K_H
+#endif // INC_BK_K_H
 

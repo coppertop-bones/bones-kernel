@@ -21,8 +21,8 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 
-#ifndef API_BK_MM_H
-#define API_BK_MM_H "bk/mm.h"
+#ifndef INC_BK_MM_H
+#define INC_BK_MM_H "bk/mm.h"
 
 #include "bk.h"
 
@@ -91,4 +91,4 @@ tdd int isDead(Buckets *a, void *p);
 pub BK_MM * MM_create();
 pub int MM_trash(BK_MM *);
 
-#endif // API_BK_MM_H
+#endif // INC_BK_MM_H

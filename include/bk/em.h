@@ -2,8 +2,8 @@
 // EM - ENUM MANAGER
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef API_BK_EM_H
-#define API_BK_EM_H "bk/em.h"
+#ifndef INC_BK_EM_H
+#define INC_BK_EM_H "bk/em.h"
 
 #include "bk.h"
 #include "mm.h"
@@ -20,4 +20,4 @@ pub int EM_trash(BK_EM *);
 
 // sort order stuff
 
-#endif // API_BK_EM_H
+#endif // INC_BK_EM_H

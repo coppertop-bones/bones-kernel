@@ -8,11 +8,11 @@
 // we check size first
 
 
-#ifndef API_BK_SM_H
-#define API_BK_SM_H "bk/sm.h"
+#ifndef INC_BK_SM_H
+#define INC_BK_SM_H "bk/sm.h"
 
 #include "bk.h"
-#include "ht.h"
+#include "hi.h"
 #include "mm.h"
 
 
@@ -39,7 +39,7 @@ typedef struct {
     char *symname_buf;                      // 8 - VM buffer of u16 length prefixed, null terminated utf8 strings for type name and sym interning
     RP *rp_by_symid;                        // 8 - array of name RP indexed by id
     u32 *sortorder_by_symid;                // 8 - array of sort_order indexed by id - slot0 is 1 if sorted, 0 if not sorted
-    ht_struct(SM_SYMID_BY_NAMEHASH) *symid_by_namehash;    // 8 - hash table for name lookup
+    hi_struct(SM_SYMID_BY_NAMEHASH) *symid_by_namehash;    // 8 - hash table for name lookup
     BK_MM *mm;                              // 8 - memory manager to use
     symid_t max_symid;                      // 4
     symid_t next_symid;                     // 4
@@ -48,8 +48,8 @@ typedef struct {
 } BK_SM;
 
 
-// HT_STRUCT_EXTRA(name, entry_t, extravars)
-HT_STRUCT_EXTRA(SM_SYMID_BY_NAMEHASH, symid_t, BK_SM* sm;)
+// HI_STRUCT_WITH(name, token_t, extravars)
+HI_STRUCT_WITH(SM_SYMID_BY_NAMEHASH, symid_t, BK_SM* sm;)
 
 
 pub BK_SM * SM_create(BK_MM*);
@@ -61,4 +61,4 @@ pvt inline RP sm_id_2_RP(BK_SM *sm, symid_t symid) {
     return sm->rp_by_symid[symid];
 };
 
-#endif // API_BK_SM_H
+#endif // INC_BK_SM_H

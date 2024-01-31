@@ -26,20 +26,20 @@
 #include "../../include/bk/mm.h"
 #include "../../include/bk/sm.h"
 #include "../../include/bk/os.h"
-#include "lib/ht_impl.h"
+#include "lib/hi_impl.h"
 #include "pp.c"
 
 
-pvt inline char * nameFromEntry(ht_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry) {
+pvt inline char * nameFromEntry(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry) {
     return h->sm->symname_buf + h->sm->rp_by_symid[entry];
 }
 
-pvt bool inline nameFound(ht_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, char *key) {
+pvt bool inline nameFound(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, char *key) {
     return strcmp(h->sm->symname_buf + h->sm->rp_by_symid[entry], key) == 0;
 }
 
-// HT_IMPL(name, entry_t, hashable_t, __hash_fn, __found_fn, __hashable_from_entry_fn)
-HT_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char *, ht_str_hash, nameFound, nameFromEntry)
+// HI_IMPL(name, token_t, hashable_t, __hash_fn, __found_fn, __hashable_from_token_fn)
+HI_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char *, hi_chars_X31_hash, nameFound, nameFromEntry)
 
 
 pub BK_SM * SM_create(BK_MM *mm) {
@@ -58,7 +58,7 @@ pub BK_SM * SM_create(BK_MM *mm) {
     onOomDie(sm->rp_by_symid, s8("in %s malloc #1 failed"), FN_NAME);
     sm->sortorder_by_symid = mm->malloc(sm->max_symid * sizeof(symid_t));
     onOomDie(sm->sortorder_by_symid, s8("in %s malloc #2 failed"), FN_NAME);
-    sm->symid_by_namehash = ht_create(SM_SYMID_BY_NAMEHASH);
+    sm->symid_by_namehash = hi_create(SM_SYMID_BY_NAMEHASH);
     sm->symid_by_namehash->sm = sm;
     return sm;
 }
@@ -67,17 +67,17 @@ pub int SM_trash(BK_SM *sm) {
     os_vm_unreserve(sm->symname_buf, SM_MAX_NAME_STORAGE);
     sm->mm->free(sm->rp_by_symid);
     sm->mm->free(sm->sortorder_by_symid);
-    ht_trash(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash);
+    hi_trash(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash);
     sm->mm->free(sm);
     return 0;
 }
 
 pub symid_t sm_id(BK_SM *sm, char *name) {
     int res, pageSize = 0;
-    u32 idx = ht_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
+    u32 idx = hi_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
 
-    if (res == HT_LIVE) return sm->symid_by_namehash->entries[idx];
-    if (res == HT_TOMBSTONE) die("TOMBSTONE");
+    if (res == HI_LIVE) return sm->symid_by_namehash->tokens[idx];
+    if (res == HI_TOMBSTONE) die("TOMBSTONE");
 
     // add the symbol
     int l = strlen(name);
@@ -106,7 +106,7 @@ pub symid_t sm_id(BK_SM *sm, char *name) {
     strcpy(sm->symname_buf + (sm->next_rp), name);
     sm->next_rp += 2 + l + 1;
 
-    ht_replace_empty(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, idx, id);
+    hi_replace_empty(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, idx, id);
 
     if (needsAnotherPage) {
         os_mprotect(sm->symname_buf + sm->max_rp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
