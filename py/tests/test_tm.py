@@ -224,6 +224,8 @@ def test_map():
     t1 = tm.nominal(f'txt')
     t2 = tm.nominal(f'f64')
     tm.map(t1, t2).id >> check >> equals >> tm.map(t1, t2).id
+    tm.mapTK(tm.map(t1, t2)).id >> check >> equals >> t1.id
+    tm.mapTV(tm.map(t1, t2)).id >> check >> equals >> t2.id
 
     return "test_map passed"
 
@@ -232,8 +234,12 @@ def test_function():
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    t1 = tm.union(tm.nominal(f'u32'), tm.nominal(f'err'))
-    tm.fn((t1, t1), t1).id >> check >> equals >> tm.fn((t1, t1), t1).id
+    t1 = tm.nominal(f'u32')
+    t2 = tm.union(t1, tm.nominal(f'err'))
+    tm.fn((t1, t1), t2).id >> check >> equals >> tm.fn((t1, t1), t2).id
+    tm.tupleTl(tm.fnTArgs(tm.fn((t1, t1), t2)))[0].id >> check >> equals >> t1.id
+    tm.tupleTl(tm.fnTArgs(tm.fn((t1, t1), t2)))[1].id >> check >> equals >> t1.id
+    tm.fnTRet(tm.fn((t1, t1), t2)).id >> check >> equals >> t2.id
 
     return "test_function passed"
 
@@ -273,7 +279,7 @@ def main():
     test_tuple() >> PP
     # test_struct() >> PP
     test_sequence() >> PP
-    # test_map() >> PP
+    test_map() >> PP
     test_function() >> PP
     # test_schemavars() >> PP
     # test_recursion() >> PP

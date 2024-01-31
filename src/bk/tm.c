@@ -474,6 +474,58 @@ pub btypeid_t * tm_inter_tl(BK_TM *tm, btypeid_t btypeid) {
     }
 }
 
+pub btypeid_t tm_map(BK_TM *tm, btypeid_t tK, btypeid_t tV, btypeid_t btypeid) {
+    i32 outcome;  TM_XXXID_T mapid;  TM_T1T2 t1t2;  u32 idx;
+
+    // answers the validated function type corresponding to tK and tV, creating if necessary
+
+    // check each typeid is valid
+    if (!(0 < tK && tK < tm->next_btypeId)) return 0;
+    if ((tm->summary_by_btypeid + tK)->bmtid == bmterr) return 0;
+    if (!(0 < tV && tV < tm->next_btypeId)) return 0;
+    if ((tm->summary_by_btypeid + tV)->bmtid == bmterr) return 0;
+
+    t1t2.tK = tK;
+    t1t2.tV = tV;
+
+    // get the btypeid for the t1t2
+    idx = hi_put_idx(TM_XXXID_BY_T1T2HASH, tm->mapid_by_t1t2hash, t1t2, &outcome);
+    switch (outcome) {
+        default:
+            die("%s:%i: HI_TOMBSTONE2!", FN_NAME, __LINE__);
+        case HI_LIVE:
+            mapid = tm->mapid_by_t1t2hash->tokens[idx];
+            if (btypeid == 0) return tm->btypid_by_mapid[mapid];
+            else if (btypeid == tm->btypid_by_mapid[mapid]) return btypeid;
+            else return 0;
+        case HI_EMPTY:
+            // missing so commit the function type for t1t2
+            if (btypeid == 0)
+                btypeid = tm->next_btypeId;
+            else if (btypeid < tm->next_btypeId && tm->summary_by_btypeid[btypeid].bmtid != bmterr)
+                // btypeid is already in use so given the t1t2 lookup above we cannot be referring to the same btype
+                return B_NAT;
+            mapid = tm->next_mapid++;
+            if (mapid >= tm->max_mapid) {
+                tm->max_mapid += TM_MAX_ID_INC_SIZE;
+                _growTo((void **)&tm->t1t2_by_mapid, tm->max_mapid * sizeof(TM_T1T2), tm->mm, FN_NAME);
+                _growTo((void **)&tm->btypid_by_mapid, tm->max_mapid * sizeof(btypeid_t), tm->mm, FN_NAME);
+            }
+            tm->t1t2_by_mapid[mapid] = t1t2;
+            _new_type_summary_at(tm, bmtmap, btenone, btypeid, mapid);
+            tm->btypid_by_mapid[mapid] = btypeid;
+            hi_replace_empty(TM_XXXID_BY_T1T2HASH, tm->mapid_by_t1t2hash, idx, mapid);
+            return btypeid;
+    }
+}
+
+pub TM_T1T2 tm_Map(BK_TM *tm, btypeid_t btypeid) {
+    if (btypeid < 1 || btypeid >= tm->next_btypeId) return (TM_T1T2) {{0}, {0}};
+    struct btsummary *sum = tm->summary_by_btypeid + btypeid;       // OPEN: in general use pointer to summary rather than copying the struct
+    if (sum->bmtid != bmtmap) return (TM_T1T2) {{0}, {0}};
+    return tm->t1t2_by_mapid[sum->mapId];
+}
+
 pub char * tm_name(BK_TM *tm, btypeid_t btypeid) {
 
     // answers the name of the given type or a null pointer it has no name
@@ -862,6 +914,12 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     // maps
     tm->max_mapid = TM_MAX_ID_INC_SIZE;
     tm->next_mapid = 1;
+    tm->t1t2_by_mapid = (TM_T1T2 *) mm->malloc(tm->max_mapid * sizeof(TM_T1T2));
+    memset(tm->t1t2_by_mapid, 0, tm->max_mapid * sizeof(TM_T1T2));
+    tm->btypid_by_mapid = (btypeid_t *) mm->malloc(tm->max_mapid * sizeof(btypeid_t));
+    memset(tm->btypid_by_mapid, 0, tm->max_mapid * sizeof(btypeid_t));
+    tm->mapid_by_t1t2hash = hi_create(TM_XXXID_BY_T1T2HASH);
+    tm->mapid_by_t1t2hash->t1t2_by_xxxid = tm->t1t2_by_mapid;
 
     // functions
     tm->max_fncid = TM_MAX_ID_INC_SIZE;
@@ -915,8 +973,14 @@ pub int TM_trash(BK_TM *tm) {
     hi_trash(TM_BTYPID_BY_SEQIDHASH, tm->containerid_by_containedidhash);
 
     // maps
+    tm->mm->free(tm->t1t2_by_mapid);
+    tm->mm->free(tm->btypid_by_mapid);
+    hi_trash(TM_XXXID_BY_T1T2HASH, tm->mapid_by_t1t2hash);
 
     // functions
+    tm->mm->free(tm->t1t2_by_fncid);
+    tm->mm->free(tm->btypid_by_fncid);
+    hi_trash(TM_XXXID_BY_T1T2HASH, tm->fncid_by_t1t2hash);
 
     // schema variables
 

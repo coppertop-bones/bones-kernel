@@ -309,6 +309,73 @@ pvt PyObject * PyTM_intersectionTl(struct PyTM *self, PyObject **args, Py_ssize_
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// map: (tK, tV) -> tMap + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_map(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t tK, tV, tMap;
+
+    // answer the tMap corresponding to tK and tV
+    if (nargs != 2) return PyErr_Format(PyExc_TypeError, "Must provide tK and tV");
+    checkpointBuckets((buckets = self->tm->buckets), &cp);
+
+    // check tK
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) {
+        resetToCheckpoint(buckets, &cp);
+        return PyErr_Format(PyExc_TypeError, "tK is not a BType");
+    }
+    tK = ((PyBType *) args[0])->btypeid;
+
+    // check tV
+    if (!PyObject_IsInstance(args[1], (PyObject *) &PyBTypeCls)) {
+        resetToCheckpoint(buckets, &cp);
+        return PyErr_Format(PyExc_TypeError, "tV is not a BType");
+    }
+    tV = ((PyBType *) args[1])->btypeid;
+
+    tMap = tm_map(self->tm, tK, tV, 0);
+
+    if (tMap) {
+        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+        answer->btypeid = tMap;
+        resetToCheckpoint(buckets, &cp);
+        return (PyObject *) answer;
+    } else {
+        TP_init(&tp, 0, buckets);
+        PyErr_Format(PyExc_TypeError, "Error creating map for %s -> %s", tm_s8(self->tm, &tp, tK).cs, tm_s8(self->tm, &tp, tV).cs);
+        resetToCheckpoint(buckets, &cp);
+        return 0;
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// mapTK: (tMap) -> tK + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_mapTK(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer tK of the given tMap
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
+    btypeid_t tMap = ((PyBType *) args[0])->btypeid;
+    if (tm_bmetatypeid(self->tm, tMap) != bmtmap) return PyErr_Format(PyExc_TypeError, "btype is not a map type");
+    PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+    answer->btypeid = tm_Map(self->tm, tMap).tK;
+    return (PyObject *) answer;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// mapTV: (tMap) -> tV + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_mapTV(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer tV of the given tMap
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
+    btypeid_t tMap = ((PyBType *) args[0])->btypeid;
+    if (tm_bmetatypeid(self->tm, tMap) != bmtmap) return PyErr_Format(PyExc_TypeError, "btype is not a map type");
+    PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+    answer->btypeid = tm_Map(self->tm, tMap).tV;
+    return (PyObject *) answer;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // name: (btype) -> PyStr + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_name(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
@@ -462,10 +529,10 @@ pvt PyObject * PyTM_tupleTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs
     tl = tm_tuple_tl(self->tm, ((PyBType *) args[0])->btypeid);
     if (tl == 0) return PyErr_Format(PyExc_TypeError, "btype is not a tuple type");
     answer = PyTuple_New(tl[0]);
-    for (btypeid_t i = 1; i < tl[0]; i++) {
+    for (btypeid_t i = 0; i < tl[0]; i++) {
         btype = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        btype->btypeid = tl[i];
-        PyTuple_SET_ITEM(answer, i - 1, btype);
+        btype->btypeid = tl[i+1];
+        PyTuple_SET_ITEM(answer, i, btype);
     }
     return answer;
 }
@@ -545,25 +612,37 @@ pvt PyMethodDef PyTM_methods[] = {
         "exists(name)\n\n"
         "Answers if the type with <name> exists or not."
     },
-    {"fn",        (PyCFunction) PyTM_fn, METH_FASTCALL,
+    {"fn",                  (PyCFunction) PyTM_fn, METH_FASTCALL,
         "fn((t1, t2, ...), tRet)\n\n"
         "Answers the fn(t1 & t2 & ...) -> tRet type."
     },
-    {"fnArgT",      (PyCFunction) PyTM_fnTArgs, METH_FASTCALL,
-        "fnArgT(t)\n\n"
+    {"fnTArgs",              (PyCFunction) PyTM_fnTArgs, METH_FASTCALL,
+        "fnTArgs(tFn)\n\n"
         "Answers a tuple of the argument types of a function."
     },
-    {"fnRetT",      (PyCFunction) PyTM_fnTRet, METH_FASTCALL,
-        "fnRetT(t)\n\n"
-        "Answers return type of a function."
+    {"fnTRet",              (PyCFunction) PyTM_fnTRet, METH_FASTCALL,
+        "fnRetT(tFn)\n\n"
+        "Answers tRet of a function."
     },
     {"intersection",        (PyCFunction) PyTM_intersection, METH_FASTCALL,
         "intersection(t1, t2, ...)\n\n"
         "Answers the intersection t1 & t2 & ... type."
     },
     {"intersectionTl",      (PyCFunction) PyTM_intersectionTl, METH_FASTCALL,
-            "intersectionTl(t)\n\n"
-            "Answers a tuple of the types in the intersection t."
+        "intersectionTl(t)\n\n"
+        "Answers a tuple of the types in the intersection t."
+    },
+    {"map",                 (PyCFunction) PyTM_map, METH_FASTCALL,
+        "map(tK, tV)\n\n"
+        "Answers the type of the map tK -> tV."
+    },
+    {"mapTK",               (PyCFunction) PyTM_mapTK, METH_FASTCALL,
+            "mapTK(tMap)\n\n"
+            "Answers tK of tMap."
+    },
+    {"mapTV",               (PyCFunction) PyTM_mapTV, METH_FASTCALL,
+            "mapTV(tMap)\n\n"
+            "Answers tV of tMap."
     },
     {"name",                (PyCFunction) PyTM_name, METH_FASTCALL,
         "name(t)\n\n"
