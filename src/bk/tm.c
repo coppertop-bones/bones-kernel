@@ -12,8 +12,15 @@
 #include "lib/hi_impl.h"
 #include "lib/radix.h"
 
+#include "pp.c"
+
 
 KRADIX_SORT_INIT(btypeid_t, btypeid_t, ,sizeof(btypeid_t))
+
+
+// forward declares to maintain nicer code order
+pvt btypeid_t _inter_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid);
+pvt btypeid_t _union_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid);
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -340,11 +347,19 @@ pub btexclusioncat_t tm_exclusion_cat(BK_TM *tm, char *name, btexclusioncat_t ex
 // (int + str) & (int + bool) => (int+int) & (int+bool) & (str+int) & (str+bool)
 // types only make sense in the context of fitsWithin a LHS might not behaviour as a RHS
 
+pvt void _make_next_page_of_typelist_buf_writable_if_necessary(BK_TM *tm, int numTypes) {
+    // make next page of tm->typelist_buf writable if necessary
+    if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
+        if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+        size_t pageSize = os_page_size();
+        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
+    }
+}
 
 pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
-    i32 i, j, outcome, numTypes, hasUnions;  btexclusioncat_t excl = 0;  TM_TLID_T tlid;
-    btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist;
-    TM_XXXID_T intid;  struct btsummary *sum;  u32 idx;
+    i32 i, j, numTypes, hasUnions;  TM_TLID_T tlid;  btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist;
+    struct btsummary *sum;
     // (A&B) & (C&D)  = A & B & C & D
     // (A&B) & (B&C)  = A & B & C
     // (A+B) & (B+C)  = (A+B) & (B+C)  why not B? because we need to keep the detail when the program causes intersections
@@ -357,7 +372,7 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     if (!(numTypes = typelist[0])) return 0;
 
     // check btypeids in typelist are in range, and figure total possible length (including possible duplicate from child intersections)
-    for (i = 1; i <= (i32)typelist[0]; i++) {
+    for (i = 1; i <= (i32) typelist[0]; i++) {
         if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtint) {
@@ -366,28 +381,21 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         }
     }
 
-    // make next page of tm->typelist_buf writable if necessary
-    if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
-        if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
-        size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
-    }
+    _make_next_page_of_typelist_buf_writable_if_necessary(tm, numTypes);
 
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
 
     // copy typelist into typelist_buf unpacking any intersections
     p1 = nextTypelist;
     *p1++ = numTypes;
-    for (i = 1; i <= (i32)typelist[0]; i++) {
+    for (i = 1; i <= (i32) typelist[0]; i++) {
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtint) {
             // we have an intersection type - expand it
             tlid = tm->tlid_by_intid[sum->intId];
             interTl = (tm->typelist_buf + tm->tlrp_by_tlid[tlid]);
-            for (j = 1; j <= (i32)interTl[0]; j++) *p1++ = interTl[j];
-        }
-        else
+            for (j = 1; j <= (i32) interTl[0]; j++) *p1++ = interTl[j];
+        } else
             *p1++ = typelist[i];
     }
 
@@ -410,6 +418,15 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
 
     // handle intersections of unions?
     if (hasUnions) return 0;
+
+    return _inter_for_emplaced_tl(tm, btypeid);
+}
+pvt btypeid_t _inter_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
+    u32 idx;  i32 i, outcome;  TM_TLID_T tlid;  TM_XXXID_T intid;  btexclusioncat_t excl = 0;  btypeid_t *p1;
+    struct btsummary *sum;  btypeid_t *nextTypelist; i32 numTypes;
+
+    nextTypelist = tm->typelist_buf + tm->next_tlrp;
+    numTypes = *nextTypelist;
 
     // check for exclusion conflicts
     p1 = nextTypelist;
@@ -526,8 +543,56 @@ pub TM_T1T2 tm_Map(BK_TM *tm, btypeid_t btypeid) {
     return tm->t1t2_by_mapid[sum->mapId];
 }
 
-pub char * tm_name(BK_TM *tm, btypeid_t btypeid) {
+pub btypeid_t tm_minus(BK_TM *tm, btypeid_t A, btypeid_t B, btypeid_t btypeid) {
+    struct btsummary *sumA, *sumB; btypeid_t *tlA1, *tlB1, *tlA2, *tlB2, *tlDest1, *tlDest2, *p;  int nA, nB, nDest;
 
+    if (!(0 < A && A < tm->next_btypeId)) return 0;
+    if (!(0 < B && B < tm->next_btypeId)) return 0;
+    sumA = (tm->summary_by_btypeid + A);
+    sumB = (tm->summary_by_btypeid + B);
+    if ((sumA->bmtid != bmtint && sumA->bmtid != bmtuni) || sumB->bmtid == bmterr) return 0;
+
+    // A is either an intersection or a union - the minus operation is essentially the same
+    if (sumA->bmtid == bmtint)
+        tlA1 = tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_intid[sumA->intId]];     // points to size element in tlA
+    else
+        tlA1 = tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_uniid[sumA->uniId]];     // points to size element in tlA
+    nA = *tlA1;
+    tlA2 = tlA1 + nA;                                                                   // points to last element in tlA
+    _make_next_page_of_typelist_buf_writable_if_necessary(tm, nA);
+    tlDest2 = tlDest1 = tm->typelist_buf + tm->next_tlrp;                               // both point to size element in tlDest
+    if (sumB->bmtid == bmtint || sumB->bmtid == bmtuni) {
+        if (sumB->bmtid == bmtint)
+            tlB1 = tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_intid[sumB->intId]]; // points to size element in tlB
+        else
+            tlB1 = tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_uniid[sumB->uniId]]; // points to size element in tlB
+        nB = *tlB1;
+        tlB2 = tlB1 + nB;                                                               // points to last element in tlB
+        ++tlB1;
+        // OPEN: this can be made a bit more efficient by using the fact that union and intersection typelists are sorted
+        for (++tlA1; tlA1 <= tlA2; tlA1++) {
+            int match = 0;
+            for (p = tlB1; p <= tlB2; p++) {
+                if (*tlA1 == *p) {
+                    match = 1;
+                    break;
+                }
+            }
+            if (!match) *(++tlDest2) = *tlA1;    // if no match inc dest ptr and copy
+        }
+    }
+    else {
+        nB = 1;
+        for (++tlA1; tlA1 <= tlA2; tlA1++) if (*tlA1 != B) *(++tlDest2) = *tlA1;    // if no match inc dest ptr and copy
+    }
+    nDest = tlDest2 - tlDest1;
+    if (nDest + nB != nA) return 0;
+    if (nDest == 1) return *tlDest2;
+    *tlDest1 = nDest;
+    return (sumA->bmtid == bmtint) ? _inter_for_emplaced_tl(tm, btypeid) : _union_for_emplaced_tl(tm, btypeid);
+}
+
+pub char * tm_name(BK_TM *tm, btypeid_t btypeid) {
     // answers the name of the given type or a null pointer it has no name
     if (btypeid <= 0 || btypeid >= tm->next_btypeId) return 0;
     symid_t symid = tm->symid_by_btypeid[btypeid];
@@ -752,8 +817,7 @@ pub btypeid_t * tm_tuple_tl(BK_TM *tm, btypeid_t btypeid) {
 }
 
 pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
-    i32 i, j, outcome, numTypes;  struct btsummary *sum;  TM_XXXID_T uniid;  TM_TLID_T tlid;
-    btypeid_t *uniTl, *p1, *p2, *p3, *nextTypelist;  u32 idx;
+    i32 i, j, numTypes;  struct btsummary *sum;  TM_TLID_T tlid;  btypeid_t *uniTl, *p1, *p2, *p3, *nextTypelist;
 
     if (!(numTypes = typelist[0])) return 0;
 
@@ -805,7 +869,15 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
         else
             while (*p1 == *p2 && p2 < p3) p2++;
     }
-    numTypes = *nextTypelist = p1 - nextTypelist;
+    *nextTypelist = p1 - nextTypelist;
+
+    return _union_for_emplaced_tl(tm, btypeid);
+}
+pvt btypeid_t _union_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
+    u32 idx;  i32 outcome;  TM_TLID_T tlid;  TM_XXXID_T uniid;  btypeid_t *nextTypelist; i32 numTypes;
+
+    nextTypelist = tm->typelist_buf + tm->next_tlrp;
+    numTypes = *nextTypelist;
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
     idx = hi_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &outcome);

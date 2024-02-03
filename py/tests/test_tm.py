@@ -284,11 +284,13 @@ def test_minus():
     t3 = tm.nominal(f'GBP')     # deliberately in reverse order
     t2 = tm.nominal(f'ccy')
     t1 = tm.nominal(f'f64')
+    t4 = tm.nominal(f'u32')
 
     # intersections
     tm.minus(tm.intersection(t1, t2, t3), t2) >> check >> isType >> tm.intersection(t1, t3)
     tm.minus(tm.intersection(t1, t2, t3), tm.intersection(t1, t3)) >> check >> isType >> t2
-    # tm.minus(t1, tm.intersection(t1, t2)) >> check >> equals >> tm.minus(t1, tm.intersection(t1, t2))   # OPEN: do one day? currently consider it hard to reason about so probably not
+    # OPEN: do the following one day? currently consider it hard to reason about so probably not
+    # tm.minus(t1, tm.intersection(t1, t2)) >> check >> equals >> tm.intersection(t1, tm.exclusion(t2))
     tm.minus >> apply_ >> (t1, t1) >> check >> raises >> TypeError
     tm.minus >> apply_ >> (t1, t2) >> check >> raises >> TypeError
     tm.minus >> apply_ >> (tm.intersection(t1, t2, t3), t4) >> check >> raises >> TypeError

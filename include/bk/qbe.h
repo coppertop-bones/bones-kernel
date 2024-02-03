@@ -294,7 +294,7 @@ void emitlocaldecl(Node *decl) {
 Symb emitload(Symb tmp, Symb m) {    // tmp is temp, m is memory
     int isFn;
     isFn = (tmp.btyp == m.btyp) && tm_fitsWithin(_bk->tm, tmp.btyp, B_FN);
-    if (tm_fitsWithin(tmp.btyp, B_EXTERN)) tmp.btyp = tm_minus(_bk->tm, tmp.btyp, B_EXTERN);
+    if (tm_fitsWithin(tmp.btyp, B_EXTERN)) tmp.btyp = tm_minus(_bk->tm, tmp.btyp, B_EXTERN, 0);
     putq(QINDENT);
     emitsymb(tmp);
     if (isFn)
@@ -734,14 +734,14 @@ Symb emitexpr(Node *n) {
 
         case OP_DEREF:
             s0 = emitexpr(n->l);
-            if (!tm_fitsWithin(s0.btyp, B_P)) die("dereference of a non-pointer");
+            if (!tm_fitsWithin(_bk->tm, s0.btyp, B_P)) die("dereference of a non-pointer");
             sr.btyp = DREF(s0.btyp);
             sr = emitload(sr, s0);
             break;
 
         case OP_ADDR:
             sr = lval(n->l);
-            sr.btyp = IDIR(sr.btyp);
+            sr.btyp = _tIndirect(sr.btyp);
             break;
 
         case OP_NEG:

@@ -269,7 +269,7 @@ pub btypeid_t tm_interv(BK_TM *, u32 numTypes, ...);
 pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);
 pub btypeid_t tm_map(BK_TM *, btypeid_t tKey, btypeid_t tValue, btypeid_t);
 pub TM_T1T2 tm_Map(BK_TM *, btypeid_t);
-pub btypeid_t tm_minus(BK_TM *, btypeid_t, btypeid_t);
+pub btypeid_t tm_minus(BK_TM *, btypeid_t A, btypeid_t B, btypeid_t);
 pub char * tm_name(BK_TM *, btypeid_t);                 // OPEN: return symid instead
 pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
 pub btypeid_t tm_nominal(BK_TM *, char *, btypeid_t);

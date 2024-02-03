@@ -18,7 +18,7 @@
 
 
 btypeid_t _num_btypes = 0;
-PyObject * *_btypes = 0;        // OPEN: move this to the Python Kernal object?
+PyObject * *_btypes = 0;        // OPEN: move this to the Python Kernel object?
 
 //OPEN: add BTypeError (as a subclass of PyTypeError?)
 
@@ -381,6 +381,21 @@ pvt PyObject * PyTM_mapTV(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// minus: (btype, btype) -> btype + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_minus(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer the name of the given btype
+    if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 2, nargs);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "A is not a BType");
+    if (!PyObject_IsInstance(args[1], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "B is not a BType");
+    btypeid_t btypeid = tm_minus(self->tm, ((PyBType *) args[0])->btypeid, ((PyBType *) args[1])->btypeid, 0);
+    if (btypeid == 0)
+        return PyErr_Format(PyExc_TypeError, "Error doing A minus B.");
+    else
+        return newPyBTypeRef(btypeid);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // name: (btype) -> PyStr + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_name(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
@@ -649,6 +664,10 @@ pvt PyMethodDef PyTM_methods[] = {
     {"mapTV",               (PyCFunction) PyTM_mapTV, METH_FASTCALL,
         "mapTV(tMap)\n\n"
         "Answers tV of tMap."
+    },
+    {"minus",               (PyCFunction) PyTM_minus, METH_FASTCALL,
+        "minus(A, B)\n\n"
+        "Answers the type of A minus B."
     },
     {"name",                (PyCFunction) PyTM_name, METH_FASTCALL,
         "name(t)\n\n"
