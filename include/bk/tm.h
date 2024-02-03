@@ -119,6 +119,7 @@ typedef enum : BTEXCLUSIONCAST_T_TYPE {
 
 // OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
 // also will store recursion, exclusivecat
+// OPEN: hasT etc
 struct btsummary {
     bmetatypeid_t bmtid;        // 1
     btexclusioncat_t excl;      // 1
@@ -142,7 +143,6 @@ typedef struct {
         btypeid_t tArgs;
         btypeid_t tK;
         btypeid_t t1;
-
     };
     union {
         btypeid_t tRet;
@@ -265,19 +265,25 @@ pub btexclusioncat_t tm_exclusion_cat(BK_TM *, char *, btexclusioncat_t);
 pub btypeid_t tm_fn(BK_TM *, btypeid_t tArgs, btypeid_t tRet, btypeid_t);
 pub TM_T1T2 tm_Fn(BK_TM *, btypeid_t);
 pub btypeid_t tm_inter(BK_TM *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_interv(BK_TM *, u32 numTypes, ...);
 pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);
 pub btypeid_t tm_map(BK_TM *, btypeid_t tKey, btypeid_t tValue, btypeid_t);
 pub TM_T1T2 tm_Map(BK_TM *, btypeid_t);
+pub btypeid_t tm_minus(BK_TM *, btypeid_t, btypeid_t);
 pub char * tm_name(BK_TM *, btypeid_t);                 // OPEN: return symid instead
 pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
 pub btypeid_t tm_nominal(BK_TM *, char *, btypeid_t);
+pub btypeid_t tm_schemavar(BK_TM *, char *, btypeid_t);
+pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained, btypeid_t);
+pub btypeid_t tm_seq_t(BK_TM *, btypeid_t);
 pub size tm_size(BK_TM *, btypeid_t);
 pub btypeid_t tm_size_as(BK_TM *, btypeid_t, size);
-pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained, btypeid_t);
 pub btypeid_t tm_struct(BK_TM *, symid_t *, btypeid_t *, btypeid_t);
 pub btypeid_t tm_tuple(BK_TM *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_tuplev(BK_TM *, u32 numTypes, ...);
 pub btypeid_t * tm_tuple_tl(BK_TM *, btypeid_t);
 pub btypeid_t tm_union(BK_TM *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_unionv(BK_TM *, u32 numTypes, ...);
 pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 
 #endif // BK_TM_H

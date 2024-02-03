@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------------------------------------------------
-//                                                    Type Manager
+// TM - TYPE MANAGER
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef __BK_TM_C
@@ -587,6 +587,34 @@ pub btypeid_t tm_nominal(BK_TM *tm, char *name, btypeid_t btypeid) {
     }
 }
 
+pub btypeid_t tm_schemavar(BK_TM *tm, char *name, btypeid_t btypeid) {
+    int outcome;  symid_t symid;  u32 idx;  struct btsummary sum;
+
+    // answers the validated schema variable corresponding to name, creating if necessary
+    if (btypeid && btypeid < tm->next_btypeId && (sum = tm->summary_by_btypeid[btypeid]).bmtid != bmterr) {
+        // there is already a type with id btypeid so check we are referring to the same type
+        if (sum.bmtid != bmtsvr || sum.excl != btenone || strcmp(name, tm_name(tm, btypeid)) != 0) return B_NAT;
+        return btypeid;
+    } else {
+        // if name is not already in use create a new schema variable
+        symid = sm_id(tm->sm, name);
+        idx = hi_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &outcome);
+        if (outcome == HI_LIVE) {
+            // already exists so check it's a schema variable
+            btypeid = hi_token(tm->btypeid_by_symidhash, idx);
+            sum = tm->summary_by_btypeid[btypeid];
+            if (sum.bmtid != bmtsvr || sum.excl != btenone) return B_NAT;
+            return btypeid;
+        } else {
+            if (btypeid == 0) btypeid = tm->next_btypeId;
+            hi_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
+            tm->symid_by_btypeid[btypeid] = symid;
+            _new_type_summary_at(tm, bmtsvr, btenone, btypeid, 0);
+            return btypeid;
+        }
+    }
+}
+
 pub btypeid_t tm_seq(BK_TM *tm, btypeid_t containedid, btypeid_t btypeid) {
     i32 outcome;  struct btsummary *sum;  btypeid_t containerid;  u32 idx;
 
@@ -627,9 +655,13 @@ pub btypeid_t tm_seq_t(BK_TM *tm, btypeid_t btypeid) {
     return sum->bmtid == bmtseq ? sum->seqId : 0;
 }
 
-pub size tm_size(BK_TM * tm, btypeid_t btypeid) {
+pub size tm_size(BK_TM *tm, btypeid_t btypeid) {
     // OPEN: implement (requires packing decisions which should be put in the client? except the mm needs to be able to navigate)
     return 8;
+}
+
+pub btypeid_t tm_size_as(BK_TM *tm, btypeid_t btypeid, size sz) {
+    return 0;
 }
 
 pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
@@ -831,6 +863,26 @@ pub btypeid_t * tm_union_tl(BK_TM *tm, btypeid_t btypeid) {
 }
 
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// sub-type checking
+// ---------------------------------------------------------------------------------------------------------------------
+
+int tm_fitsWithin(BK_TM *tm, btypeid_t a, btypeid_t b) {
+    // should answer a tuple {cacheID, doesFit, tByT, distance}
+    // tByT can just be a T sorted list (not worth doing a hash)
+    if (a == b) return 1;
+    if ((b == B_EXTERN) && (a & B_EXTERN)) return 1;
+    if ((b == B_FN) && ((a & 0x7f) == B_FN)) return 1;
+    if ((b == B_EXTERN_FN_PTR) && ((a & 0xffff) == B_EXTERN_FN_PTR)) return 1;
+    if ((b == B_FN_PTR) && ((a & 0xff7f) == B_FN_PTR)) return 1;
+    if ((b == B_CHAR_STAR) && ((a & 0xff7f) == B_CHAR_STAR)) return 1;
+    if ((b == B_VOID_STAR) && ((a & 0xff7f) == B_VOID_STAR)) return 1;
+    if ((a & 0x000000FF) == b) return 1;
+    return 0;
+}
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 // type manager lifecycle fns
 // ---------------------------------------------------------------------------------------------------------------------
@@ -988,6 +1040,52 @@ pub int TM_trash(BK_TM *tm) {
     tm->mm->free(tm);
     return 0;
 }
+
+
+
+
+pub btypeid_t tm_interv(BK_TM *tm, u32 numTypes, ...) {
+    va_list args;  btypeid_t *typelist;  int i;  btypeid_t btypeid;
+    va_start(args, numTypes);
+    typelist = malloc((1 + numTypes) * sizeof(btypeid_t));
+    for (i = 1; i <= numTypes; i++) typelist[i] = va_arg(args, btypeid_t);
+    typelist[0] = numTypes;
+    btypeid = tm_inter(tm, typelist, 0);
+    free(typelist);
+    va_end(args);
+    return btypeid;
+}
+
+pub btypeid_t _intersect2(BK_TM *tm, u32 numTypes, btypeid_t *args) {
+    btypeid_t *typelist;  int i;  btypeid_t btypeid;
+    typelist = malloc((1 + numTypes) * sizeof(btypeid_t));      // OPEN: use a typelist buffer of big enough size
+    for (i = 1; i <= numTypes; i++) typelist[i] = args[i-1];
+    typelist[0] = numTypes;
+    btypeid = tm_inter(tm, typelist, 0);
+    free(typelist);
+    return btypeid;
+}
+
+#define BK_INTERSECTION(tm, ...) ({                                                                                     \
+    btypeid_t args[] = { __VA_ARGS__ };                                                                                 \
+    _intersect2((tm), sizeof(args) / sizeof(args[0]), args);                                                            \
+})
+
+pub btypeid_t _union2(BK_TM *tm, u32 numTypes, btypeid_t *args) {
+    btypeid_t *typelist;  int i;  btypeid_t btypeid;
+    typelist = malloc((1 + numTypes) * sizeof(btypeid_t));
+    for (i = 1; i <= numTypes; i++) typelist[i] = args[i-1];
+    typelist[0] = numTypes;
+    btypeid = tm_union(tm, typelist, 0);
+    free(typelist);
+    return btypeid;
+}
+
+#define BK_UNION(tm, ...) ({                                                                                            \
+    btypeid_t args[] = { __VA_ARGS__ };                                                                                 \
+    _union2((tm), sizeof(args) / sizeof(args[0]), args);                                                                \
+})
+
 
 
 #endif  // __BK_TM_C

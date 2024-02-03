@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // QBE - QBE CODE GENERATOR
+// Emits QBE code to a stream given an RST.
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef BK_QBE_H
@@ -20,7 +21,7 @@
 
 
 
-// helpers to emit QBE IR from an AST and a symbol table
+// helpers to emit QBE IR from an RST and a symbol table
 // needs knowledge of Node, Symb and btyp and the symbol table
 
 static const char neltl[] = {OP_NE, OP_EQ, OP_LT, OP_LE, };
@@ -292,8 +293,8 @@ void emitlocaldecl(Node *decl) {
 
 Symb emitload(Symb tmp, Symb m) {    // tmp is temp, m is memory
     int isFn;
-    isFn = (tmp.btyp == m.btyp) && fitsWithin(tmp.btyp, B_FN);
-    if (fitsWithin(tmp.btyp, B_EXTERN)) tmp.btyp = minus(tmp.btyp, B_EXTERN);
+    isFn = (tmp.btyp == m.btyp) && tm_fitsWithin(_bk->tm, tmp.btyp, B_FN);
+    if (tm_fitsWithin(tmp.btyp, B_EXTERN)) tmp.btyp = tm_minus(_bk->tm, tmp.btyp, B_EXTERN);
     putq(QINDENT);
     emitsymb(tmp);
     if (isFn)
@@ -313,11 +314,11 @@ void emitcall(Node *n, Symb *sr) {
     s = *ps;
     if ((s.styp != Glo) && (s.styp != Ext) && (s.styp != Fn))
         bug(BK_QBE_H ">>emitcall @ %d", __LINE__);
-    isExtern = fitsWithin(s.btyp, B_EXTERN);
+    isExtern = tm_fitsWithin(s.btyp, B_EXTERN);
     for (a = n->r; a; a = a->r)
         a->s = emitexpr(a->l);                      // mutate the node with the allocated symbol
     if ((KIND(s.btyp) & 0x7f) == B_FN) {
-        sr->btyp = tRet(s.btyp) & 0x7f7f7f7f;
+        sr->btyp = tm_Fn(_bk->tm, s.btyp).tRet & 0x7f7f7f7f;
         putq(QINDENT);
         if (sr->btyp == B_VOID) {
             putq("call ");
@@ -331,8 +332,8 @@ void emitcall(Node *n, Symb *sr) {
         }
     }
     else if (KIND(s.btyp) == B_P && KIND(DREF(s.btyp)) == B_FN) {
-        sr->btyp = tRet(DREF(s.btyp)) & 0x7f7f7f7f;
-        isExtern = fitsWithin(s.btyp, B_EXTERN);
+        sr->btyp = tm_Fn(_bk->tm, DREF(s.btyp)).tRet & 0x7f7f7f7f;
+        isExtern = tm_fitsWithin(_bk->tm, s.btyp, B_EXTERN);
         sfn.styp = Tmp;
         sfn.u.n = reserve_tmp();
         sfn.btyp = s.btyp;
@@ -733,7 +734,7 @@ Symb emitexpr(Node *n) {
 
         case OP_DEREF:
             s0 = emitexpr(n->l);
-            if (!fitsWithin(s0.btyp, B_P)) die("dereference of a non-pointer");
+            if (!tm_fitsWithin(s0.btyp, B_P)) die("dereference of a non-pointer");
             sr.btyp = DREF(s0.btyp);
             sr = emitload(sr, s0);
             break;
@@ -796,11 +797,11 @@ Symb emitexpr(Node *n) {
             if (s1.btyp == B_F64 && s0.btyp == B_I64) emit_sl_to_d(s0);
 
             if (
-                    (fitsWithin(s1.btyp, B_P) && s0.btyp == B_VOID_STAR) ||
-                    ((s1.btyp == B_VOID_STAR && fitsWithin(s0.btyp, B_P)))
+                    (tm_fitsWithin(s1.btyp, B_P) && s0.btyp == B_VOID_STAR) ||
+                    ((s1.btyp == B_VOID_STAR && tm_fitsWithin(s0.btyp, B_P)))
                 ) {}
             else if (
-                    fitsWithin(s1.btyp, B_FN_PTR) && fitsWithin(KIND(s0.btyp), B_FN)
+                    tm_fitsWithin(s1.btyp, B_FN_PTR) && tm_fitsWithin(KIND(s0.btyp), B_FN)
                 )
             {}
             else {
@@ -856,7 +857,7 @@ Symb emitexpr(Node *n) {
             putq("\n");
             break;
     }
-    if (n->tok == OP_SUB  &&  fitsWithin(s0.btyp, B_P)  &&  fitsWithin(s1.btyp, B_P)) {
+    if (n->tok == OP_SUB  &&  tm_fitsWithin(s0.btyp, B_P)  &&  tm_fitsWithin(s1.btyp, B_P)) {
         putq(QINDENT TEMP "%d =l div ", tmp_seed);
         emitsymb(sr);
         putq(", %d\n", SIZE(DREF(s0.btyp)));

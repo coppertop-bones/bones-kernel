@@ -213,6 +213,7 @@ def test_sequence():
 
     t1 = tm.union(tm.nominal(f'u32'), tm.nominal(f'err'))
     tm.seq(t1).id >> check >> equals >> tm.seq(t1).id
+    tm.seqT(tm.seq(t1)).id >> check >> equals >> t1.id
 
     return "test_sequence passed"
 
@@ -244,29 +245,126 @@ def test_function():
     return "test_function passed"
 
 
-def test_schemavars():
+def test_schemavar():
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    raise NotYetImplemented()
+    tm.exists('T1') >> check >> equals >> False
+    tm.btype >> apply_ >> ['T1'] >> check >> raises >> TypeError
+    t = tm.schemavar(f'T1')
+    tm.exists('T1') >> check >> equals >> True
+    tm.btype('T1').id >> check >> equals >> t.id
+    tm.name(t) >> check >> equals >> 'T1'
 
-    return "test_schemavars passed"
+    return "test_schemavar passed"
+
+
+def test_minus():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    t3 = tm.nominal(f'GBP')     # deliberately in reverse order
+    t2 = tm.nominal(f'ccy')
+    t1 = tm.nominal(f'f64')
+
+    # intersections
+    tm.minus(tm.intersection(t1, t2, t3), t2).id >> check >> equals >> tm.intersection(t1, t3).id
+    tm.minus(tm.intersection(t1, t2, t3), tm.intersection(t1, t3)).id >> check >> equals >> t2.id
+    # tm.minus(t1, tm.intersection(t1, t2)).id >> check >> equals >> tm.minus(t1, tm.intersection(t1, t2)).id   # OPEN: do one day? currently consider it hard to reason about so probably not
+    tm.minus >> apply_ >> (t1, t1) >> check >> raises >> TypeError
+    tm.minus >> apply_ >> (t1, t2) >> check >> raises >> TypeError
+    tm.minus >> apply_ >> (tm.intersection(t1, t2, t3), t4) >> check >> raises >> TypeError
+    tm.minus >> apply_ >> (tm.intersection(t1, t2, t3), tm.intersection(t1, t3, t4)) >> check >> raises >> TypeError
+
+    # unions
+    tm.minus(tm.union(t1, t2, t3), t2).id >> check >> equals >> tm.union(t1, t3).id
+    tm.minus(tm.union(t1, t2, t3), tm.union(t1, t3)).id >> check >> equals >> t2.id
+    tm.minus >> apply_ >> (tm.union(t1, t2, t3), t4) >> check >> raises >> TypeError
+    tm.minus >> apply_ >> (tm.union(t1, t2, t3), tm.union(t1, t3, t4)) >> check >> raises >> TypeError
+
+    return "test_minus passed"
+
+
+def test_hasT():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    t1 = tm.nominal("u8")
+    tm.hasT(t1) >> check >> equals >> False
+
+    T1 = tm.schemavar(f'T1')
+    tm.hasT(T1) >> check >> equals >> True
+
+    tm.hasT(tm.intersection(t1, T1)) >> check >> equals >> True
+    tm.hasT(tm.union(t1, T1)) >> check >> equals >> True
+    tm.hasT(tm.tuple(t1, T1)) >> check >> equals >> True
+    tm.hasT(tm.seq(T1)) >> check >> equals >> True
+    tm.hasT(tm.map(t1, T1)) >> check >> equals >> True
+    tm.hasT(tm.function((t1, t1), T1)) >> check >> equals >> True
+    # tm.hasT(tm.struct(("x",), (T1,))) >> check >> equals >> True
+
+    return "test_hasT passed"
 
 
 def test_recursion():
     sys._k = jones.Kernel()
     tm = sys._k.tm
 
-    raise NotYetImplemented()
+    u8 = tm.nominal('u8')
+    null = tm.nominal('null')
+    txt = tm.nominal('txt')
+    f64 = tm.nominal('f64')
 
-    return "test_function passed"
+    # various linked lists
+
+    # struct
+    tr1 = tm.recursive()
+    tnode1 = tm.struct_at(('i', 'next'), (u8, tm.union(tr1, null)), tr1)
+    tr1.id >> check >> equals >> tnode1.id
+
+    # check we can't use tr1 again
+    tm.tuple_at >> apply_ >> ((u8, tm.union(tr1, null)), tr1) >> check >> raises >> TypeError
+
+    # tuple
+    tr2 = tm.recursive()
+    tnode2 = tm.tuple_at((u8, tm.union(tr2, null)), tr2)
+    tr2.id >> check >> equals >> tnode2.id
+
+    # seq
+    tr3 = tm.recursive()
+    tnode3 = tm.seq_at((u8, tm.union(u8, tr3, null)), tr3)
+    tr3.id >> check >> equals >> tnode3.id
+
+    # map
+    tr4 = tm.recursive()
+    tnode4 = tm.map_at(txt, (u8, tm.union(u8, tr4, null)), tr4)
+
+    # union
+    tr5 = tm.recursive()
+    tnode5 = tm.union_at((null, tm.tuple(u8, tr5)), tr5)
+
+    # intersection without need for dummy type
+    tr6 = tm.recursive()
+    GBP = tm.intersection_at((tr6, f64), tr6)
+    tm.nameAs(GBP, 'GBP')
+
+    # need isRecursive for printing?
+
+    return "test_recursion passed"
+
+
+
+# blocks in bones / RST must behave the same as C ones - so in bones parameters are new variables
+# each(agg, fn) can just call the fn via C-ABI
+# each(agg, block) can emit RST or use a block calling api? or the block is made to look like a function with pointers
+# to vars
 
 
 # TODO
 #   check sizes
 #   add python BTypeError (subclass of TypeError)
 #   once all types can be created rework bones.lang.metatypes
-
+#   create the null tuple for functions that take no arguments
 
 def main():
     test_sm() >> PP
@@ -281,8 +379,10 @@ def main():
     test_sequence() >> PP
     test_map() >> PP
     test_function() >> PP
-    # test_schemavars() >> PP
-    # test_recursion() >> PP
+    test_schemavar() >> PP
+    test_minus() >> PP
+    test_hasT() >> PP
+    test_recursion() >> PP
 
 
 

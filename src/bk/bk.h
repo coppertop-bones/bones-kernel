@@ -2,8 +2,8 @@
 // BK - BONES KERNEL
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_BK_H
-#define __BK_BK_H "bk/bk.h"
+#ifndef SRC_BK_BK_H
+#define SRC_BK_BK_H "bk/bk.h"
 
 #include "../../include/bk/bk.h"
 

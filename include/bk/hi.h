@@ -199,7 +199,7 @@
  */
 #define hi_foreach(hi, var, code) { u32 __i;                                                                            \
         for (__i = hi_start(hi); __i < hi_end(hi); ++__i) {                                                             \
-            if (!hi_is_live(hi, __i)) continue;                                                                           \
+            if (!hi_is_live(hi, __i)) continue;                                                                         \
             (var) = hi_token(hi, __i);                                                                                  \
             code;                                                                                                       \
         }                                                                                                               \

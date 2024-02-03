@@ -421,6 +421,23 @@ pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject **args, Py_ssize_t nargs
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// schemavar: (name:str) -> tSchemavar + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_schemavar(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer a new schema variable with the given name, or an exception if already taken
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
+    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    btypeid_t btypeid = tm_schemavar(self->tm, name, 0);
+    if (btypeid) {
+        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+        answer->btypeid = btypeid;
+        return (PyObject *) answer;
+    } else
+        return PyErr_Format(PyExc_TypeError, "name is taken by another type");  // OPEN: better error
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // seq: (constained:btype) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_seq(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
@@ -637,12 +654,12 @@ pvt PyMethodDef PyTM_methods[] = {
         "Answers the type of the map tK -> tV."
     },
     {"mapTK",               (PyCFunction) PyTM_mapTK, METH_FASTCALL,
-            "mapTK(tMap)\n\n"
-            "Answers tK of tMap."
+        "mapTK(tMap)\n\n"
+        "Answers tK of tMap."
     },
     {"mapTV",               (PyCFunction) PyTM_mapTV, METH_FASTCALL,
-            "mapTV(tMap)\n\n"
-            "Answers tV of tMap."
+        "mapTV(tMap)\n\n"
+        "Answers tV of tMap."
     },
     {"name",                (PyCFunction) PyTM_name, METH_FASTCALL,
         "name(t)\n\n"
@@ -656,12 +673,17 @@ pvt PyMethodDef PyTM_methods[] = {
         "Answers the nominal called <name>, creating it if it doesn't exist, or raising an error if "
         "<name> is used by another type."
     },
+    {"schemavar",           (PyCFunction) PyTM_schemavar, METH_FASTCALL,
+        "schemavar(name)\n\n"
+        "Answers the schema variable called <name>, creating it if it doesn't exist, or raising an error if "
+        "<name> is used by another type."
+    },
     {"seq",                 (PyCFunction) PyTM_seq, METH_FASTCALL,
         "seq(t)\n\n"
         "Answers the sequence of t type."
     },
     {"seqT",                (PyCFunction) PyTM_seqT, METH_FASTCALL,
-        "structTl(t)\n\n"
+        "seqT(t)\n\n"
         "Answers the contained type."
     },
     {"struct",              (PyCFunction) PyTM_struct, METH_FASTCALL,
@@ -690,7 +712,6 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {0}
 };
-
 
 pvt PyTypeObject PyTMCls = {
     PyVarObject_HEAD_INIT(0, 0)
