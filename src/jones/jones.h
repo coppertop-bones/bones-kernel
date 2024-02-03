@@ -2,8 +2,8 @@
 // "The object reference returned from a C function that is called from Python must be an owned reference"
 
 
-#ifndef __JONES__JONES_H
-#define __JONES__JONES_H "jones/_jones.h"
+#ifndef SRC_JONES_JONES_H
+#define SRC_JONES_JONES_H "jones/jones.h"
 
 
 #define PY_SSIZE_T_CLEAN
@@ -95,4 +95,4 @@ pvt PyTypeObject PyPTernaryCls;
 #define PTR_MASK 0x0000FFFFFFFFFFFF
 
 
-#endif  // __JONES__JONES_H
+#endif  // SRC_JONES_JONES_H

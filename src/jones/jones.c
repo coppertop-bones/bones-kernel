@@ -1,5 +1,5 @@
-#ifndef JONES_JONES_C
-#define JONES_JONES_C "jones/jones.c"
+#ifndef SRC_JONES_JONES_C
+#define SRC_JONES_JONES_C "jones/jones.c"
 
 
 #include "jones.h"
@@ -7,7 +7,7 @@
 #include "../bk/lib/os.c"
 #include "pybtype.c"
 #include "pymanagers.c"
-#include "fs.c"
+#include "pyfs.c"
 #include "mod.c"
 
 #ifdef JONES_INCLUDE_PLAY
@@ -224,4 +224,4 @@ pvt void die_(char *preamble, char *msg, va_list args) {
     exit(1);
 }
 
-#endif  // JONES_JONES_C
+#endif  // SRC_JONES_JONES_C

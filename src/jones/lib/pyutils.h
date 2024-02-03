@@ -1,5 +1,5 @@
-#ifndef __JONES__UTILS_C
-#define __JONES__UTILS_C "jones/_utils.c"
+#ifndef SRC_JONES_LIB_PYUTILS_C
+#define SRC_JONES_LIB_PYUTILS_C "jones/_utils.c"
 
 
 #include "../jones.h"
@@ -56,4 +56,4 @@ pvt PyObject * jErrWrongNumberOfArgs(char * fName, int numExpected, Py_ssize_t n
 
 
 
-#endif  // __JONES__UTILS_C
+#endif  // SRC_JONES_LIB_PYUTILS_C

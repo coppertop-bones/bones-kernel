@@ -1,5 +1,5 @@
-#ifndef JONES_CONFIG_CFG
-#define JONES_CONFIG_CFG "jones/config.h"
+#ifndef SRC_JONES_CONFIG_H
+#define SRC_JONES_CONFIG_H "jones/config.h"
 
 #define BK_EXPOSE_TDD
 #define JONES_INCLUDE_PLAY
@@ -14,4 +14,4 @@
 
 
 
-#endif  // JONES_CONFIG_CFG
+#endif  // SRC_JONES_CONFIG_H

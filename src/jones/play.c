@@ -1,5 +1,5 @@
-#ifndef __JONES_PLAY_C
-#define __JONES_PLAY_C "jones/play.c"
+#ifndef SRC_JONES_PLAY_C
+#define SRC_JONES_PLAY_C "jones/play.c"
 
 
 #include "jones.h"
@@ -270,4 +270,4 @@ pvt PyTypeObject PyPlayCls = {
 
 
 
-#endif  // __JONES_PLAY_C
+#endif  // SRC_JONES_PLAY_C

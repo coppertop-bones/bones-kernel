@@ -1,5 +1,9 @@
-#ifndef JONES_PY_BTYPE_C
-#define JONES_PY_BTYPE_C "jones/py_btype.c"
+// ---------------------------------------------------------------------------------------------------------------------
+// PYBTYPE - PYTHON BTYPE
+// ---------------------------------------------------------------------------------------------------------------------
+
+#ifndef SRC_JONES_PYBTYPE_C
+#define SRC_JONES_PYBTYPE_C "jones/pybtype.c"
 
 #include "jones.h"
 #include "../../include/bk/tm.h"
@@ -39,4 +43,4 @@ pvt PyTypeObject PyBTypeCls = {
 };
 
 
-#endif  // JONES_PY_BTYPE_C
+#endif  // SRC_JONES_PYBTYPE_C

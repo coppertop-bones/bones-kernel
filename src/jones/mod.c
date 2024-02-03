@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // module functions
 // ---------------------------------------------------------------------------------------------------------------------
-#ifndef __JONES_MOD_C
-#define __JONES_MOD_C "jones/mod.c"
+#ifndef SRC_JONES_MOD_C
+#define SRC_JONES_MOD_C "jones/mod.c"
 
 
 #include "../../include/bk/bk.h"
@@ -128,4 +128,4 @@ pvt PyObject * _atU8Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 
 
 
-#endif  // __JONES_MOD_C
+#endif  // SRC_JONES_MOD_C

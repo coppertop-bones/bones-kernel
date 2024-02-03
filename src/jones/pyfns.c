@@ -1,5 +1,9 @@
-#ifndef JONES_PYFNS_C
-#define JONES_PYFNS_C "jones/pipe_ops.c"
+// ---------------------------------------------------------------------------------------------------------------------
+// PYFNS - PYTHON NULLARY, UNARY, BINARY, TERNARY FUNCTION CLASSES
+// ---------------------------------------------------------------------------------------------------------------------
+
+#ifndef SRC_JONES_PYFNS_C
+#define SRC_JONES_PYFNS_C "jones/pyfns.c"
 
 #include "jones.h"
 
@@ -942,4 +946,4 @@ pvt PyTypeObject PyPTernaryCls = {
 
 
 
-#endif  // JONES_PYFNS_C
+#endif  // SRC_JONES_PYFNS_C

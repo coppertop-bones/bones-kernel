@@ -1,5 +1,9 @@
-#ifndef JONES_KERNEL_C
-#define JONES_KERNEL_C "jones/kernel.c"
+// ---------------------------------------------------------------------------------------------------------------------
+// PYMANAGERS - PYTHON INTERFACE TO BK MANAGERS
+// ---------------------------------------------------------------------------------------------------------------------
+
+#ifndef SRC_JONES_PYMANAGERS_C
+#define SRC_JONES_PYMANAGERS_C "jones/pymanagers.c"
 
 
 #include "jones.h"
@@ -10,7 +14,6 @@
 #include "../bk/tp.c"
 #include "../bk/k.c"
 #include "lib/pyutils.h"
-
 
 
 
@@ -781,4 +784,4 @@ pvt PyTypeObject PyKernelCls = {
 
 
 
-#endif  // JONES_KERNEL_C
+#endif  // SRC_JONES_PYMANAGERS_C

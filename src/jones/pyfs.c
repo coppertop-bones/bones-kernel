@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
-// FS - FUNCTION SELECTION
+// PYFS - PYTHON INTERFACE TO FUNCTION SELECTION
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef JONES_FS_C
-#define JONES_FS_C "jones/fs.c"
+#ifndef SRC_JONES_PYFS_C
+#define SRC_JONES_PYFS_C "jones/pyfs.c"
 
 
 #include "jones.h"
@@ -409,4 +409,4 @@ pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
 
 
 
-#endif  // JONES_FS_C
+#endif  // SRC_JONES_PYFS_C

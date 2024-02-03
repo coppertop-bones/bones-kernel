@@ -1,6 +1,6 @@
 from coppertop.pipe import *
 from dm.core.types import pylist, pytuple
-from dm.testing import check, raises, equals, gt, different
+from dm.testing import check, raises, equals, gt, different, IS
 from bones import jones
 from bones.core.errors import NotYetImplemented
 import dm.pp
@@ -15,6 +15,10 @@ def apply_(fn, arg):
 @coppertop(style=binary)
 def apply_(fn, arg:pylist+pytuple):
     return lambda : fn(*arg)
+
+@coppertop(style=binary, dispatchEvenIfAllTypes=True)
+def IS(a, b) -> bool:
+    return a is b
 
 
 class tvfloat(float):
@@ -259,6 +263,19 @@ def test_schemavar():
     return "test_schemavar passed"
 
 
+def test_equals():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    # BTypes need to be cached in the kernel and dropped on kernel shutdown
+
+    t1 = tm.nominal(f'u32')
+    t1 >> check >> equals >> t1
+    t1 >> check >> IS >> t1
+
+    return "test_equals passed"
+
+
 def test_minus():
     sys._k = jones.Kernel()
     tm = sys._k.tm
@@ -353,6 +370,33 @@ def test_recursion():
     return "test_recursion passed"
 
 
+def test_offsets():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    mem = tm.exclusionCat('mem')
+    f64 = tm.exclusiveNominal('f64', mem, 8)
+    u32 = tm.exclusiveNominal('f64', mem, 4)
+
+    s1 = tm.struct(('t', 'x', 'y'), (u32, f64, f64))
+    tm.sz(s1) >> check >> equal >> 24
+    tm.align(s1) >> check >> equal >> 8
+    tm.offsets(s1) >> check >> equal >> (0, 8, 16)
+
+    s2 = tm.struct(('x', 'y', 't'), (f64, f64, u32))
+    tm.sz(s2) >> check >> equal >> 20
+    tm.align(s2) >> check >> equal >> 8
+    tm.offsets(s2) >> check >> equal >> (0, 8, 16)
+
+    s3 = tm.struct(('x', 'y', 't'), (u32, u32, u32))
+    tm.sz(s3) >> check >> equal >> 12
+    tm.align(s3) >> check >> equal >> 4
+    tm.offsets(s3) >> check >> equal >> (0, 4, 8)
+
+    return "test_offsets passed"
+
+
+
 
 # blocks in bones / RST must behave the same as C ones - so in bones parameters are new variables
 # each(agg, fn) can just call the fn via C-ABI
@@ -380,9 +424,11 @@ def main():
     test_map() >> PP
     test_function() >> PP
     test_schemavar() >> PP
+    test_equals() >> PP
     test_minus() >> PP
     test_hasT() >> PP
     test_recursion() >> PP
+    test_offsets() >> PP
 
 
 
