@@ -1,6 +1,6 @@
 from coppertop.pipe import *
 from dm.core.types import pylist, pytuple
-from dm.testing import check, raises, equals, gt, different, IS
+from dm.testing import check, raises, equals, gt, different
 from bones import jones
 from bones.core.errors import NotYetImplemented
 import dm.pp
@@ -16,10 +16,11 @@ def apply_(fn, arg):
 def apply_(fn, arg:pylist+pytuple):
     return lambda : fn(*arg)
 
-@coppertop(style=binary, dispatchEvenIfAllTypes=True)
-def IS(a, b) -> bool:
-    return a is b
+def isType(a, b) -> bool:
+    return a == b
 
+def isNotType(a, b) -> bool:
+    return a != b
 
 class tvfloat(float):
     def __new__(cls, t, v, *args, **kwargs):
@@ -116,7 +117,7 @@ def test_nominal():
     tm.btype >> apply_ >> ['u32'] >> check >> raises >> TypeError
     t = tm.nominal(f'u32')
     tm.exists('u32') >> check >> equals >> True
-    tm.btype('u32').id >> check >> equals >> t.id
+    tm.btype('u32') >> check >> isType >> t
     # tm.btype('u32') >> check >> equals >> t
     tm.name(t) >> check >> equals >> 'u32'
 
@@ -133,7 +134,7 @@ def test_intersection():
     tCcy = tm.exclusiveNominal('ccy', ccy)
 
     GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
-    GBP.id >> check >> equals >> tm.intersection(tm.nominal(f'_GBP'), tCcy).id
+    GBP >> check >> equals >> tm.intersection(tm.nominal(f'_GBP'), tCcy)
     EUR = tm.intersection(tCcy, tm.nominal(f'_EUR'))
 
     # test exclusivity
@@ -144,7 +145,7 @@ def test_intersection():
     tm.intersection >> apply_ >> (t, u64) >> check >> raises >> TypeError
 
     tl = tm.intersectionTl(tm.intersection(GBP, u32))
-    [e.id for e in tl] >> check >> equals >> [tCcy.id, tm.nominal(f'_GBP').id, u32.id]
+    [e for e in tl] >> check >> isType >> [tCcy, tm.nominal(f'_GBP'), u32]
 
     # OPEN: intersections of unions
 
@@ -163,7 +164,7 @@ def test_name_as():
     # test nameAs
     tm.name(GBP) >> check >> different >> 'GBP'
     t = tm.nameAs(GBP, 'GBP')
-    GBP.id >> check >> equals >> t.id
+    GBP >> check >> isType >> t
     tm.name(GBP) >> check >> equals >> 'GBP'
 
     return "test_name_as passed"
@@ -176,12 +177,12 @@ def test_union():
     t1 = tm.nominal(f'u32')
     t2 = tm.nominal(f'err')
 
-    tm.union(t1, t2).id >> check >> equals >> tm.union(t2, t1).id
-    tm.union(t1, t2, t1).id >> check >> equals >> tm.union(t2, t1, t2).id
-    tm.union(tm.union(t1, t2), t1).id >> check >> equals >> tm.union(t2, tm.union(t2, t1)).id
+    tm.union(t1, t2) >> check >> isType >> tm.union(t2, t1)
+    tm.union(t1, t2, t1) >> check >> isType >> tm.union(t2, t1, t2)
+    tm.union(tm.union(t1, t2), t1) >> check >> isType >> tm.union(t2, tm.union(t2, t1))
 
     tl = tm.unionTl(tm.union(tm.union(t1, t2), t1))
-    tuple([e.id for e in tl]) >> check >> equals >> (t1.id, t2.id)
+    tuple([e for e in tl]) >> check >> isType >> (t1, t2)
 
     return "test_union passed"
 
@@ -193,8 +194,8 @@ def test_tuple():
     t1 = tm.nominal(f'u32')
     t2 = tm.nominal(f'err')
 
-    tm.tuple(t1, t2).id >> check >> equals >> tm.tuple(t1, t2).id
-    tm.tuple(t1, t2).id >> check >> different >> tm.tuple(t2, t1).id
+    tm.tuple(t1, t2) >> check >> isType >> tm.tuple(t1, t2)
+    tm.tuple(t1, t2) >> check >> isNotType >> tm.tuple(t2, t1)
 
     return "test_tuple passed"
 
@@ -205,8 +206,8 @@ def test_struct():
 
     t1 = tm.nominal(f'f64')
 
-    tm.struct(('x', 'y'), (t1, t2)).id >> check >> equals >> tm.struct(('x', 'y'), (t1, t2)).id
-    tm.struct(('x', 'y'), (t1, t2)).id >> check >> different >> tm.struct(('y', 'x'), (t1, t2)).id
+    tm.struct(('x', 'y'), (t1, t2)) >> check >> isType >> tm.struct(('x', 'y'), (t1, t2))
+    tm.struct(('x', 'y'), (t1, t2)) >> check >> isNotType >> tm.struct(('y', 'x'), (t1, t2))
 
     return "test_struct passed"
 
@@ -216,8 +217,8 @@ def test_sequence():
     tm = sys._k.tm
 
     t1 = tm.union(tm.nominal(f'u32'), tm.nominal(f'err'))
-    tm.seq(t1).id >> check >> equals >> tm.seq(t1).id
-    tm.seqT(tm.seq(t1)).id >> check >> equals >> t1.id
+    tm.seq(t1) >> check >> isType >> tm.seq(t1)
+    tm.seqT(tm.seq(t1)) >> check >> isType >> t1
 
     return "test_sequence passed"
 
@@ -228,9 +229,9 @@ def test_map():
 
     t1 = tm.nominal(f'txt')
     t2 = tm.nominal(f'f64')
-    tm.map(t1, t2).id >> check >> equals >> tm.map(t1, t2).id
-    tm.mapTK(tm.map(t1, t2)).id >> check >> equals >> t1.id
-    tm.mapTV(tm.map(t1, t2)).id >> check >> equals >> t2.id
+    tm.map(t1, t2) >> check >> isType >> tm.map(t1, t2)
+    tm.mapTK(tm.map(t1, t2)) >> check >> isType >> t1
+    tm.mapTV(tm.map(t1, t2)) >> check >> isType >> t2
 
     return "test_map passed"
 
@@ -241,10 +242,10 @@ def test_function():
 
     t1 = tm.nominal(f'u32')
     t2 = tm.union(t1, tm.nominal(f'err'))
-    tm.fn((t1, t1), t2).id >> check >> equals >> tm.fn((t1, t1), t2).id
-    tm.tupleTl(tm.fnTArgs(tm.fn((t1, t1), t2)))[0].id >> check >> equals >> t1.id
-    tm.tupleTl(tm.fnTArgs(tm.fn((t1, t1), t2)))[1].id >> check >> equals >> t1.id
-    tm.fnTRet(tm.fn((t1, t1), t2)).id >> check >> equals >> t2.id
+    tm.fn((t1, t1), t2) >> check >> isType >> tm.fn((t1, t1), t2)
+    tm.tupleTl(tm.fnTArgs(tm.fn((t1, t1), t2)))[0] >> check >> isType >> t1
+    tm.tupleTl(tm.fnTArgs(tm.fn((t1, t1), t2)))[1] >> check >> isType >> t1
+    tm.fnTRet(tm.fn((t1, t1), t2)) >> check >> isType >> t2
 
     return "test_function passed"
 
@@ -257,7 +258,7 @@ def test_schemavar():
     tm.btype >> apply_ >> ['T1'] >> check >> raises >> TypeError
     t = tm.schemavar(f'T1')
     tm.exists('T1') >> check >> equals >> True
-    tm.btype('T1').id >> check >> equals >> t.id
+    tm.btype('T1') >> check >> isType >> t
     tm.name(t) >> check >> equals >> 'T1'
 
     return "test_schemavar passed"
@@ -270,8 +271,8 @@ def test_equals():
     # BTypes need to be cached in the kernel and dropped on kernel shutdown
 
     t1 = tm.nominal(f'u32')
-    t1 >> check >> equals >> t1
-    t1 >> check >> IS >> t1
+    assert t1 == tm.nominal(f'u32')     # have to use assert as check uses the type system (which we are testing)
+    assert t1 is tm.nominal(f'u32')
 
     return "test_equals passed"
 
@@ -285,17 +286,17 @@ def test_minus():
     t1 = tm.nominal(f'f64')
 
     # intersections
-    tm.minus(tm.intersection(t1, t2, t3), t2).id >> check >> equals >> tm.intersection(t1, t3).id
-    tm.minus(tm.intersection(t1, t2, t3), tm.intersection(t1, t3)).id >> check >> equals >> t2.id
-    # tm.minus(t1, tm.intersection(t1, t2)).id >> check >> equals >> tm.minus(t1, tm.intersection(t1, t2)).id   # OPEN: do one day? currently consider it hard to reason about so probably not
+    tm.minus(tm.intersection(t1, t2, t3), t2) >> check >> isType >> tm.intersection(t1, t3)
+    tm.minus(tm.intersection(t1, t2, t3), tm.intersection(t1, t3)) >> check >> isType >> t2
+    # tm.minus(t1, tm.intersection(t1, t2)) >> check >> equals >> tm.minus(t1, tm.intersection(t1, t2))   # OPEN: do one day? currently consider it hard to reason about so probably not
     tm.minus >> apply_ >> (t1, t1) >> check >> raises >> TypeError
     tm.minus >> apply_ >> (t1, t2) >> check >> raises >> TypeError
     tm.minus >> apply_ >> (tm.intersection(t1, t2, t3), t4) >> check >> raises >> TypeError
     tm.minus >> apply_ >> (tm.intersection(t1, t2, t3), tm.intersection(t1, t3, t4)) >> check >> raises >> TypeError
 
     # unions
-    tm.minus(tm.union(t1, t2, t3), t2).id >> check >> equals >> tm.union(t1, t3).id
-    tm.minus(tm.union(t1, t2, t3), tm.union(t1, t3)).id >> check >> equals >> t2.id
+    tm.minus(tm.union(t1, t2, t3), t2) >> check >> isType >> tm.union(t1, t3)
+    tm.minus(tm.union(t1, t2, t3), tm.union(t1, t3)) >> check >> isType >> t2
     tm.minus >> apply_ >> (tm.union(t1, t2, t3), t4) >> check >> raises >> TypeError
     tm.minus >> apply_ >> (tm.union(t1, t2, t3), tm.union(t1, t3, t4)) >> check >> raises >> TypeError
 
@@ -337,7 +338,7 @@ def test_recursion():
     # struct
     tr1 = tm.recursive()
     tnode1 = tm.struct_at(('i', 'next'), (u8, tm.union(tr1, null)), tr1)
-    tr1.id >> check >> equals >> tnode1.id
+    tr1 >> check >> isType >> tnode1
 
     # check we can't use tr1 again
     tm.tuple_at >> apply_ >> ((u8, tm.union(tr1, null)), tr1) >> check >> raises >> TypeError
@@ -345,20 +346,22 @@ def test_recursion():
     # tuple
     tr2 = tm.recursive()
     tnode2 = tm.tuple_at((u8, tm.union(tr2, null)), tr2)
-    tr2.id >> check >> equals >> tnode2.id
+    tr2 >> check >> isType >> tnode2
 
     # seq
     tr3 = tm.recursive()
     tnode3 = tm.seq_at((u8, tm.union(u8, tr3, null)), tr3)
-    tr3.id >> check >> equals >> tnode3.id
+    tr3 >> check >> isType >> tnode3
 
     # map
     tr4 = tm.recursive()
     tnode4 = tm.map_at(txt, (u8, tm.union(u8, tr4, null)), tr4)
+    tr4 >> check >> isType >> tnode4
 
     # union
     tr5 = tm.recursive()
     tnode5 = tm.union_at((null, tm.tuple(u8, tr5)), tr5)
+    tr5 >> check >> isType >> tnode5
 
     # intersection without need for dummy type
     tr6 = tm.recursive()

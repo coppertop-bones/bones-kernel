@@ -6,6 +6,7 @@
 #define SRC_JONES_PYMANAGERS_C "jones/pymanagers.c"
 
 
+#include <stdlib.h>
 #include "jones.h"
 #include "../bk/mm.c"
 #include "../bk/sm.c"
@@ -16,6 +17,8 @@
 #include "lib/pyutils.h"
 
 
+btypeid_t _num_btypes = 0;
+PyObject * *_btypes = 0;        // OPEN: move this to the Python Kernal object?
 
 //OPEN: add BTypeError (as a subclass of PyTypeError?)
 
@@ -92,6 +95,26 @@ pvt PyTypeObject PyEMCls = {
 // ---------------------------------------------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------------------------------------------------
+// PyBType cache
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * newPyBTypeRef(btypeid_t btypeid) {
+    if (btypeid >= _num_btypes) {
+        btypeid_t oldNum = _num_btypes;
+        while (_num_btypes <= btypeid) _num_btypes += 1024;
+        _btypes = realloc(_btypes, sizeof(PyBType *) * _num_btypes);
+        memset(_btypes + oldNum, 0, sizeof(PyObject *) * (_num_btypes - oldNum));  // zero the new memory
+//        PP(info, "_num_btypes: %i", _num_btypes);
+    }
+    if (_btypes[btypeid] == 0) {
+        PyBType *new = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
+        new->btypeid = btypeid;
+        _btypes[btypeid] = (PyObject *) new;
+    }
+    Py_INCREF(_btypes[btypeid]);
+    return _btypes[btypeid];
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // btype: (name:str) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_btype(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
@@ -101,9 +124,7 @@ pvt PyObject * PyTM_btype(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
     btypeid_t btypeid = tm_btypeid(self->tm, name);
     if (!btypeid) return PyErr_Format(PyExc_TypeError, "'%s' is not a btype", name);
-    PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-    answer->btypeid = btypeid;
-    return (PyObject *) answer;
+    return newPyBTypeRef(btypeid);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -153,11 +174,9 @@ pvt PyObject * PyTM_exclusiveNominal(struct PyTM *self, PyObject **args, Py_ssiz
     char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
     btypesize_t sz = 0;
     btypeid_t btypeid = tm_exclnominal(self->tm, name, excl, sz, 0);
-    if (btypeid) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
-        return (PyObject *) answer;
-    } else
+    if (btypeid)
+        return newPyBTypeRef(btypeid);
+    else
         return PyErr_Format(PyExc_TypeError, "The name '%s' is already is taken by another type", name);
 }
 
@@ -213,10 +232,8 @@ pvt PyObject * PyTM_fn(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     btypeid_t btypeid = tm_fn(self->tm, tArgs, tRet, 0);
 
     if (btypeid) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
         resetToCheckpoint(buckets, &cp);
-        return (PyObject *) answer;
+        return newPyBTypeRef(btypeid);
     } else {
         TP_init(&tp, 0, buckets);
         PyErr_Format(PyExc_TypeError, "Error creating (%s) -> %s", tm_s8_typelist(self->tm, &tp, tl).cs, tm_s8(self->tm, &tp, tRet).cs);
@@ -234,9 +251,7 @@ pvt PyObject * PyTM_fnTArgs(struct PyTM *self, PyObject **args, Py_ssize_t nargs
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     btypeid_t tFn = ((PyBType *) args[0])->btypeid;
     if (tm_bmetatypeid(self->tm, tFn) != bmtfnc) return PyErr_Format(PyExc_TypeError, "btype is not a fn type");
-    PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-    answer->btypeid = tm_Fn(self->tm, tFn).tArgs;
-    return (PyObject *) answer;
+    return newPyBTypeRef(tm_Fn(self->tm, tFn).tArgs);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -248,9 +263,7 @@ pvt PyObject * PyTM_fnTRet(struct PyTM *self, PyObject **args, Py_ssize_t nargs)
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     btypeid_t tFn = ((PyBType *) args[0])->btypeid;
     if (tm_bmetatypeid(self->tm, tFn) != bmtfnc) return PyErr_Format(PyExc_TypeError, "btype is not a fn type");
-    PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-    answer->btypeid = tm_Fn(self->tm, tFn).tRet;
-    return (PyObject *) answer;
+    return newPyBTypeRef(tm_Fn(self->tm, tFn).tRet);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -280,10 +293,8 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
     btypeid_t btypeid = tm_inter(self->tm, tl, 0);
 
     if (btypeid) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
         resetToCheckpoint(buckets, &cp);
-        return (PyObject *) answer;
+        return newPyBTypeRef(btypeid);
     } else {
         TP_init(&tp, 0, buckets);
         PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", tm_s8_typelist(self->tm, &tp, tl).cs);
@@ -297,16 +308,13 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_intersectionTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answer a new PyTuple of new PyBTypes which is the type list of the given intersection btype
-    PyBType *btype;
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     btypeid_t *tl = tm_inter_tl(self->tm, ((PyBType *) args[0])->btypeid);
     if (tl == 0) return PyErr_Format(PyExc_TypeError, "btype is not an intersection type");
     PyObject *answer = PyTuple_New(tl[0]);
     for (btypeid_t i = 1; i <= tl[0]; i++) {
-        btype = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        btype->btypeid = tl[i];
-        PyTuple_SET_ITEM(answer, i - 1, btype);
+        PyTuple_SET_ITEM(answer, i - 1, newPyBTypeRef(tl[i]));
     }
     return answer;
 }
@@ -338,10 +346,8 @@ pvt PyObject * PyTM_map(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     tMap = tm_map(self->tm, tK, tV, 0);
 
     if (tMap) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = tMap;
         resetToCheckpoint(buckets, &cp);
-        return (PyObject *) answer;
+        return newPyBTypeRef(tMap);
     } else {
         TP_init(&tp, 0, buckets);
         PyErr_Format(PyExc_TypeError, "Error creating map for %s -> %s", tm_s8(self->tm, &tp, tK).cs, tm_s8(self->tm, &tp, tV).cs);
@@ -359,9 +365,7 @@ pvt PyObject * PyTM_mapTK(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     btypeid_t tMap = ((PyBType *) args[0])->btypeid;
     if (tm_bmetatypeid(self->tm, tMap) != bmtmap) return PyErr_Format(PyExc_TypeError, "btype is not a map type");
-    PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-    answer->btypeid = tm_Map(self->tm, tMap).tK;
-    return (PyObject *) answer;
+    return newPyBTypeRef(tm_Map(self->tm, tMap).tK);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -373,9 +377,7 @@ pvt PyObject * PyTM_mapTV(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     btypeid_t tMap = ((PyBType *) args[0])->btypeid;
     if (tm_bmetatypeid(self->tm, tMap) != bmtmap) return PyErr_Format(PyExc_TypeError, "btype is not a map type");
-    PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-    answer->btypeid = tm_Map(self->tm, tMap).tV;
-    return (PyObject *) answer;
+    return newPyBTypeRef(tm_Map(self->tm, tMap).tV);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -415,11 +417,9 @@ pvt PyObject * PyTM_nominal(struct PyTM *self, PyObject **args, Py_ssize_t nargs
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
     char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
     btypeid_t btypeid = tm_nominal(self->tm, name, 0);
-    if (btypeid) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
-        return (PyObject *) answer;
-    } else
+    if (btypeid)
+        return newPyBTypeRef(btypeid);
+    else
         return PyErr_Format(PyExc_TypeError, "name is taken by another type");  // OPEN: better error
 }
 
@@ -432,11 +432,9 @@ pvt PyObject * PyTM_schemavar(struct PyTM *self, PyObject **args, Py_ssize_t nar
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
     char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
     btypeid_t btypeid = tm_schemavar(self->tm, name, 0);
-    if (btypeid) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
-        return (PyObject *) answer;
-    } else
+    if (btypeid)
+        return newPyBTypeRef(btypeid);
+    else
         return PyErr_Format(PyExc_TypeError, "name is taken by another type");  // OPEN: better error
 }
 
@@ -444,7 +442,7 @@ pvt PyObject * PyTM_schemavar(struct PyTM *self, PyObject **args, Py_ssize_t nar
 // seq: (constained:btype) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_seq(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  PyBType *answer;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;
 
     // answer a new sequence for the given contained btype
     if (nargs != 1) return PyErr_Format(PyExc_TypeError, "Must provide just one BType");
@@ -458,10 +456,8 @@ pvt PyObject * PyTM_seq(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     btypeid_t btypeid = tm_seq(self->tm, ((PyBType *) args[0])->btypeid, 0);
 
     if (btypeid) {
-        answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
         resetToCheckpoint(buckets, &cp);
-        return (PyObject *) answer;
+        return newPyBTypeRef(btypeid);
     } else {
         TP_init(&tp, 0, buckets);
         PyErr_Format(PyExc_TypeError, "Undertermined error");
@@ -474,16 +470,14 @@ pvt PyObject * PyTM_seq(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
 // seqT: (seq:btype) -> (PyBType1,...) + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_seqT(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    btypeid_t btypeid;  PyBType *answer;
+    btypeid_t btypeid;
 
     // answer a new PyBType which is the type list of the given union
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     btypeid = tm_seq_t(self->tm, ((PyBType *) args[0])->btypeid);
     if (btypeid == 0) return PyErr_Format(PyExc_TypeError, "btype is not a union type");
-    answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-    answer->btypeid = btypeid;
-    return (PyObject *) answer;
+    return newPyBTypeRef(btypeid);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -527,10 +521,8 @@ pvt PyObject * PyTM_tuple(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     btypeid_t btypeid = tm_tuple(self->tm, tl, 0);
 
     if (btypeid) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
         resetToCheckpoint(buckets, &cp);
-        return (PyObject *) answer;
+        return newPyBTypeRef(btypeid);
     } else {
         TP_init(&tp, 0, buckets);
         PyErr_Format(PyExc_TypeError, "Error creating tuple (%s)", tm_s8_typelist(self->tm, &tp, tl).cs);
@@ -543,16 +535,14 @@ pvt PyObject * PyTM_tuple(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
 // tupleTl: btype -> (PyBType1, ...) + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_tupleTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    PyBType *btype;  btypeid_t *tl;  PyObject *answer;
+    btypeid_t *tl;  PyObject *answer;
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     tl = tm_tuple_tl(self->tm, ((PyBType *) args[0])->btypeid);
     if (tl == 0) return PyErr_Format(PyExc_TypeError, "btype is not a tuple type");
     answer = PyTuple_New(tl[0]);
     for (btypeid_t i = 0; i < tl[0]; i++) {
-        btype = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        btype->btypeid = tl[i+1];
-        PyTuple_SET_ITEM(answer, i, btype);
+        PyTuple_SET_ITEM(answer, i, newPyBTypeRef(tl[i+1]));
     }
     return answer;
 }
@@ -584,10 +574,8 @@ pvt PyObject * PyTM_union(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     btypeid_t btypeid = tm_union(self->tm, tl, 0);
 
     if (btypeid) {
-        PyBType *answer = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        answer->btypeid = btypeid;
         resetToCheckpoint(buckets, &cp);
-        return (PyObject *) answer;
+        return newPyBTypeRef(btypeid);
     } else {
         TP_init(&tp, 0, buckets);
         PyErr_Format(PyExc_TypeError, "There are conflicts within (%s)", tm_s8_typelist(self->tm, &tp, tl).cs);
@@ -601,16 +589,14 @@ pvt PyObject * PyTM_union(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_unionTl(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answer a new PyTuple of new PyBTypes which is the type list of the given union
-    PyBType *btype;  btypeid_t *tl;  PyObject *answer;
+    btypeid_t *tl;  PyObject *answer;
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     tl = tm_union_tl(self->tm, ((PyBType *) args[0])->btypeid);
     if (tl == 0) return PyErr_Format(PyExc_TypeError, "btype is not a union type");
     answer = PyTuple_New(tl[0]);
     for (btypeid_t i=1; i <= tl[0]; i++) {
-        btype = (PyBType *) ((&PyBTypeCls)->tp_alloc(&PyBTypeCls, 0));
-        btype->btypeid = tl[i];
-        PyTuple_SET_ITEM(answer, i - 1, btype);
+        PyTuple_SET_ITEM(answer, i - 1, newPyBTypeRef(tl[i]));
     }
     return answer;
 }
