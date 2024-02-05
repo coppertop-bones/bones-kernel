@@ -7,7 +7,7 @@
 #define BK_QBE_H "bk/qbe.h"
 
 #include "tm.h"
-#include "../../../../src99/minc.h"
+#include "minc.h"
 
 
 // code gen constants - PVAR is the pointer to the memory that backs a C variable
@@ -22,7 +22,7 @@
 
 
 // helpers to emit QBE IR from an RST and a symbol table
-// needs knowledge of Node, Symb and btyp and the symbol table
+// needs knowledge of PTNode, Symb and btyp and the symbol table
 
 static const char neltl[] = {OP_NE, OP_EQ, OP_LT, OP_LE, };
 static char *otoa[] = {
@@ -40,15 +40,15 @@ static char *otoa[] = {
 
 
 struct Promoted{
-    struct Symb s0;
-    struct Symb s1;
+    Symb s0;
+    Symb Symb s1;
     btypeid_t btyp;
 };
 
-Node * node(int tok, Node *l, Node *r, int lineno);
+PTNode * node(int tok, PTNode *l, PTNode *r, int lineno);
 
-int emitstmt(Node *n, int b);
-Symb emitexpr(Node *n);
+int emitstmt(PTNode *n, int b);
+Symb emitexpr(PTNode *n);
 
 
 void emitsymb(Symb s) {
@@ -263,7 +263,7 @@ char * fntyp(btypeid_t btyp) {
     return 0;
 }
 
-Symb lval(Node *n) {
+Symb lval(PTNode *n) {
     Symb s, *_s;
     switch (n->tok) {
         default:
@@ -285,7 +285,7 @@ Symb lval(Node *n) {
     return s;
 }
 
-void emitlocaldecl(Node *decl) {
+void emitlocaldecl(PTNode *decl) {
     int sz = SIZE(decl->s.btyp);
     putq(QINDENT PVAR "%s =l alloc%d %d\n", decl->l->s.u.v, sz, sz);
     if (decl->r) emitexpr(node(OP_ASSIGN, decl->l, decl->r, __LINE__));
@@ -294,7 +294,7 @@ void emitlocaldecl(Node *decl) {
 Symb emitload(Symb tmp, Symb m) {    // tmp is temp, m is memory
     int isFn;
     isFn = (tmp.btyp == m.btyp) && tm_fitsWithin(_bk->tm, tmp.btyp, B_FN);
-    if (tm_fitsWithin(tmp.btyp, B_EXTERN)) tmp.btyp = tm_minus(_bk->tm, tmp.btyp, B_EXTERN, 0);
+    if (tm_fitsWithin(_bk->tm, tmp.btyp, B_EXTERN)) tmp.btyp = tm_minus(_bk->tm, tmp.btyp, B_EXTERN, 0);
     putq(QINDENT);
     emitsymb(tmp);
     if (isFn)
@@ -307,14 +307,14 @@ Symb emitload(Symb tmp, Symb m) {    // tmp is temp, m is memory
     return tmp;
 }
 
-void emitcall(Node *n, Symb *sr) {
-    Node *a;  int iEllipsis, iArg;  Symb *ps, s, sfn;  int isExtern=0;
+void emitcall(PTNode *n, Symb *sr) {
+    PTNode *a;  int iEllipsis, iArg;  Symb *ps, s, sfn;  int isExtern=0;
     char *name = n->l->s.u.v;
     if (!(ps = symget(name))) die("undeclared function %s", name);
     s = *ps;
     if ((s.styp != Glo) && (s.styp != Ext) && (s.styp != Fn))
         bug(BK_QBE_H ">>emitcall @ %d", __LINE__);
-    isExtern = tm_fitsWithin(s.btyp, B_EXTERN);
+    isExtern = tm_fitsWithin(_bk->tm, s.btyp, B_EXTERN);
     for (a = n->r; a; a = a->r)
         a->s = emitexpr(a->l);                      // mutate the node with the allocated symbol
     if ((KIND(s.btyp) & 0x7f) == B_FN) {
@@ -367,7 +367,7 @@ void emitcall(Node *n, Symb *sr) {
     // OPEN: extend sub word return types?
 }
 
-void emitboolop(Node *n, char *tlabel, int tn, char*flabel, int fn) {
+void emitboolop(PTNode *n, char *tlabel, int tn, char*flabel, int fn) {
     Symb s;  int l;
     switch (n->tok) {
         default:
@@ -395,12 +395,12 @@ void emitboolop(Node *n, char *tlabel, int tn, char*flabel, int fn) {
     }
 }
 
-void emitbreak(Node *n, int b) {
+void emitbreak(PTNode *n, int b) {
     if (b < 0) die("break not in loop");
     putq(QINDENT "jmp " LABEL "while.end.%d\n", b);
 }
 
-void emitret(Node *n) {
+void emitret(PTNode *n) {
     Symb x;
     if (n->l) {
         x = emitexpr(n->l);
@@ -411,7 +411,7 @@ void emitret(Node *n) {
     putq("\n");
 }
 
-void emitif(Node *n, int b) {
+void emitif(PTNode *n, int b) {
     int l;
     l = reserve_lbl(1);
     putq(LABEL "if.%d\n", l);
@@ -421,8 +421,8 @@ void emitif(Node *n, int b) {
     putq(LABEL "if.%d.end\n", l);
 }
 
-int emitifelse(Node *n, int b) {
-    int l, r;  Node *e;
+int emitifelse(PTNode *n, int b) {
+    int l, r;  PTNode *e;
     l = reserve_lbl(1);
     putq(LABEL "if.%d\n", l);
     emitboolop(n->l, "if.%d.true", l, "if.%d.false", l);
@@ -436,7 +436,7 @@ int emitifelse(Node *n, int b) {
     return e->r && r;
 }
 
-void emitwhile(Node *n) {
+void emitwhile(PTNode *n) {
     int l;
     l = reserve_lbl(1);
     putq(LABEL "while.%d.cond\n", l);
@@ -447,7 +447,7 @@ void emitwhile(Node *n) {
     putq(LABEL "while.%d.end\n", l);
 }
 
-void emitfunc(btypeid_t tRet, char *fnname, NameType *params, Node *stmts) {
+void emitfunc(btypeid_t tRet, char *fnname, NameType *params, PTNode *stmts) {
     NameType *p;  int i, sz;
     PP(emit, "emitFunc: %s", fnname);
     if (tRet == B_VOID)
@@ -474,7 +474,7 @@ void emitfunc(btypeid_t tRet, char *fnname, NameType *params, Node *stmts) {
     putq("}\n\n");
 }
 
-int emitstmt(Node *n, int b) {
+int emitstmt(PTNode *n, int b) {
     if (!n) return 0;
     PP(emit, "%s", toktopp[n->tok]);
 
@@ -644,7 +644,7 @@ static btypeid_t _emitpromotion(enum tok tok, Symb *l, Symb *r) {
 //// the bst node will need to have a function pointer to the correct one
 //
 //// ww -> w
-//Symb emitadd2_1(Node *n) {
+//Symb emitadd2_1(PTNode *n) {
 //    putq(QINDENT);
 //    emitsymb(sr);
 //    putq(" =w", regtyp(sr.btyp));
@@ -652,7 +652,7 @@ static btypeid_t _emitpromotion(enum tok tok, Symb *l, Symb *r) {
 //}
 //
 //// wl -> w
-//Symb emitadd2_2(Node *n) {
+//Symb emitadd2_2(PTNode *n) {
 //    putq(QINDENT);
 //    emitsymb(sr);
 //    putq(" =w", regtyp(sr.btyp));
@@ -660,7 +660,7 @@ static btypeid_t _emitpromotion(enum tok tok, Symb *l, Symb *r) {
 //}
 //
 //// lw -> w
-//Symb emitadd2_3(Node *n) {
+//Symb emitadd2_3(PTNode *n) {
 //    putq(QINDENT);
 //    emitsymb(sr);
 //    putq(" =w", regtyp(sr.btyp));
@@ -670,7 +670,7 @@ static btypeid_t _emitpromotion(enum tok tok, Symb *l, Symb *r) {
 //// and so on
 
 
-Symb emitexpr(Node *n) {
+Symb emitexpr(PTNode *n) {
     Symb sr, s0, s1, st;  enum tok o;  int l;  char ty[2];
 
     sr.styp = Tmp;
@@ -797,11 +797,11 @@ Symb emitexpr(Node *n) {
             if (s1.btyp == B_F64 && s0.btyp == B_I64) emit_sl_to_d(s0);
 
             if (
-                    (tm_fitsWithin(s1.btyp, B_P) && s0.btyp == B_VOID_STAR) ||
-                    ((s1.btyp == B_VOID_STAR && tm_fitsWithin(s0.btyp, B_P)))
+                    (tm_fitsWithin(_bk->tm, s1.btyp, B_P) && s0.btyp == B_VOID_STAR) ||
+                    ((s1.btyp == B_VOID_STAR && tm_fitsWithin(_bk->tm, s0.btyp, B_P)))
                 ) {}
             else if (
-                    tm_fitsWithin(s1.btyp, B_FN_PTR) && tm_fitsWithin(KIND(s0.btyp), B_FN)
+                    tm_fitsWithin(_bk->tm, s1.btyp, B_FN_PTR) && tm_fitsWithin(_bk->tm, KIND(s0.btyp), B_FN)
                 )
             {}
             else {
@@ -857,7 +857,7 @@ Symb emitexpr(Node *n) {
             putq("\n");
             break;
     }
-    if (n->tok == OP_SUB  &&  tm_fitsWithin(s0.btyp, B_P)  &&  tm_fitsWithin(s1.btyp, B_P)) {
+    if (n->tok == OP_SUB  &&  tm_fitsWithin(_bk->tm, s0.btyp, B_P)  &&  tm_fitsWithin(_bk->tm, s1.btyp, B_P)) {
         putq(QINDENT TEMP "%d =l div ", tmp_seed);
         emitsymb(sr);
         putq(", %d\n", SIZE(DREF(s0.btyp)));

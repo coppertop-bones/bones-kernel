@@ -116,28 +116,28 @@ void test_exclusions() {
     check(strcmp(tm_s8(tm, &tp, EUR).cs, "EUR") == 0, "%s @ %i: pp(EUR) != \"EUR\" but got \"%s\"", __FILE__, __LINE__, tm_s8(tm, &tp, EUR).cs);
 
     // check construction returns identical objects
-    t7 = tm_interv(tm, 2, GBP, u32);
-    t8 = tm_interv(tm, 2, GBP, u32);
+    t7 = tm_interv(tm, 2, GBP, u32, 0);
+    t8 = tm_interv(tm, 2, GBP, u32, 0);
     check(t7 == t8, "%s @ %i: t7 != t8 got %i and %i", __FILE__, __LINE__, t7, t8);
 
     // check u32 doesn't mix with u64
-    actual = tm_interv(tm, 2, u32, u64);
+    actual = tm_interv(tm, 2, u32, u64, 0);
     check(actual == 0, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, actual, 0);
 
     // check u32 doesn't mix with u64 - nested
-    t7 = tm_interv(tm, 2, u32, tCcy);
+    t7 = tm_interv(tm, 2, u32, tCcy, 0);
     PP(debug, "u32 & ccy: %i, %s", t7, tm_s8_typelist(tm, &tp, tm_inter_tl(tm, t7)).cs);
-    t8 = tm_interv(tm, 2, u64, tCcy);
+    t8 = tm_interv(tm, 2, u64, tCcy, 0);
     PP(debug, "u64 & ccy: %i, %s", t8, tm_s8_typelist(tm, &tp, tm_inter_tl(tm, t8)).cs);
-    actual = tm_interv(tm, 2, t7, t8);
+    actual = tm_interv(tm, 2, t7, t8, 0);
     if (actual != 0) s = tm_s8_typelist(tm, &tp, tm_inter_tl(tm, actual)).cs;
     check(actual == 0, "%s @ %i: t == %i (should be %i) - %s", __FILE__, __LINE__, actual, 0, s);
 
     // check GBP mixes with EUR
-    actual = tm_interv(tm, 2, GBP, EUR);
+    actual = tm_interv(tm, 2, GBP, EUR, 0);
     check(actual != 0, "%s @ %i: t == %i (should not be %i)", __FILE__, __LINE__, actual, 0);
-    t = tm_interv(tm, 2, GBP, u32);
-    actual = tm_interv(tm, 2, t, EUR);
+    t = tm_interv(tm, 2, GBP, u32, 0);
+    actual = tm_interv(tm, 2, t, EUR, 0);
     check(actual != 0, "%s @ %i: t == %i (should not be %i)", __FILE__, __LINE__, actual, 0);
 
     TP_free(&tp);

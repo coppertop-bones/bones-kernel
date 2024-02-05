@@ -415,7 +415,7 @@ int emitmir (rst *n, smbase *sm) {
 }
 
 
-//Symb emitexpr(Node *n) {
+//Symb emitexpr(PTNode *n) {
 //    Symb sr, s0, s1, st;  enum tok o;  int l;  char ty[2];
 //
 //    sr.styp = Tmp;
