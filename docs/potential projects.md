@@ -19,3 +19,15 @@
 * c-bones - add type lang
 * c-bones - add mm
 * c-bones - add overloading
+* use RST for another language
+* write a RTS interpreter with stepping, inspection and evaluation api
+* add a remote debugger interface to RST interpreter
+* add byte code generator and similar interpreter with stepping, inspection and evaluation api
+* connect JetBrains tooling
+* connect VCCode
+* MIR generator
+* MIR debugger
+* add xl interface for macos
+* add xl interface for windows
+* formally analyse the type system
+* make buckets work on windows and linux
