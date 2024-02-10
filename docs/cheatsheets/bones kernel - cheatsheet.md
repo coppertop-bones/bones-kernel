@@ -71,6 +71,8 @@ arenas - something to investigate
 16 byte alignment leaves 20 bits free is we wanted pointer boxing, i.e.
 `| XXXX XXXX XXXX XXXX | PPPP PPPP PPPP PPPP | PPPP PPPP PPPP PPPP | PPPP PPPP PPPP XXXX |`
 
+### API
+TBC
 
 ### TERMS / NOMENCLATURE
 - run - the count of contiguous free lines
@@ -80,6 +82,27 @@ arenas - something to investigate
 
 ### REFERENCES
 immix2017 - "Immix: A Mark-Region Garbage Collector with Space Efficiency, Fast Collection, and Mutator Performance"
+
+### QUOTATIONS
+TBC
+
+### NOTES
+//  Untracked arenas - client is responsible for evacuation and reset
+//
+// Region based management. Blocks (32KB) may contain small (<= 1 line sized, 1 to 16 slots) and medium (<= 8KB)
+// objects. Although we use the term object we don't mean it in the sense of OO.
+//
+// Memory may be used in several modes. Untracked and tracked. Arena (bump) style allocation. Tracing, evacuation
+//
+// Features include:
+//  - born dead optimisation
+//  - ref counted CoW (to assist destructive updates)
+//  - conservative on stack - pointer to start, pointer within
+//  - pinning
+//  - call backs on death
+//  - generational
+//
+// Can't handle encoded pointers
 
 
 ## TYPE MANAGER

@@ -1,23 +1,5 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // MM - MEMORY MANAGER
-//
-// Supports:
-//  Untracked arenas - client is responsible for evacuation and reset
-//
-// Region based management. Blocks (32KB) may contain small (<= 1 line sized, 1 to 16 slots) and medium (<= 8KB)
-// objects. Although we use the term object we don't mean it in the sense of OO.
-//
-// Memory may be used in several modes. Untracked and tracked. Arena (bump) style allocation. Tracing, evacuation
-//
-// Features include:
-//  - born dead optimisation
-//  - ref counted CoW (to assist destructive updates)
-//  - conservative on stack - pointer to start, pointer within
-//  - pinning
-//  - call backs on death
-//  - generational
-//
-// Can't handle encoded pointers (but may be able to handle
 // ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -25,6 +7,40 @@
 #define INC_BK_MM_H "bk/mm.h"
 
 #include "bk.h"
+
+// TODO
+//   make buckets use block manager
+//   review
+//      https://danluu.com/malloc-tutorial/
+//      https://github.com/zyfjeff/C-HOW-TO/blob/master/c-malloc/Malloc_tutorial.pdf
+//      https://manybutfinite.com/post/anatomy-of-a-program-in-memory/
+//      https://goog-perftools.sourceforge.net/doc/tcmalloc.html
+//      https://github.com/jemalloc/jemalloc
+//      https://wiki-prog.infoprepa.epita.fr/images/0/04/Malloc_tutorial.pdf
+//      https://github.com/sailfish009/malloc   doug lea's also https://sourceware.org/git/?p=glibc.git;a=blob;f=malloc/malloc.c
+//      https://moss.cs.iit.edu/cs351/slides/slides-malloc.pdf
+//      https://github.com/microsoft/mimalloc  microsoft's me malloc
+//      https://news.ycombinator.com/item?id=20249743 mimalloc experience at clickhouse and more
+//      https://github.com/spaskalev/buddy_alloc
+//      https://www.gingerbill.org/series/memory-allocation-strategies/
+//      https://softwareengineering.stackexchange.com/questions/303666/merits-of-copy-on-write-semantics
+//      https://igoro.com/archive/gallery-of-processor-cache-effects/
+//      https://sploitfun.wordpress.com/2015/02/10/understanding-glibc-malloc/
+//      https://www.gingerbill.org/article/2020/06/21/the-ownership-semantics-flaw/
+//      https://www.gingerbill.org/article/2020/05/17/relative-pointers/
+//      https://www.gingerbill.org/article/2020/01/25/a-reply-to-lets-stop-copying-c/
+//      https://github.com/olemorud/arena-allocator
+//      https://nullprogram.com/blog/2023/09/27/    arenas s8 chap
+//      https://nullprogram.com/blog/2023/10/08/
+//      https://www.rfleury.com/p/untangling-lifetimes-the-arena-allocator
+//      https://lobste.rs/s/sutuvh/arena_allocator_tips_tricks
+//      https://www.hboehm.info/gc/
+//      https://www.memorymanagement.org/
+//      https://github.com/xoofx/gcix
+//      https://www.youtube.com/watch?v=x-CBUQxp1vE&t=1203s rc immix talk
+//   write api for arena and region mm
+//   https://joeduffyblog.com/2016/02/07/the-error-model/
+
 
 
 #define MM_SLOT_SIZE 16

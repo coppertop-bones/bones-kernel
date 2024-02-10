@@ -12,6 +12,11 @@
 #include <limits.h>
 #include "bk.h"
 
+// TODO
+//  implement special values for unused (0) and tombstoned (-1) tokens, e.g. for type manager
+//  add size limit for linear probing
+//  investigate hashing functions and other probing styles
+
 
 // A hash index is essentially a sparce array of tokens (with size of power of 2), each token may live, tombstoned
 // or empty. The token is used to find the actual entry (and for the simplest uses, e.g. a set of integers, may be the
