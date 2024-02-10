@@ -5,7 +5,7 @@ enums \
 mm \
 tm
 
-VM buffer - over allocate buffer in VM and allow OS to allocate physical memory as and when required \
+
 ID is an index into an array (fixed size elements) \
 RP is a u32 offset into a buffer (variable size elements) - Relative Pointer
 
@@ -42,30 +42,10 @@ managed - user puts ptrs into kv store
 
 on OOM - stop the world and figure gaps
 
-
-we use region based memory management
-32k block divided into 256 byte lines divided into 16 byte slots
-a small object may cover up to 16 slots or 1 line
-a medium object may cover up to 8k
-we keep an object (start) bitmap (1 bit for each slot)
-    - we need this to implement conservative on stack pointer identification
-    - 1 bit * (32k / 16 bytea) of memory per block for the object start map (256 bytes)
-we keep a line used bitmap (1 bit for each line that has object data in it)
-    - this is used to avoid allocating on top of existing objects when reusing blocks
-
 we bump allocate small objects into fresh or ready blocks (user can choose fresh for locality)
 we bump allocate medium objects into fresh blocks (rather than searching for space)
 large objects use a separate allocator - details to be decided - compacting? prob just a very big amount of vm
 we bump allocate user sized objects into an arena - object map and line maps do not need to be maintained
-
-object header
-objects are 16 byte aligned and prefixed with the header (i.e 4 bytes preceding the object start)
-prefixing is chosen for better c-abi compatability and to help keep bkheader private (to minimise breaking changes)
-12 bytes is largest 1 slot object, 28 bytes is largest 2 slot object, etc.
-we can reuse / reserve the first 12 bytes, and last 4 bytes of a block for kernel usage
-
-16 byte alignment leaves 20 bits free is we wanted pointer boxing, i.e. 
-`| XXXX XXXX XXXX XXXX | PPPP PPPP PPPP PPPP | PPPP PPPP PPPP PPPP | PPPP PPPP PPPP XXXX |`
 
 created untracked
 object starts must always be marked, lines are not marked on allocation (i.e. they will be made live / tracked later on)

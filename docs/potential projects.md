@@ -31,3 +31,4 @@
 * add xl interface for windows
 * formally analyse the type system
 * make buckets work on windows and linux
+* complete Python bones -> rst parser / compiler
