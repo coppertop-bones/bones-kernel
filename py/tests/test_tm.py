@@ -22,23 +22,6 @@ def isType(a, b) -> bool:
 def isNotType(a, b) -> bool:
     return a != b
 
-class tvfloat(float):
-    def __new__(cls, t, v, *args, **kwargs):
-        instance = super(cls, cls).__new__(cls, v)
-        instance._t_ = t
-        return instance
-    @property
-    def _v(self):
-        return super().__new__(float, self)
-    @property
-    def _t(self):
-        return self._t_
-    def __repr__(self):
-        return f'{self._t}{super().__repr__()}'
-    def _asT(self, t):
-        self._t_ = t
-        return self
-
 
 
 def test_sm():

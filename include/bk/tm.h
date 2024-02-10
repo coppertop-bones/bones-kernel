@@ -69,7 +69,61 @@ typedef enum : BTYPEID_T_TYPE {
     B_EXTERN_FN,
     B_EXTERN_FN_PTR,
 
+    B_T,
+    B_T1,       // aka B_TA
+    B_T2,       // aka B_TB
+    B_T3,       // aka B_TC
+    B_T4,       // aka B_TD
+    B_T5,       // aka B_TE
+    B_T6,       // aka B_TF
+    B_T7,       // aka B_TG
+    B_T8,       // aka B_TH
+    B_T9,       // aka B_TI
+    B_T10,      // aka B_TJ
+    B_T11,      // aka B_TK
+    B_T12,      // aka B_TL
+    B_T13,      // aka B_TM
+    B_T14,      // aka B_TN
+    B_T15,      // aka B_TO
+    B_T16,      // aka B_TP
+    B_T17,      // aka B_TQ
+    B_T18,      // aka B_TR
+    B_T19,      // aka B_TS
+
+    B_N,
+    B_N1,
+    B_N2,
+    B_N3,
+    B_N4,
+    B_N5,
+    B_N6,
+    B_N7,
+    B_N8,
+    B_N9,
+
 } btypeid_t;
+
+#define B_TA B_T1
+#define B_TB B_T2
+#define B_TC B_T3
+#define B_TD B_T4
+#define B_TE B_T5
+#define B_TF B_T6
+#define B_TG B_T7
+#define B_TH B_T8
+#define B_TI B_T9
+#define B_TJ B_T10
+#define B_TK B_T11
+#define B_TL B_T12
+#define B_TM B_T13
+#define B_TN B_T14
+#define B_TO B_T15
+#define B_TP B_T16
+#define B_TQ B_T17
+#define B_TR B_T18
+#define B_TS B_T19
+
+
 
 
 typedef enum : BTSIZE_TYPE {

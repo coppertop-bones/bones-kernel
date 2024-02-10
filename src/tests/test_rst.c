@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdalign.h>
-#include "../../../include/bk/bk.h"
-#include "../../../include/bk/rst.h"
+#include "../../include/bk/bk.h"
+#include "../bk/rst.c"
 
 
 /*

@@ -5,9 +5,13 @@
 #include "tokens.h"
 
 
+
+
+
+
 typedef struct _csym {      // 20
     enum {                  // 4
-        Con = 1,            // constant - integer or double with type btyp
+        Con = 1,            // constant - integer or double with type ctyp
         Str,                // literal string
         Tmp,                // qbe temporary - hidden from user
         Var,                // local variable, with type btyp - named
@@ -43,4 +47,4 @@ typedef struct PTNode {       // 48 bytes
     unsigned int lineno;    // 4
 } PTNode;
 
-#endif INCLUDE_PT_H
+#endif  // INCLUDE_PT_H

@@ -1,28 +1,28 @@
 # Bones type system
 
-In bones, a type is considered a label that is used by the type system to check some aspects of the validity of a 
-program, to generate code from a template and to manage memory. This label or type is attached to name, i.e. a 
-function or a value, always in the building process, sometimes at runtime to track a contained object in a union, and
-to tag objects in kernel managed memory. The tag is needed for a garbage collection style termed conservative on 
-stack, precise on heap. Side note: we allow conservative escape hatches on the heap to handle things like C unions, 
-and pin both conservatively reference objects and objects shared outside of the kernel.
+In bones, we can think of a type as just a label that is used by the type system to check program consistency,
+generate code from a pro forma (aka a template) and to manage memory. This label or type is attached to a variable name 
+in the building process, at runtime to track objects in a union, and in memory management meta data. The tag is 
+needed for a garbage collection style termed conservative on stack, precise on heap. Side note: we allow conservative 
+escape hatches on the heap to handle things like C unions, and pin both conservatively reference objects and objects 
+shared outside of the kernel.
 
 Every type has a unique identity, used at build time for inference, checking, code generation and compilation, etc,
 at runtime to distinguish types in a union which cannot be statically determined, and by the kernel for precise memory
 management.
 
 
-## metatypes
+## Metatypes
 
 We have the following sorts of types: 
-nominal \
-intersection, union - set relation types \
+nominal - an atomic (can't be broken down into smaller parts) type that is identified by a name \
+intersection, union - subtype relationships \
 tuple, struct - aggregate (aka product) types \
 sequence, map, function - arrow (aka exponential) types 
 
 Any type that can recursively reach its own definition is flagged as such.
 
-Types can be grouped into exclusive sets where types of a particular exclusion may only appear once in a definition.
+Types can be grouped into exclusive sets where types of a particular exclusion may only appear once in an intersection.
 For example, the exclusive set "memory" (aka "concrete type" by Wikipedia) is used to prevent the creation of 
 intersections like Int & Double. Other examples include, finance / business types such as Currency (possibly with 
 subtypes GBP, USD, etc) and FX (GBPUSD, USDEUR, USDJPY, etc) and physical types such as feet, inches, cm, hour, 
@@ -31,16 +31,20 @@ minute, second, weekday, etc.
 
 ## The subtype relation
 
-Intuitive subtyping rules are defined in the behaviour of the <: operation - which as well as answering if type A fits 
-within type B can also measure distance between types. 
+Intuitive subtyping rules are defined in the behaviour of the `<:` operation - which as well as answering if type A fits 
+within type B can also measure the distance between types.
 
-The following uses & for intersection, + for union, (A, B) for tuple, {fred:A, joe:B} for a struct with fields fred and joe, A->B 
-for a function from A to B, and {fn1, fn2} as a set of functions, aka overlaods. Memory based functions are so 
-common that we use N**A for a sequence of A, i.e. a map from ordinal to A, and A**B for a map from A to B.
+The following uses `&` for intersection, `+` for union, `(A, B)` for tuple, `{fred:A, joe:B}` for a struct with fields 
+fred and joe. Memory based error types are common so we differentiate them from functions. We use `A->B` for a function 
+from A to B, `{fn1, fn2}` as a set of functions, aka an overload. We use `N**A` for a sequence of A, i.e. a map from 
+ordinal to A, and `A**B` for a map from A to B. To define a type A we use `A: <type expression>`.
 
 
-### nominal, set and aggregate subtyping
+### Nominal, relationship and aggregate subtyping
 ```
+        A: 'A'
+        B: 'B'
+
          A   <:  A      - true
          A   <:  B      - false
 
@@ -56,10 +60,26 @@ common that we use N**A for a sequence of A, i.e. a map from ordinal to A, and A
 (A,A)&(B,B)  <:  (A,A)
 
 
+(A+B) + (C+D) == A+B+C+D
 (A&B) & (C&D) == A&B&C&D
 (A&B) + (C&D) == (A&B) + (C&D) 
 (A&B) + (A&D) == A & (B + D)
-(A+B) & (C+D) = A+C & A+D & B+C & B+D
+(A+B) & (C+D) == A+C & A+D & B+C & B+D
+```
+
+
+E.g. to model integers and natural numbers, given
+```
+int: 'int'
+```
+we could either use a dummy type ascribing naturalness
+```
+_nat: 'naturalness'
+nat: _nat & int
+```
+or use a recursive definition
+```
+nat: nat & int
 ```
 
 
@@ -80,11 +100,13 @@ fn: <:(A) -> C&D>
 fred: <:C+D>
 joe: <:D>
 sally: <:E>
+a: <:A>
+b: <:B>
 
-fred: fn(A)    - okay
-fred: fn(B)    - not okay
-joe: fn(A)     - okay
-sally: fn(A)   - not okay
+fred: fn(a)    - always okay
+fred: fn(b)    - not okay since fn cannot take a B
+joe: fn(a)     - sometimes okay, i.e. as long as fn(A) returns a D and not a C
+sally: fn(a)   - not okay since sally can't be a C or D
 ```
 
 Another way of saying this is that the call-site must fit within the function.
@@ -101,6 +123,43 @@ C <: C+D
 
 I.e. the arguments of the call site must fit within the parameters of the function and the return type of the 
 function must fit within that of the call site.
+
+
+### exclusive types
+
+Exclusive types merely help to declutter the type system and introduce no additional semantics.
+
+
+### implicit types
+
+char const *
+
+char & const & ptr
+
+we want
+a: <:char*>
+fn: strlen(<:char const *>)
+fn(a) to be valid
+
+i.e. the non-const is a sub type of const
+
+what we are really saying is that everything be default is non-const, explicity const, and non-const <: const.
+
+we define non-const as implicit and const and const and define that non-const is implicit
+
+```
+const: 'const'
+nonconst: nonconst & const && implicit  // non-const is a recursive intersection with the implicit property (const is tagged as being related to an implicit type)
+
+const <: nonconst   false
+nonconst <: nonconst   false
+char  <: const & char   true  - 
+```
+
+Initially we see `char  <: const & char` as false but when we check the RHS residual `const` we see it is in an 
+intersection relationship with the implicit type non-const and since `non-const <: const` the overall expression passes.
+
+Implicit types merely help to declutter the type system and introduce no additional semantics.
 
 
 #### overloads
@@ -171,3 +230,13 @@ NOTES
 // no
 // 1) tuple unpacking should be clear e.g. (A): fn() is not the same as A: fn()
 // 2) tuples can be indexed e.g. fn()[1]
+
+
+
+
+
+
+
+
+
+

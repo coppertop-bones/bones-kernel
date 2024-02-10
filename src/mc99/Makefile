@@ -1,5 +1,5 @@
-BIN = ../_minc99
-INC = -I../coppertop/bk/include -I../coppertop/bk/src -I.
+BIN = play/_minc99
+INC = -I../../include -I../../src -I.
 #SRC_DIR = ../bk/src
 
 CFLAGS += -g -Wall $(INC)

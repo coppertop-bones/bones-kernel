@@ -10,7 +10,7 @@
 #include "../bk/pp.c"
 #include "../bk/mm.c"
 #include "../bk/tm.c"
-#include "pt.h"
+#include "pt99.h"
 
 
 // compiler constants (enum so get in debugger)

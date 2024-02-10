@@ -1,8 +1,9 @@
 #ifndef SRC_PT_C
 #define SRC_PT_C
 
-#include "minc.h"
+#include "minc99.h"
 #include "bk/qbe.h"
+#include "../../include/bk/rst.h"
 
 Buckets nodes;
 
@@ -12,13 +13,13 @@ Buckets nodes;
 
 
 
-PTNode * ptnode(int cat, int tok, PTNode *l, PTNode *r, int lineno) {
+PTNode * ptnode(int cat, int tok, PTNode *l, PTNode *r, int l1) {
     PTNode *n = allocInBuckets(&nodes, sizeof *n, alignof(n));
     n->cat = cat;
     n->tok = tok;
     n->l = l;
     n->r = r;
-    n->lineno = lineno;
+    n->l1 = l1;
     return n;
 }
 
@@ -110,18 +111,22 @@ PTNode * apply2(enum tok fn, PTNode *arg1, PTNode *arg2, int lineno) {
     return ptnode(FN_APPLY, fn, arg1, arg2, lineno);
 }
 
-
 RNode * fn_arrayAt(RNode *ptr, RNode *index, int lineno) {
+    // the type of this fn is at(seq:[T1], i:offset) -> T1  (N**T1, N)^T1
+    // fitsWithin will provide a tByT - which we can use to determine the return type
+
     // postfix_expression '[' expression ']'
-    PTNode *n = node(FN_ADD, ptr, index, lineno);
+    PTNode *n = node(RST_ADD, ptr, index, lineno);
     n = node(OP_DEREF, n, 0, lineno);
     return n;
 }
 
+// move to rst
 PTNode * mkifelse(void *c, PTNode *t, PTNode *f, int lineno) {
     return node(IfElse, c, node(Else, t, f, lineno), lineno);
 }
 
+// move to rst
 PTNode * mkfor(PTNode *ini, PTNode *tst, PTNode *inc, PTNode *s, int lineno) {
     PTNode *s1, *s2;
     if (ini)

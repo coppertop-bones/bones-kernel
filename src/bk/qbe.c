@@ -3,10 +3,12 @@
 // Emits QBE code to a stream given an RST.
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef BK_QBE_H
-#define BK_QBE_H "bk/qbe.h"
+#ifndef SRC_BK_QBE_C
+#define SRC_BK_QBE_C "bk/qbe.c"
 
-#include "tm.h"
+#include "bk/k.h"
+#include "bk/tm.h"
+#include "bk/rst.h"
 #include "minc.h"
 
 
@@ -19,7 +21,7 @@
 #define LABEL   "@"
 #define QINDENT "    "
 
-
+BK *_bk_qbe;
 
 // helpers to emit QBE IR from an RST and a symbol table
 // needs knowledge of PTNode, Symb and btyp and the symbol table
@@ -41,14 +43,14 @@ static char *otoa[] = {
 
 struct Promoted{
     Symb s0;
-    Symb Symb s1;
+    Symb s1;
     btypeid_t btyp;
 };
 
 PTNode * node(int tok, PTNode *l, PTNode *r, int lineno);
 
-int emitstmt(PTNode *n, int b);
-Symb emitexpr(PTNode *n);
+int emitstmt(BK_SymTab *st, PTNode *n, int b);
+Symb emitexpr(BK_SymTab *st, PTNode *n);
 
 
 void emitsymb(Symb s) {
@@ -263,7 +265,7 @@ char * fntyp(btypeid_t btyp) {
     return 0;
 }
 
-Symb lval(PTNode *n) {
+Symb lval(BK_SymTab *st, PTNode *n) {
     Symb s, *_s;
     switch (n->tok) {
         default:
@@ -277,7 +279,7 @@ Symb lval(PTNode *n) {
             s = *_s;
             break;
         case OP_DEREF:
-            s = emitexpr(n->l);
+            s = emitexpr(st, n->l);
             if (KIND(s.btyp) != B_P) die("dereference of a non-pointer");
             s.btyp = DREF(s.btyp);
             break;
@@ -285,10 +287,10 @@ Symb lval(PTNode *n) {
     return s;
 }
 
-void emitlocaldecl(PTNode *decl) {
+void emitlocaldecl(BK_SymTab *st, PTNode *decl) {
     int sz = SIZE(decl->s.btyp);
     putq(QINDENT PVAR "%s =l alloc%d %d\n", decl->l->s.u.v, sz, sz);
-    if (decl->r) emitexpr(node(OP_ASSIGN, decl->l, decl->r, __LINE__));
+    if (decl->r) emitexpr(st, node(OP_ASSIGN, decl->l, decl->r, __LINE__));
 }
 
 Symb emitload(Symb tmp, Symb m) {    // tmp is temp, m is memory
@@ -307,16 +309,16 @@ Symb emitload(Symb tmp, Symb m) {    // tmp is temp, m is memory
     return tmp;
 }
 
-void emitcall(PTNode *n, Symb *sr) {
+void emitcall(BK_SymTab st, PTNode *n, Symb *sr) {
     PTNode *a;  int iEllipsis, iArg;  Symb *ps, s, sfn;  int isExtern=0;
     char *name = n->l->s.u.v;
-    if (!(ps = symget(name))) die("undeclared function %s", name);
+    if (!(ps = rst_symget(st, name))) die("undeclared function %s", name);
     s = *ps;
     if ((s.styp != Glo) && (s.styp != Ext) && (s.styp != Fn))
-        bug(BK_QBE_H ">>emitcall @ %d", __LINE__);
+        bug(SRC_BK_QBE_C ">>emitcall @ %d", __LINE__);
     isExtern = tm_fitsWithin(_bk->tm, s.btyp, B_EXTERN);
     for (a = n->r; a; a = a->r)
-        a->s = emitexpr(a->l);                      // mutate the node with the allocated symbol
+        a->s = emitexpr(st, st, a->l);                      // mutate the node with the allocated symbol
     if ((KIND(s.btyp) & 0x7f) == B_FN) {
         sr->btyp = tm_Fn(_bk->tm, s.btyp).tRet & 0x7f7f7f7f;
         putq(QINDENT);
@@ -353,7 +355,7 @@ void emitcall(PTNode *n, Symb *sr) {
         }
     }
     else
-        bug(BK_QBE_H ">>emitcall @ %d", __LINE__);
+        bug(SRC_BK_QBE_C ">>emitcall @ %d", __LINE__);
     a = n->r;  iArg = 1;  iEllipsis = s.i;
     while (a) {
         if (iArg == iEllipsis) putq("..., ");
@@ -367,11 +369,11 @@ void emitcall(PTNode *n, Symb *sr) {
     // OPEN: extend sub word return types?
 }
 
-void emitboolop(PTNode *n, char *tlabel, int tn, char*flabel, int fn) {
+void emitboolop(BK_SymTab *st, PTNode *n, char *tlabel, int tn, char*flabel, int fn) {
     Symb s;  int l;
     switch (n->tok) {
         default:
-            s = emitexpr(n); /* OPEN: insert comparison to 0 with proper type */
+            s = emitexpr(st, n); /* OPEN: insert comparison to 0 with proper type */
             putq(QINDENT "jnz ");
             emitsymb(s);
             putq(", " LABEL);
@@ -400,10 +402,10 @@ void emitbreak(PTNode *n, int b) {
     putq(QINDENT "jmp " LABEL "while.end.%d\n", b);
 }
 
-void emitret(PTNode *n) {
+void emitret(BK_SymTab *st, PTNode *n) {
     Symb x;
     if (n->l) {
-        x = emitexpr(n->l);
+        x = emitexpr(st, n->l);
         putq(QINDENT "ret ");
         emitsymb(x);
     } else
@@ -411,43 +413,43 @@ void emitret(PTNode *n) {
     putq("\n");
 }
 
-void emitif(PTNode *n, int b) {
+void emitif(BK_SymTab *st, PTNode *n, int b) {
     int l;
     l = reserve_lbl(1);
     putq(LABEL "if.%d\n", l);
     emitboolop(n->l, "if.%d.true", l, "if.%d.end", l);
     putq(LABEL "if.%d.true\n", l);
-    emitstmt(n->r, b);
+    emitstmt(st, n->r, b);
     putq(LABEL "if.%d.end\n", l);
 }
 
-int emitifelse(PTNode *n, int b) {
+int emitifelse(BK_SymTab *st, PTNode *n, int b) {
     int l, r;  PTNode *e;
     l = reserve_lbl(1);
     putq(LABEL "if.%d\n", l);
     emitboolop(n->l, "if.%d.true", l, "if.%d.false", l);
     putq(LABEL "if.%d.true\n", l);
     e = n->r;
-    if (!(r=emitstmt(e->l, b)))
+    if (!(r=emitstmt(st, e->l, b)))
         putq(QINDENT "jmp " LABEL "if.%d.end\n", l);
     putq(LABEL "if.%d.false\n", l);
-    if (!(r &= emitstmt(e->r, b)))
+    if (!(r &= emitstmt(st, e->r, b)))
         putq(LABEL "if.%d.end\n", l);
     return e->r && r;
 }
 
-void emitwhile(PTNode *n) {
+void emitwhile(BK_SymTab *st, PTNode *n) {
     int l;
     l = reserve_lbl(1);
     putq(LABEL "while.%d.cond\n", l);
     emitboolop(n->l, "while.%d.body", l, "while.%d.end", l);
     putq(LABEL "while.%d.body\n", l);
-    if (!emitstmt(n->r, 1))
+    if (!emitstmt(st, n->r, 1))
         putq(QINDENT "jmp " LABEL "while.%d.cond\n", l);
     putq(LABEL "while.%d.end\n", l);
 }
 
-void emitfunc(btypeid_t tRet, char *fnname, NameType *params, PTNode *stmts) {
+void emitfunc(BK_SymTab *st, btypeid_t tRet, char *fnname, NameType *params, PTNode *stmts) {
     NameType *p;  int i, sz;
     PP(emit, "emitFunc: %s", fnname);
     if (tRet == B_VOID)
@@ -470,18 +472,18 @@ void emitfunc(btypeid_t tRet, char *fnname, NameType *params, PTNode *stmts) {
         putq(", " PVAR "%s\n", p->name);
     }
     putq(LABEL "body.%d\n", reserve_lbl(1));
-    if (!emitstmt(stmts, -1)) putq(QINDENT "ret\n");    // for the case of a void function with no return statement
+    if (!emitstmt(st, stmts, -1)) putq(QINDENT "ret\n");    // for the case of a void function with no return statement
     putq("}\n\n");
 }
 
-int emitstmt(PTNode *n, int b) {
+int emitstmt(BK_SymTab *st, PTNode *n, int b) {
     if (!n) return 0;
     PP(emit, "%s", toktopp[n->tok]);
 
     switch (n->tok) {
         case DeclVars:
-            emitlocaldecl(n->l);
-            emitstmt(n->r, b);
+            emitlocaldecl(st, n->l);
+            emitstmt(st, n->r, b);
             return 0;
         case Ret:
             emitret(n);
@@ -490,14 +492,14 @@ int emitstmt(PTNode *n, int b) {
             emitbreak(n, b);
             return 1;
         case Seq:
-            return emitstmt(n->l, b) || emitstmt(n->r, b);
+            return emitstmt(st, n->l, b) || emitstmt(st, n->r, b);
         case If:
-            emitif(n, b);
+            emitif(st, n, b);
             return 0;
         case IfElse:
-            return emitifelse(n, b);
+            return emitifelse(st, n, b);
         case While:
-            emitwhile(n);
+            emitwhile(st, n);
             return 0;
         case Label:
         case Else:
@@ -509,7 +511,7 @@ int emitstmt(PTNode *n, int b) {
             nyi("%d:\"%s\" @ %d", n->tok, toktopp[n->tok], n->lineno);
         default:
             if ((OP_EXPR_START <= n->tok) && (n->tok <= OP_EXPR_END))
-                emitexpr(n);
+                emitexpr(st, n);
             else
                 die("invalid statement %d:\"%s\" @ %d", n->tok, toktopp[n->tok], n->lineno);
             return 0;
@@ -670,7 +672,7 @@ static btypeid_t _emitpromotion(enum tok tok, Symb *l, Symb *r) {
 //// and so on
 
 
-Symb emitexpr(PTNode *n) {
+Symb emitexpr(BK_SymTab st, PTNode *n) {
     Symb sr, s0, s1, st;  enum tok o;  int l;  char ty[2];
 
     sr.styp = Tmp;
@@ -697,7 +699,7 @@ Symb emitexpr(PTNode *n) {
         case IDENT:
             // NEXT: need to handle pointers to functions as they are a little different semantically
             // is there a hack to get this working in the short term? probably
-            s0 = lval(n);
+            s0 = lval(st, n);
             sr.btyp = s0.btyp;
             sr = emitload(sr, s0);
             break;
@@ -729,18 +731,18 @@ Symb emitexpr(PTNode *n) {
             break;
 
         case OP_CALL:
-            emitcall(n, &sr);
+            emitcall(st, n, &sr);
             break;
 
         case OP_DEREF:
-            s0 = emitexpr(n->l);
+            s0 = emitexpr(st, n->l);
             if (!tm_fitsWithin(_bk->tm, s0.btyp, B_P)) die("dereference of a non-pointer");
             sr.btyp = DREF(s0.btyp);
             sr = emitload(sr, s0);
             break;
 
         case OP_ADDR:
-            sr = lval(n->l);
+            sr = lval(st, n->l);
             sr.btyp = _tIndirect(sr.btyp);
             break;
 
@@ -754,7 +756,7 @@ Symb emitexpr(PTNode *n) {
             n->r = n->l;
             n->l = z;
             n->tok = OP_SUB;
-            sr = emitexpr(n);
+            sr = emitexpr(st, n);
             break;
 
         case OP_BINV:
@@ -769,10 +771,10 @@ Symb emitexpr(PTNode *n) {
             // if the storage size of s1 is larger than the storage size of s0 then we need to either zero extend or
             // sign extend s0.
             // we only ever store the correct number of bytes from s0 into s1
-            s0 = emitexpr(n->r);
+            s0 = emitexpr(st, n->r);
             if (s0.btyp == 0)
                 die("s0.btyp == 0");
-            s1 = lval(n->l);        // always memory
+            s1 = lval(st, n->l);        // always memory
             sr = s0;                // consider for example `if (x=1+1) {`
 
             // OPEN: think through how to make this clearer and simpler - there's 100 possibilities
@@ -806,7 +808,7 @@ Symb emitexpr(PTNode *n) {
             {}
             else {
                 if (s1.btyp != s0.btyp) {
-                    s0 = emitexpr(n->r);
+                    s0 = emitexpr(st, n->r);
                     die("invalid assignment");
                 }
             }
@@ -818,7 +820,7 @@ Symb emitexpr(PTNode *n) {
         case OP_INC:
         case OP_DEC:
             o = n->tok == OP_INC ? OP_ADD : OP_SUB;    // e.g. x += 1  => x = x + 1
-            st = lval(n->l);
+            st = lval(st, n->l);
             s0.styp = Tmp;
             s0.u.n = reserve_tmp();
             s0.btyp = st.btyp;
@@ -831,8 +833,8 @@ Symb emitexpr(PTNode *n) {
         default:
             // handle the binary ops
             if ((OP_BIN_START <= n->tok) && (n->tok <= OP_BIN_END)) {
-                s0 = emitexpr(n->l);
-                s1 = emitexpr(n->r);
+                s0 = emitexpr(st, n->l);
+                s1 = emitexpr(st, n->r);
                 o = n->tok;
             }
             else
@@ -874,4 +876,4 @@ Symb emitexpr(PTNode *n) {
     return sr;
 }
 
-#endif //BK_QBE_H
+#endif //SRC_BK_QBE_C

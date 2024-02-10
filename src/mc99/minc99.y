@@ -24,11 +24,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pt.c"
-#include "bk/qbe.h"
-#include "bk/k.h"
-#include "bk/mm.c"
-#include "bk/tm.c"
+#include "pt99.c"
+#include "../include/bk/qbe.h"
+#include "../include/bk/k.h"
+#include "../src/bk/mm.c"
+#include "../src/bk/tm.c"
 
 
 int yylex(void);
@@ -554,6 +554,7 @@ struct {
 int yylex() {
     int i, c, c2, c3, n;  char v[SYM_NAME_MAX], *p;  double d, s;
 
+    // consume line comments, preprocessor notes, newlines and whitespace
     do {
         c = getc(inf);
         if (c == '#') {
@@ -571,12 +572,13 @@ int yylex() {
         if (c == '\n') incLine();
     } while (isspace(c));
 
+    // handle EOF
     if (c == EOF) {
         PP(lex, "\nEOF\n");
         return 0;
     }
 
-    // open handle octal and hexadecimal
+    // consume integers and decimals - OPEN: handle octal and hexadecimal, scientific style, 1_000 style etc
     if (isdigit(c)) {
         // OPEN: use standard C to parse the numbers
         n = 0;
@@ -611,6 +613,7 @@ int yylex() {
         }
     }
 
+    // consume keywords and indentifiers
     if (isalpha(c) || c == '_') {
         p = v;  n = 0;
         do {
@@ -632,7 +635,7 @@ int yylex() {
         return IDENTIFIER;
     }
 
-    // OPEN: handle multichar literals
+    // consume single char literals, OPEN: handle multichar literals
     if (c == '\'') {
         n = getc(inf);
         if (n == '\\') {
@@ -676,6 +679,7 @@ int yylex() {
         return CONSTANT;
     }
 
+    // consume strings
     if (c == '"') {
         i = 0;
         n = 32;

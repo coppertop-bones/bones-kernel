@@ -1,5 +1,5 @@
 # minc99
-A minimal C99 compiler that compiles to RST (based on minic by Quentin Carbonneaux)
+A minimal C99 compiler (based on minic by Quentin Carbonneaux) that compiles to RST 
 
 - uses c99 grammar from https://www.quut.com/c/ANSI-C-grammar-y-1999.html
 - added line numbers and comments to miniyacc - https://c9x.me/yacc/
