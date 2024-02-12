@@ -11,6 +11,7 @@
 // TODO
 //   make buckets use block manager
 //   review
+//      review the matrix mul by mutation example
 //      https://danluu.com/malloc-tutorial/
 //      https://github.com/zyfjeff/C-HOW-TO/blob/master/c-malloc/Malloc_tutorial.pdf
 //      https://manybutfinite.com/post/anatomy-of-a-program-in-memory/
@@ -57,6 +58,13 @@
 typedef struct {
     int fred;
 } BK_BM;
+
+
+
+// objects may be agents or values
+// meta:
+// isAgent
+
 
 
 typedef struct {

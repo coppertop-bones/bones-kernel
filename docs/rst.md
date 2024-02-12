@@ -63,7 +63,6 @@ function and function-closure
 stack memory management - fastest allocation, results must be evacuated, good locality, per thread
 region - fast allocation, results do not need to be evacuated, needs type info, good locality
 pools - poor locality
-jmalloc - 
 regions can be compacted / evacuated
 
 stack vs heap is not a great dictotomy
@@ -91,7 +90,8 @@ in bones blocks you can pass arguments in
 in c blocks you can't
 
 
-rst_for()
+rst_for
+rst_for_i
 rst_for_each
 rst_for_ieach
 rst_for_k
