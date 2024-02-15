@@ -45,10 +45,11 @@
 - per object metadata - prefix 4 bytes prior to c pointer
   - isFlat - contains no indirection (pointers or relative pointers)
   - isMedium - 256 (-4) < size <= 8k
-  - isVariable - type knows how to calculate size, else type knows size
+  - isVariable - type knows how to calculate size (including opaque malloced structures?), else type knows size
   - isTombstone - used when evacuating, overwrites object start with forwarding pointer
   - isData - e.g. double*, data maybe shared but size is stored in a containing structure
-  - leaving 27 bits for ref count (e.g 4 bits) and btypeid (e.g. 23 bits -> 8M, 22 bits -> 4M)
+  - isAgent?
+  - leaving 26 bits for ref count (e.g 4 bits) and btypeid (e.g. 23 bits -> 8M, 22 bits -> 4M, 21 bits -> 2M)
 - thus min size is 12 bytes and then in increments of 16 bytes
 - medium object spans more than one line
 - born dead optimisation
