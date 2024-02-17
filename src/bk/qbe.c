@@ -23,6 +23,9 @@
 
 BK *_bk_qbe;
 
+void emitwhile(BK_SymTab *st, PTNode *n);
+
+
 // helpers to emit QBE IR from an RST and a symbol table
 // needs knowledge of PTNode, Symb and btyp and the symbol table
 
@@ -312,6 +315,18 @@ Symb emitload(Symb tmp, Symb m) {    // tmp is temp, m is memory
 void emitcall(BK_SymTab st, PTNode *n, Symb *sr) {
     PTNode *a;  int iEllipsis, iArg;  Symb *ps, s, sfn;  int isExtern=0;
     char *name = n->l->s.u.v;
+
+    // check primitives first
+    if (strcmp(name, "whileTrue:") == 0) {
+        emitwhile(st, n.l);
+        return;
+    }
+    if (strcmp(name, "+") == 0) {
+        // add
+        return;
+    }
+
+        // do a regular function call
     if (!(ps = rst_symget(st, name))) die("undeclared function %s", name);
     s = *ps;
     if ((s.styp != Glo) && (s.styp != Ext) && (s.styp != Fn))
@@ -437,6 +452,27 @@ int emitifelse(BK_SymTab *st, PTNode *n, int b) {
         putq(LABEL "if.%d.end\n", l);
     return e->r && r;
 }
+
+
+// whileTrue: is know to the qbe generator
+// so when
+// fnName = "whileTrue:"
+// conditionBlock = seq
+// mainblock = seq
+//
+// whileTrue: (block, block) -> void
+// conditionBlock
+// mainBlock
+// @while.4.cond
+//    %.14 = ...
+//    jnz %.14, @while.4.body, @while.4.end
+//@while.4.body
+//    ...
+//    jmp @while.4.cond
+//@while.4.end
+//
+
+
 
 void emitwhile(BK_SymTab *st, PTNode *n) {
     int l;

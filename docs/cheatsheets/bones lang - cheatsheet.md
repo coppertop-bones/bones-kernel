@@ -9,6 +9,29 @@ whenever a fuller explanation is required.
 Bones is a high level, high performance, decision support language intended for non-career programmers aged 8 to 88. 
 
 
+## PITHY SUMMARY
+
+bones is intended to make the structure of what is going on more explicit and simpler to follow but in a textual form
+rather than a GUI form - hence the language is as simple as we can make it ("bones" is short for "bare bones language")
+and much of the useful stuff (including control flow) is put into libraries.
+
+we have functions, blocks, types, ability to (partially or fully) call functions and blocks, names, the ability to
+bind names, and scopes to organise the names - obviously we also need to be able to load preexisting work and import
+names, as well as the usual literals. but that's the essence - semantically we default to immutable values (but can do
+agents), function names may form a union / intersection (depending on your view point) of functions that are
+automatically selected on context (aka multiple dispatch), and functions and blocks are first class although blocks are
+restricted to being stack based - to reduce spaghetti we provide early return, signals (aka exceptions) and auto
+rebinding of lvalues - finally we add some convenience - the piping and hole based function argument syntax and
+implicitly passing parent names as arguments to local in scope functions.
+
+under the hood we do the memory management for the user, infer principle types, provide a single threaded programming
+model, use the C-ABI and generate code for consumption by optimising compiler backends, e.g. QBE, MIR, LLVM, etc.
+
+tooling wise - we have AST and bytecode interpreters and debuggers with profiling support.
+
+bones can call and be called by Python and C.
+
+
 ## CONCEPTS
 
 A central idea of bones is that it does all sorts of things for you so you don't have to, and thus can instead focus 
@@ -107,7 +130,6 @@ Build in so you know early on if you need to architect for performance up front 
 _.                  - accessing contextual scope
 _..                 - accessing global scope
 :                   - binding, separation of parameter names and types
-->                  - return type (of a function or block)
 ,                   - phrase separation
 ;                   - phrase separation
 \                   - line continuation??
@@ -236,7 +258,7 @@ creates a new scope that cannot see value or agent names in parent scopes, but c
 
 Examples of binary functions to add to two 64-bit floating point numbers:
 ```
-1.0 {[x:f64, y:f64] -> f64. ^x + y} <:binary> 2.0
+1.0 {[x:f64, y:f64] <:f64> ^x + y} <:binary> 2.0
 1.0 {[x:f64, y:f64] ^ x + y} <:binary> 2.0          // rely on type inference
 1.0 {[x:f64, y:f64] x + y} <:binary> 2.0            // last phrase is return value
 1.0 {[x, y] x + y} <:binary> 2.0                    // reply even more on inference
@@ -252,7 +274,7 @@ parents' scopes.
 
 Examples of blocks to add to two 64-bit floating point numbers:
 ```
-[[x:f64, y:f64] -> f64. x + y](1.0, 2.0)    // blocks can only be called fortran style and ^ exits the direct parent
+[[x:f64, y:f64] <:f64> x + y](1.0, 2.0)     // blocks can only be called fortran style and ^ exits the direct parent
 [[x:f64, y:f64] x + y](1.0, 2.0)            // rely on type inference
 [[x, y] x + y](1.0, 2.0)                    // reply even more on inference
 [[x] x + y](1.0)                            // refer to y defined in the parent scope
@@ -261,9 +283,9 @@ Examples of blocks to add to two 64-bit floating point numbers:
 
 ### TYPE-LANG
 Type-lang is the name given to the mini-language that describes bones types. In bones it occurs in three places, in a 
-`<:type-lang>` type annotation used to indicate the type of a name, to the right of a parameter name after the : in a 
-function or block definition and after a -> describing the return type of a function / block. Type-lang used in 
-function / block definition may only be a single expression and may not define new nominal types.
+`<:type-lang>` type annotation used to indicate the type of a name and to the right of a name after a `:` in a struct 
+or function / block parameter definition. Type-lang used in struct / function / block definition may only be a single 
+expression and may not define new nominal types.
 
 ```
 u32: nom                // nominal name "u32"
@@ -356,6 +378,8 @@ and so on. Under the hood we will likely use the itanium exception mechanism.
 
 TBC
 
+intersections... because there are types that cannot be inferred that remove whole classes of bugs
+
 
 
 ## OTHER FEATURES
@@ -390,7 +414,7 @@ which allows the agent's state to vary. Allowing rebinding opens the way to synt
 immutable code, for example:
 
 ```
-addOneToEach: {[xs: N**u32] -> N**u32
+addOneToEach: {[xs: N**u32] <:N**u32>
     xs forI: [[i]
         xs[i]: xs[i] + 1        // xs is rebound here (maybe via destructive update)
     ]
@@ -409,6 +433,16 @@ forI: {[xs, block]
 }
 
 (1,2,3) addOneToEach == (2,3,4)
+```
+
+Which could be done with recursion (although not so reliably with a C-ABI):
+```
+timesDo: {[count, aBlock]
+    count > 0 ifTrue: [count - 1 timesDo: aBlock()]
+}
+
+i = 0
+2 timesDo: [i + 1]
 ```
 
 Every function in bones is pure - i.e. all the inputs and outputs are well-defined even though sometimes those inputs / 

@@ -80,23 +80,28 @@ typedef struct {
 
 typedef struct {
     // OPEN: for stepping / debugging and error reporting - need to have references to the source code (rstsrc*?)
-    enum rstop op;  // 4
+    enum rstop op;      // 4
     btypeid_t tRet;     // 4
-    btypeid_t *t;
-} rst;
+//    btypeid_t *t;
+} rst_node;
 char * rst_typelang = "rstop*i32*(btype&ptr) :rst";
 btypeid_t * rst_btype;
 
 typedef struct {
     int n;
-    rst *nodes[];
+    rst_node *nodes[];
 } rstlist;
 
 typedef struct {
-    rst base;
-    rst *fn;
+    rst_node base;
+    rst_node *fn;
     rstlist args;
 } rstapply;
+
+
+
+
+
 char * rstapply_typelang = "rst * rst&ptr * i32 * (N** rst&ptr)";
 btypeid_t * rstapply_btype;
 // how would a visitor know that nargs is the size of the pointer array?
@@ -120,8 +125,8 @@ btypeid_t * rstapply_btype;
 // };
 
 typedef struct {
-    rst base;
-    rst *n;
+    rst_node base;
+    rst_node *n;
     char *name;
     bscope *scope;
 } rstbind;

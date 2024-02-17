@@ -42,7 +42,6 @@ each object is aligned to 16 bytes and prefixes with the type
 
 
 
-
 case styles for variable names within jones:
 - t_integral_types
 - equationvaluesarehandcasetokeepthemshort
@@ -61,5 +60,6 @@ create
 trash
 init
 break
+
 
 
