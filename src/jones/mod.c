@@ -6,7 +6,7 @@
 
 
 #include "../../include/bk/bk.h"
-#include "../../include/bk/os.h"
+#include "../../include/bk/lib/os.h"
 #include "jones.h"
 #include "lib/pyutils.h"
 

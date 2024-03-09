@@ -66,6 +66,8 @@ typedef struct {
 // isAgent
 
 
+// https://stackoverflow.com/questions/37460579/error-c2036-void-unknown-size
+// Visual C doesn't allow pointer arithmatic on void * but clang on macos does
 
 typedef struct {
     void *(* malloc)(size_t);
@@ -101,7 +103,7 @@ typedef struct BucketHeader BucketHeader;
 
 tdd void * initBuckets(Buckets *a, size chunkSize);
 tdd void * allocInBuckets(Buckets *a, size n, size align);
-tdd void * reallocInBuckets(Buckets *a, void* p, size n, size align);
+tdd void * reallocInBuckets(Buckets *a, void * p, size n, size align);
 tdd void checkpointBuckets(Buckets *a, BucketsCheckpoint *s);
 tdd void resetToCheckpoint(Buckets *a, BucketsCheckpoint *s);
 tdd void cleanBuckets(void *first_bucket);

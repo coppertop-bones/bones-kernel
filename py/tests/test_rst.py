@@ -4,7 +4,7 @@ from dm.testing import check, raises, equals, gt, different
 from bones import jones
 from bones.core.errors import NotYetImplemented
 import dm.pp
-from groot import PP
+from dm.core import PP
 
 import sys, itertools
 

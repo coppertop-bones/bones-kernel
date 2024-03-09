@@ -108,7 +108,7 @@ pvt err FS_required_size(int num_args, int num_slots, size_t *size) {
     if (!(1 <= num_slots && num_slots <=128)) SIGNAL("num_slots is not within {1, 128}");
     int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
     *size = sizeof(struct FunctionSelector) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
-    return NO_ERROR;
+    return BK_NO_ERROR;
 }
 
 pvt err FS_create(struct FunctionSelector *fs, int num_args, int num_slots) {
@@ -124,7 +124,7 @@ pvt err FS_create(struct FunctionSelector *fs, int num_args, int num_slots) {
     unsigned short *array = P_SIG_ARRAY(fs);
     for (i=0; i < slot_width * num_slots; i++) array[i] = 0x0000;
     for (iHC=0; iHC < num_slots; iHC++) array[i+iHC] = 0x0000;
-    return NO_ERROR;
+    return BK_NO_ERROR;
 }
 
 pvt void FS_trash(struct FunctionSelector *fs) {

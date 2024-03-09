@@ -22,7 +22,11 @@ typedef u32 TM_XXXID_T;
 #define TM_RP_BY_TLID_INC_SIZE (0x4000 / sizeof(RP))        /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
 
 
+#if defined _APPLE_ || defined __MACH__
 typedef enum : BTYPEID_T_TYPE {
+#else
+typedef enum {
+#endif
     B_NAT = 0,       // not-a-type - i.e. an error code
     B_NULL,          // empty set - not the same as not-a-type
     B_VOID,
@@ -125,14 +129,20 @@ typedef enum : BTYPEID_T_TYPE {
 
 
 
-
+#if defined _APPLE_ || defined __MACH__
 typedef enum : BTSIZE_TYPE {
+#else
+typedef enum {
+#endif
     NOSZ = 0,
 } btypesize_t;
 
 
-
+#if defined _APPLE_ || defined __MACH__
 typedef enum : BMETATYPEID_T_TYPE {
+#else
+typedef enum {
+#endif
     bmterr = 0,
     bmtnom = 1, // nominal - atomic type with a given name
 
@@ -158,7 +168,12 @@ typedef enum : BMETATYPEID_T_TYPE {
 // allow up to 8 categories of exclusion so can AND these together to detail conflict - OPEN: is that enough categories
 // actually since exclusion is detected on union creation speed is not that important - so we can have intersections of
 // exclusions but that is a little more involved - use the bitmask for the moment
+
+#if defined _APPLE_ || defined __MACH__
 typedef enum : BTEXCLUSIONCAST_T_TYPE {
+#else
+typedef enum {
+#endif
     btenone = 0,
     btememory = 1,
     bteptr = 2,

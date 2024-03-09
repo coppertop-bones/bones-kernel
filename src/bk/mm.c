@@ -37,33 +37,33 @@ pub void * initBuckets(Buckets *a, size chunkSize) {
     a->current_bucket = 0;
     a->next = 0;
     a->eoc = 0;
-    a->nPages = chunkSize / PAGE_SIZE + (chunkSize % PAGE_SIZE > 0);
+    a->nPages = (int)(chunkSize / PAGE_SIZE + (chunkSize % PAGE_SIZE > 0));
     return _nextBucket(a, 0, 1);
 }
 
 pub void * allocInBuckets(Buckets *a, size n, size align) {
-    void *p;
-    p = a->next + (align - ((unsigned long)a->next % align));
-    if ((p + n) > a->eoc) {
+    void* p;
+    p = (mem)a->next + (align - ((size)a->next % align));
+    if (((mem)p + n) > (mem)a->eoc) {
         p = _nextBucket(a, n, align);
         if (!p) return 0;
-        p = a->next + (align - ((unsigned long)a->next % align));
+        p = (mem)a->next + (align - ((size)a->next % align));
     }
     a->last_alloc = p;
-    a->next = p + n;
+    a->next = (mem)p + n;
     return p;
 }
 
-pub void * reallocInBuckets(Buckets *a, void* p, size n, size align) {
+pub void * reallocInBuckets(Buckets *a, void *p, size n, size align) {
     // OPEN: if we can't realloc the client should decide how much needs allocating
     if (!p  || p != a->last_alloc) return allocInBuckets(a, n, align);
-    if ((p + n) > a->eoc) {
+    if (((mem)p + n) > (mem)a->eoc) {
         void *chunk = _nextBucket(a, n, align);
         if (!chunk) return 0;
-        p = a->next + (align - ((unsigned long)a->next % align));
+        p = (mem)a->next + (align - ((size)a->next % align));
         a->last_alloc = p;
     }
-    a->next = p + n;
+    a->next = (mem)p + n;
     return p;
 }
 
@@ -85,7 +85,7 @@ tdd void * _nextBucket(Buckets *a, size n, size align) {
         }
     }
     a->current_bucket = p;
-    a->next = p + sizeof(BucketHeader);
+    a->next = (mem) p + sizeof(BucketHeader);
     a->eoc = ((BucketHeader *)p)->eoc;
     return p;
 }
@@ -96,7 +96,7 @@ tdd void * _allocBucket(size size) {
     if (!p) return 0;
     ch = (BucketHeader *)p;
     ch->next_chunk = 0;
-    ch->eoc = p + size - 1;
+    ch->eoc = (mem)p + size - 1;
     return p;
 }
 

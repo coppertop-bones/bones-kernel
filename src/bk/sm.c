@@ -25,7 +25,7 @@
 
 #include "../../include/bk/mm.h"
 #include "../../include/bk/sm.h"
-#include "../../include/bk/os.h"
+#include "../../include/bk/lib/os.h"
 #include "lib/hi_impl.h"
 #include "pp.c"
 
@@ -80,7 +80,7 @@ pub symid_t sm_id(BK_SM *sm, char *name) {
     if (res == HI_TOMBSTONE) die("TOMBSTONE");
 
     // add the symbol
-    int l = strlen(name);
+    size l = strlen(name);
     if (l >= SM_MAX_NAME_LEN || l == 0) return SM_NA_SYM;
     if (sm->next_rp + l >= SM_MAX_NAME_STORAGE) die("%s: out of typelist storage", FN_NAME);   // OPEN: we've run out of storage space, but really we should add an error reporting mechanism, e.g. SM_ERR_NAME_TOO_LONG, SM_ERR_OUT_OF_NAME_STORAGE etc
     bool needsAnotherPage = (2 + sm->next_rp + l + 1 >= sm->max_rp);
@@ -104,7 +104,7 @@ pub symid_t sm_id(BK_SM *sm, char *name) {
     sm->next_symid++;
     // OPEN: prefix with length
     strcpy(sm->symname_buf + (sm->next_rp), name);
-    sm->next_rp += 2 + l + 1;
+    sm->next_rp += 2 + (int)l + 1;
 
     hi_replace_empty(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, idx, id);
 

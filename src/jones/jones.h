@@ -26,7 +26,7 @@
 
 
 struct Base {
-    PyObject_VAR_HEAD;
+    PyObject_VAR_HEAD
 };
 
 struct Fn {
@@ -47,27 +47,27 @@ struct Partial {
 };
 
 typedef struct {
-    PyObject_HEAD;
+    PyObject_HEAD
     btypeid_t btypeid;
 } PyBType;
 
 struct PySM {
-    PyObject_HEAD;
+    PyObject_HEAD
     BK_SM *sm;
 };
 
 struct PyEM {
-    PyObject_HEAD;
+    PyObject_HEAD
     BK_EM *em;
 };
 
 struct PyTM {
-    PyObject_HEAD;
+    PyObject_HEAD
     BK_TM *tm;
 };
 
 struct PyKernel {
-    PyObject_HEAD;
+    PyObject_HEAD
     BK_K *kernel;
     PyObject *pySM;
     PyObject *pyEM;

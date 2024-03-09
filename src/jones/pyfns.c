@@ -177,7 +177,7 @@ pvt PyObject * _punary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         // this should not be called re-entrantly but we can't stop it - so detect and throw as it would be hard to debug
         int iPipe1 = 32;
         Py_ssize_t num_args = Py_SIZE(partial);
-        for (Py_ssize_t o=0; o < num_args; o++) {
+        for (int o=0; o < num_args; o++) {
             if (partial->args[o] == partial->Fn.TBCSentinel) {
                 iPipe1 = o;
                 break;
@@ -256,7 +256,7 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
             // this should not be called re-entrantly (and probably won't) but we can't stop it - so detect and throw as it would be hard to debug
             int iPipe1 = 32;  int iPipe2 = 32;
             Py_ssize_t num_args = Py_SIZE(partial);
-            for (Py_ssize_t o=0; o < num_args; o++)
+            for (int o=0; o < num_args; o++)
                 if (partial->args[o] == partial->Fn.TBCSentinel) {
                     if (iPipe1 == 32)
                         iPipe1 = o;
@@ -381,7 +381,7 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
             // this should not be called re-entrantly (and probably won't) but we can't stop it - so detect and throw as it would be hard to debug
             int iPipe1 = 32;  int iPipe2 = 32;  int iPipe3 = 32;
             Py_ssize_t num_args = Py_SIZE(partial);
-            for (Py_ssize_t o=0; o < num_args; o++)
+            for (int o=0; o < num_args; o++)
                 if (partial->args[o] == partial->Fn.TBCSentinel) {
                     if (iPipe1 == 32)
                         iPipe1 = o;
@@ -551,7 +551,7 @@ pvt PyObject * Partial_o_tbc(struct Partial *partial, void* closure) {
     PyObject *answer = PyTuple_New(num_tbc);
     if (answer == 0) return 0;
     int o_next = 0;
-    for (Py_ssize_t o=0; o < full_size; o++) {
+    for (int o=0; o < full_size; o++) {
         if (args[o] == TBC) {
             PyTuple_SET_ITEM(answer, o_next, PyLong_FromLong(o));
             o_next++;

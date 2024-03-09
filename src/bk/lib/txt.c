@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include "../bk.h"
 
+#if defined _WIN64 || defined _WIN32
+#include "txt_win64.c"
+#elif defined _APPLE_ || defined __MACH__
+#elif defined __linux__
+#endif
 
 pvt char * join_txts(int num_args, ...) {
     size_t size = 0;

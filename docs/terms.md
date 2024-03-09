@@ -82,6 +82,8 @@ circular-unification
 
 class - a template of a data-structure that defines allowable memory layout and allowable behaviours
 
+class two disagreement - https://www.latimes.com/business/hiltzik/la-fi-hiltzik-taylor-appreciation-20170417-story.html
+
 code-generation
 
 collection

@@ -69,8 +69,12 @@ pvt void nyi(char *msg, ...) {
     va_end(args);
 }
 
+#if defined _WIN64 || defined _WIN32
+#else
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wunused-function\"")
+#endif
+
 pvt void bug(char *msg, ...) {
     va_list args;
     va_start(args, msg);
@@ -86,6 +90,11 @@ pvt void check(bool truth, char *msg, ...) {
         va_end(args);
     }
 }
+
+#if defined _WIN64 || defined _WIN32
+#else
 _Pragma("GCC diagnostic pop")
+#endif
+
 
 #endif  // __BK_PP_C

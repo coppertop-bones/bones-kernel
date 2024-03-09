@@ -201,7 +201,7 @@ pvt PyObject * PyTM_fn(struct PyTM *self, PyObject **args, Py_ssize_t nargs) {
     else if (PyObject_IsInstance(args[0], (PyObject *) &PyTuple_Type)) {
         tup = args[0];
         n = PyTuple_Size(tup);
-        tl = allocInBuckets(buckets, ((1 + n) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
+        tl = (btypeid_t *) allocInBuckets(buckets, ((1 + n) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
         tl[0] = (btypeid_t) n;
         for (int i=0; i < n; i++) {
             e = PyTuple_GetItem(tup, i);
@@ -280,7 +280,7 @@ pvt PyObject * PyTM_intersection(struct PyTM *self, PyObject **args, Py_ssize_t 
     checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // create a type list of the correct length
-    tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
+    tl = (btypeid_t *) allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
     tl[0] = (btypeid_t) nargs;
     for (int i=1; i <= nargs; i++) {
         if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {
@@ -523,7 +523,7 @@ pvt PyObject * PyTM_tuple(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // create a type list of the correct length
-    tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
+    tl = (btypeid_t *) allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
     tl[0] = (btypeid_t) nargs;
     for (int i=1; i <= nargs; i++) {
         if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {
@@ -576,7 +576,7 @@ pvt PyObject * PyTM_union(struct PyTM *self, PyObject **args, Py_ssize_t nargs) 
     checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // create a type list of the correct length
-    btypeid_t *tl = allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
+    btypeid_t *tl = (btypeid_t *) allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
     tl[0] = (btypeid_t) nargs;
     for (int i=1; i <= nargs; i++) {
         if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {

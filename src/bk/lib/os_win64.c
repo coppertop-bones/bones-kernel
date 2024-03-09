@@ -7,7 +7,9 @@
 #include <stdarg.h>
 #include <stdio.h>          /* for vsnprintf */
 #include <stdlib.h>
-#include <windows.h>
+#define _AMD64_
+#include <sysinfoapi.h>
+//#include <windows.h>
 #include "../../../include/bk/bk.h"
 //#include "os_win64.h"
 
@@ -17,9 +19,8 @@ pub int os_page_size() {
     return si.dwPageSize;
 }
 
-
 pub int os_cache_line_size() {
-    size lineSize = 0;
+    int lineSize = 0;
     DWORD bufferSize = 0;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION * buffer = 0;
 
@@ -38,7 +39,25 @@ pub int os_cache_line_size() {
     return lineSize;
 }
 
+pub void * os_vm_reserve(void *addr, size_t len) {
+    return 0;
+}
 
+pub int os_vm_unreserve(void *addr, size_t len) {
+    return 0;
+}
+
+pub int os_mprotect(void *addr, size_t len, int prot) {
+    return 0;
+}
+
+pub int os_madvise(void *addr, size_t len, int advice) {
+    return 0;
+}
+
+pub int os_mfree(void *addr, size_t len) {
+    return 0;
+}
 
 
 // https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc

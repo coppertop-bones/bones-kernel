@@ -17,10 +17,8 @@
 
 
 #include "../../../include/bk/bk.h"
-#include "../../../include/bk/os.h"
+#include "../../../include/bk/lib/os.h"
 #include "../pp.c"
-#include <sys/sysctl.h>
-#include <libc.h>
 
 
 // https://www.etalabs.net/overcommit.html - mmap - none, then mprotect read-write what you need

@@ -116,7 +116,8 @@
 typedef unsigned int    RP;                // relative pointer
 //typedef unsigned char   u8;
 typedef uint8_t         u8;
-typedef char            byte;
+typedef char            b8;                 // byte doesn't work in win10
+typedef char *          mem;
 typedef unsigned short  u16;
 //typedef char16_t      c16;
 //typedef unsigned int   u32;
@@ -161,7 +162,7 @@ typedef u32 symid_t;    // 4 billion syms
 
 // error codes
 typedef char* err;
-#define NO_ERROR 0
+#define BK_NO_ERROR 0
 
 
 // the following control visibility of functions

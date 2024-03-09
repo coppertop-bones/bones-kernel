@@ -15,7 +15,6 @@
 #endif
 
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // init module
 // ---------------------------------------------------------------------------------------------------------------------
@@ -47,9 +46,11 @@ pvt PyMethodDef free_fns[] = {
     {"sc_test_numSlots", (PyCFunction)          _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
     {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _fs_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
 
+#ifdef JONES_INCLUDE_PLAY
     // play
     {"execShell",                               _execShell, METH_VARARGS, "Execute a shell command."},
     {"sizeofFredJoe", (PyCFunction)             _sizeofFredJoe, METH_FASTCALL, "tuple with sizeOf Fred and Joe in it"},
+#endif
 
     {0, 0, 0, 0}
 };
