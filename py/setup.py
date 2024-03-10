@@ -1,5 +1,10 @@
-import os, setuptools, distutils.core
+import os, setuptools, sys
+
 parent_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-setuptools.setup(
-  ext_modules=[distutils.core.Extension("bones.jones", [os.path.join(parent_folder, "src/jones/jones.c")])],
-)
+python_include_dir = os.path.abspath(os.path.join(sys.executable, 'include'))
+
+setuptools.setup(ext_modules=[setuptools.Extension(
+    "bones.jones",
+    [os.path.join(parent_folder, "src/jones/jones.c")],
+    include_dirs=[python_include_dir]
+)])

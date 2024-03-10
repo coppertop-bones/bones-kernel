@@ -1,3 +1,3 @@
-export PYTHONPATH=~/arwen/IR/minc/coppertop/src
-export PYTHONPATH=$PYTHONPATH:~/arwen/dm/src
-export PYTHONPATH=$PYTHONPATH:~/arwen/bones/src
+export PYTHONPATH=../../../coppertop/src
+export PYTHONPATH=$PYTHONPATH:../../../dm/src
+export PYTHONPATH=$PYTHONPATH:../../../bones/src

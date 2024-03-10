@@ -3,8 +3,8 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 
-#ifndef __BK_EM_C
-#define __BK_EM_C "bk/em.c"
+#ifndef SRC_BK_EM_C
+#define SRC_BK_EM_C "bk/em.c"
 
 #include "../../include/bk/mm.h"
 #include "../../include/bk/em.h"
@@ -22,4 +22,4 @@ pub int EM_trash(BK_EM *em) {
 }
 
 
-#endif // __BK_EM_C
+#endif // SRC_BK_EM_C

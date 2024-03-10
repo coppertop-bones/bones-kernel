@@ -1,8 +1,21 @@
 #ifndef __BK_LIB_TXT_WIN64_C
 #define __BK_LIB_TXT_WIN64_C "bk/lib/txt_win64.c"
 
-#include "../bk.h"
-#include "txt_win64.h"
+#include "../bk.c"
+
+#define INIT_SZ 128
+
+#ifndef VA_COPY
+    #ifdef HAVE_VA_COPY
+        #define VA_COPY(dest, src) va_copy(dest, src)
+    #else
+        #ifdef HAVE___VA_COPY
+            #define VA_COPY(dest, src) __va_copy(dest, src)
+        #else
+            #define VA_COPY(dest, src) (dest) = (src)
+        #endif
+    #endif
+#endif
 
 
 pvt int vasprintf(char **str, char *fmt, va_list ap) {

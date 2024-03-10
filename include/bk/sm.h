@@ -12,7 +12,7 @@
 #define INC_BK_SM_H "bk/sm.h"
 
 #include "bk.h"
-#include "hi.h"
+#include "lib/hi.h"
 #include "mm.h"
 
 

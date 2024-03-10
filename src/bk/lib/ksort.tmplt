@@ -1,5 +1,5 @@
-#ifndef BK_OTHER_KSORT_H
-#define BK_OTHER_KSORT_H
+#ifndef SRC_BK_LIB_KSORT_TMPLT
+#define SRC_BK_LIB_KSORT_TMPLT
 
 #include <stdlib.h>
 #include <string.h>
@@ -238,4 +238,4 @@ typedef char *ksstr_t;
 
 
 
-#endif  //BK_OTHER_KSORT_H
+#endif  //SRC_BK_LIB_KSORT_TMPLT

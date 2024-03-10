@@ -21,7 +21,7 @@ typedef struct {
 
 pub void TP_init(BK_TP *, size, Buckets *);
 pub void TP_free(BK_TP *);
-tdd FILE *tp_open(BK_TP *, char const *mode);        // macos and linux only I think - not obvious how to catch the flush on windows even it maps to a mm file
+//tdd FILE *tp_open(BK_TP *, char const *mode);        // macos and linux only I think - not obvious how to catch the flush on windows even it maps to a mm file
 //pub S8 tp_pp(BK_TP *, char const *format, ...);
 pub TPN tp_printf(BK_TP *, char const *format, ...);
 pub void tp_buf_printf(BK_TP *, char const *format, ...);

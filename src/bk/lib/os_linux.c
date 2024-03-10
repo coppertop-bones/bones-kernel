@@ -1,8 +1,10 @@
-#ifndef __BK_UTILS_OS_LINUX_C
-#define __BK_UTILS_OS_LINUX_C "bk/os_linux.c"
+#ifndef SRC_BK_LIB_OS_LINUX_C
+#define SRC_BK_LIB_OS_LINUX_C "bk/os_linux.c"
 
 #include <stdio.h>
 #include "../../../include/bk/bk.h"
+#include "../../../include/bk/lib/os.h"
+#include "../pp.c"
 
 pub size_t os_cache_line_size() {
     FILE * p = 0;
@@ -15,4 +17,4 @@ pub size_t os_cache_line_size() {
     return lineSize;
 }
 
-#endif  // __BK_UTILS_OS_LINUX_C
+#endif  // SRC_BK_LIB_OS_LINUX_C

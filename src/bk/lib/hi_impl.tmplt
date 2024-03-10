@@ -1,11 +1,11 @@
-#ifndef __BK_HI_IMPL_H
-#define __BK_HI_IMPL_H
+#ifndef SRC_BK_LIB_HI_IMPL_TMPLT
+#define SRC_BK_LIB_HI_IMPL_TMPLT
 
 
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include "../../../include/bk/hi.h"
+#include "../../../include/bk/lib/hi.h"
 
 
 // 1 u32 flag per 16 tokens (2 bits per entry) - 0b10 -> empty and not a tombstone
@@ -226,4 +226,4 @@ static bk_inline u32 __hi_Wang_hash(u32 h) {
 }
 
 
-#endif // __BK_HI_IMPL_H
+#endif // SRC_BK_LIB_HI_IMPL_TMPLT

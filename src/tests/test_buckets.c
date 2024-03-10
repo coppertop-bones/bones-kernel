@@ -1,4 +1,12 @@
-#include "../mc99/minc99.h"
+#include "../bk/pp.c"
+#include "../bk/k.c"
+
+pvt void die_(char *preamble, char *msg, va_list args) {
+    fprintf(stdout, "%s", preamble);
+    vfprintf(stdout, msg, args);
+    fprintf(stdout, "\n");
+    exit(1);
+}
 
 void checkIEq(long act, long exp, unsigned long lineno, char *msg, ...) {
     if (act != exp) {

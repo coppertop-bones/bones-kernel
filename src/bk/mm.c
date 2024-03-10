@@ -2,6 +2,12 @@
 // MM - MEMORY MANAGER
 // ---------------------------------------------------------------------------------------------------------------------
 
+// https://www.etalabs.net/overcommit.html - mmap - none, then mprotect read-write what you need
+// mremap
+// https://github.com/estraier/tkrzw/issues/11 - not on macos
+// https://stackoverflow.com/questions/17197615/no-mremap-for-windows - use windows AWE
+
+
 #ifndef __BK_MM_C
 #define __BK_MM_C "bk/mm.c"
 

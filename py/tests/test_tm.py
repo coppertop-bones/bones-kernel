@@ -3,8 +3,7 @@ from dm.core.types import pylist, pytuple
 from dm.testing import check, raises, equals, gt, different
 from bones import jones
 from bones.core.errors import NotYetImplemented
-import dm.pp
-from dm.core import PP
+from dm.pp import PP
 
 import sys, itertools
 

@@ -1,5 +1,5 @@
-#ifndef BK_UTILS_RADIX_C
-#define BK_UTILS_RADIX_C
+#ifndef SRC_BK_LIB_RADIX_TMPLT
+#define SRC_BK_LIB_RADIX_TMPLT
 
 #define RS_MIN_SIZE 64
 #define RS_MAX_BITS 8
@@ -62,4 +62,4 @@
 
 #define ks_radix_sort(name, beg, N) radix_sort_##name(beg, N)
 
-#endif      // BK_UTILS_RADIX_C
+#endif      // SRC_BK_LIB_RADIX_TMPLT

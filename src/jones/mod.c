@@ -102,7 +102,7 @@ pvt PyObject * _atU8(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (!PyLong_Check(args[1])) return 0;        // size_t index
 
     size_t index = PyLong_AsSize_t(args[1]);
-    unsigned char *pItem = ((unsigned char*) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
+    m8 *pItem = ((mem) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
 
     return PyLong_FromLong(*pItem);
 }
@@ -118,7 +118,7 @@ pvt PyObject * _atU8Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
     if (!PyLong_Check(args[3])) return 0;        // u8
 
     size_t index = (size_t) PyLong_AsSize_t(args[1]);
-    unsigned char *pItem = ((unsigned char*) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
+    m8 *pItem = ((mem) (PyLong_AsSize_t(args[0]) & PTR_MASK)) + index - 1;
     unsigned char mask = (unsigned char) PyLong_AsLong(args[2]);
     unsigned char v = (unsigned char) PyLong_AsLong(args[3]);
 

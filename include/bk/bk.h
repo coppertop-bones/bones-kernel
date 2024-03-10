@@ -58,6 +58,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 
 #define _4K 0x1000          /* 4096 */
@@ -116,7 +117,7 @@
 typedef unsigned int    RP;                // relative pointer
 //typedef unsigned char   u8;
 typedef uint8_t         u8;
-typedef char            b8;                 // byte doesn't work in win10
+typedef char            m8;                 // byte doesn't work in win10
 typedef char *          mem;
 typedef unsigned short  u16;
 //typedef char16_t      c16;

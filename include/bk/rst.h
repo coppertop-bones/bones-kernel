@@ -6,7 +6,7 @@
 #define INC_BK_RST_H "bk/rst.h"
 
 #include "bk.h"
-#include "hi.h"
+#include "lib/hi.h"
 #include "mm.h"
 
 

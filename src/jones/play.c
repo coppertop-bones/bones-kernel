@@ -4,7 +4,7 @@
 
 #include "jones.h"
 #include "lib/pyutils.h"
-#include "../bk/lib/hi_impl.h"
+#include "../bk/lib/hi_impl.tmplt"
 #include "../../include/bk/bk.h"
 #include "../../include/bk/lib/os.h"
 #include "../play/khash.h"

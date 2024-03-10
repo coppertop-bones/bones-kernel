@@ -1,9 +1,10 @@
-#ifndef __BK_LIB_TXT_C
-#define __BK_LIB_TXT_C "bk/lib/txt.c"
+#ifndef SRC_BK_LIB_TXT_C
+#define SRC_BK_LIB_TXT_C "bk/lib/txt.c"
 
 #include <string.h>
 #include <stdio.h>
-#include "../bk.h"
+#include "../bk.c"
+
 
 #if defined _WIN64 || defined _WIN32
 #include "txt_win64.c"
@@ -36,6 +37,4 @@ char * concatMsg(char *str1, char *str2){
 }
 
 
-
-
-#endif  // __BK_LIB_TXT_C
+#endif  // SRC_BK_LIB_TXT_C

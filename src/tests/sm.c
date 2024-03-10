@@ -16,7 +16,7 @@ int main() {
     BK_K *k = K_create(mm, buckets);
     PP(info, "kernel created");
 
-    int off = 7;
+    int off = 6;
 
     id = sm_id(k->sm, "fred");
     check(id == 1 + off, "id == %i (should be %i)", id, 1 + off);

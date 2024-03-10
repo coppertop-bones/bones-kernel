@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // TM - TYPE MANAGER
+// KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef __BK_TM_C
@@ -9,8 +10,8 @@
 #include "../../include/bk/mm.h"
 #include "../../include/bk/tm.h"
 #include "../../include/bk/tp.h"
-#include "lib/hi_impl.h"
-#include "lib/radix.h"
+#include "lib/hi_impl.tmplt"
+#include "lib/radix.tmplt"
 
 #include "pp.c"
 
@@ -56,8 +57,8 @@ pvt inline bool tlCompare(btypeid_t *a, btypeid_t *b) {
 
 pvt u32 tl_hash(btypeid_t *tl) {
     u32 n = tl[0] * sizeof(btypeid_t);
-    u8 *s = (unsigned char *) tl;
-    u8 *e = s + n;
+    m8 *s = (mem) tl;
+    m8 *e = s + n;
     u32 hash = *s++;
     for (; s < e; s++) if (*s) hash = (hash << 5) - hash + *s;  // OPEN: explain why ignoring zeros
     return hash;
@@ -106,7 +107,7 @@ HI_IMPL(TM_BTYPID_BY_SEQIDHASH, TM_XXXID_T, btypeid_t, hi_int32_hash, seqidHasha
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// TM_XXXID_BY_T1T2HASH fns
+// TM_XXXID_BY_T1T2HASH fns - functions and maps
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt inline TM_T1T2 t1t2idFromXxxid(hi_struct(TM_XXXID_BY_T1T2HASH) *hi, TM_XXXID_T xxxid) {
@@ -119,8 +120,8 @@ pvt bool inline t1t2HashableFound(hi_struct(TM_XXXID_BY_T1T2HASH) *hi, TM_XXXID_
 }
 
 pvt u32 t1t2_hash(TM_T1T2 t1t2) {
-    u8 *s = (unsigned char *) &t1t2;
-    u8 *e = s + 2 * sizeof(btypeid_t);
+    m8 *s = (mem) &t1t2;
+    m8 *e = s + sizeof(TM_T1T2);
     u32 hash = *s++;
     for (; s < e; s++) if (*s) hash = (hash << 5) - hash + *s;  // OPEN: explain why ignoring zeros
     return hash;
@@ -128,6 +129,32 @@ pvt u32 t1t2_hash(TM_T1T2 t1t2) {
 
 // HI_IMPL(name, token_t, hashable_t, __hash_fn, __found_fn, __hashable_from_token_fn)
 HI_IMPL(TM_XXXID_BY_T1T2HASH, TM_XXXID_T, TM_T1T2, t1t2_hash, t1t2HashableFound, t1t2idFromXxxid)
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// TM_XXXID_BY_SLIDTLIDHASH fns - structs and records
+// ---------------------------------------------------------------------------------------------------------------------
+
+pvt inline TM_SLTL slidtlidFromXxxid(hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *hi, TM_XXXID_T xxxid) {
+    return (TM_SLTL) {.slid = hi->tm->slid_by_strid[xxxid], .tlid = hi->tm->tlid_by_strid[xxxid]};
+}
+
+pvt bool inline slidtlidHashableFound(hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *hi, TM_XXXID_T token, TM_SLTL hashable) {
+    TM_SLID_T slid = hi->tm->slid_by_strid[token];
+    TM_TLID_T tlid = hi->tm->tlid_by_strid[token];
+    return slid == hashable.slid && tlid == hashable.tlid;
+}
+
+pvt u32 slidtlid_hash(TM_SLTL sltl) {
+    m8 *s = (mem) &sltl;
+    m8 *e = s + sizeof(TM_SLTL);
+    u32 hash = *s++;
+    for (; s < e; s++) if (*s) hash = (hash << 5) - hash + *s;  // OPEN: explain why ignoring zeros
+    return hash;
+}
+
+// HI_IMPL(name, token_t, hashable_t, __hash_fn, __found_fn, __hashable_from_token_fn)
+HI_IMPL(TM_XXXID_BY_SLIDTLIDHASH, TM_XXXID_T, TM_SLTL, slidtlid_hash, slidtlidHashableFound, slidtlidFromXxxid)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -152,7 +179,7 @@ tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
     hi_replace_empty(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, idx, tlid);
     if (tm->next_tlrp + numTypes + 1 >= tm->max_tlrp) {
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_tlrp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
+        os_mprotect(tm->typelist_buf + tm->max_tlrp - pageSize, pageSize, BK_PROT_WRITE);     // make the prior last page read only
         tm->max_tlrp += pageSize / sizeof(TM_TLID_T);
     }
     tm->next_tlrp += numTypes + 1;
@@ -352,8 +379,8 @@ pvt void _make_next_page_of_typelist_buf_writable_if_necessary(BK_TM *tm, int nu
     if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
         if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
+        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_PROT_READ | BK_PROT_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_MADV_RANDOM);
     }
 }
 
@@ -748,8 +775,8 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
         if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
+        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_PROT_READ | BK_PROT_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_MADV_RANDOM);
     }
 
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
@@ -835,8 +862,8 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
         if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_AD_RANDOM);
+        os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_PROT_READ | BK_PROT_WRITE);
+        os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_MADV_RANDOM);
     }
 
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
@@ -970,8 +997,8 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
 
     // typelists
     tm->max_tlrp = os_page_size() / sizeof(TM_TLID_T);
-    os_mprotect(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_M_READ | BK_M_WRITE);      // make first page of typelist storage R/W
-    os_madvise(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_AD_RANDOM);                 // and advise as randomly accessed
+    os_mprotect(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_PROT_READ | BK_PROT_WRITE);      // make first page of typelist storage R/W
+    os_madvise(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_MADV_RANDOM);                 // and advise as randomly accessed
     tm->next_tlrp = 0;
 
     tm->max_tlid = TM_MAX_TLID_INC_SIZE;
@@ -1026,10 +1053,22 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     // structs
     tm->max_strid = TM_MAX_ID_INC_SIZE;
     tm->next_strid = 1;
+    tm->tlid_by_strid = (TM_TLID_T *) mm->malloc(tm->max_strid * sizeof(TM_TLID_T));
+    memset(tm->tlid_by_strid, 0, tm->max_strid * sizeof(TM_TLID_T));
+    tm->btypid_by_strid = (btypeid_t *) mm->malloc(tm->max_strid * sizeof(btypeid_t));
+    memset(tm->btypid_by_strid, 0, tm->max_strid * sizeof(btypeid_t));
+    tm->strid_by_slidtlidhash = hi_create(TM_XXXID_BY_SLIDTLIDHASH);
+    tm->strid_by_slidtlidhash->tm = tm;
 
     // records
-//    tm->max_recid = TM_MAX_ID_INC_SIZE;
-//    tm->next_recid = 1;
+    tm->max_recid = TM_MAX_ID_INC_SIZE;
+    tm->next_recid = 1;
+    tm->tlid_by_recid = (TM_TLID_T *) mm->malloc(tm->max_recid * sizeof(TM_TLID_T));
+    memset(tm->tlid_by_recid, 0, tm->max_recid * sizeof(TM_TLID_T));
+    tm->btypid_by_recid = (btypeid_t *) mm->malloc(tm->max_recid * sizeof(btypeid_t));
+    memset(tm->btypid_by_recid, 0, tm->max_recid * sizeof(btypeid_t));
+    tm->recid_by_slidtlidhash = hi_create(TM_XXXID_BY_SLIDTLIDHASH);
+    tm->recid_by_slidtlidhash->tm = tm;
 
     // sequences
     tm->containerid_by_containedidhash = hi_create(TM_BTYPID_BY_SEQIDHASH);
@@ -1056,8 +1095,6 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     tm->fncid_by_t1t2hash->t1t2_by_xxxid = tm->t1t2_by_fncid;
 
     // schema variables
-    tm->max_svrid = TM_MAX_ID_INC_SIZE;
-    tm->next_svrid = 1;
 
     return tm;
 }
@@ -1090,8 +1127,16 @@ pub int TM_trash(BK_TM *tm) {
     hi_trash(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash);
 
     // structs
+    tm->mm->free(tm->tlid_by_strid);
+    tm->mm->free(tm->slid_by_strid);
+    tm->mm->free(tm->btypid_by_strid);
+    hi_trash(TM_XXXID_BY_SLIDTLIDHASH, tm->strid_by_slidtlidhash);
 
     // records
+    tm->mm->free(tm->tlid_by_recid);
+    tm->mm->free(tm->slid_by_recid);
+    tm->mm->free(tm->btypid_by_recid);
+    hi_trash(TM_XXXID_BY_SLIDTLIDHASH, tm->recid_by_slidtlidhash);
 
     // sequences
     hi_trash(TM_BTYPID_BY_SEQIDHASH, tm->containerid_by_containedidhash);

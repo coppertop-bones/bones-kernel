@@ -13,7 +13,7 @@
 #include "tp.c"
 
 pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
-    BK_K *k = (BK_K *) mm->malloc(sizeof(BK_K));
+    BK_K *k = mm->malloc(sizeof(BK_K));
     k->mm = mm;
     k->buckets = buckets;
     k->sm = SM_create(mm);

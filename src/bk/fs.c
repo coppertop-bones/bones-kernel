@@ -2,12 +2,12 @@
 // FS - FUNCTION SELECTION
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_FS_C
-#define __BK_FS_C "bk/fs.c"
+#ifndef SRC_BK_FS_C
+#define SRC_BK_FS_C "bk/fs.c"
 
 
 #include "../../include/bk/bk.h"
-#include "bk.h"
+#include "bk.c"
 #include "lib/txt.c"
 
 
@@ -131,4 +131,4 @@ pvt void FS_trash(struct FunctionSelector *fs) {
 }
 
 
-#endif  // __BK_FS_C
+#endif  // SRC_BK_FS_C

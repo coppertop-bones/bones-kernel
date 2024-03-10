@@ -26,7 +26,7 @@
 #include "../../include/bk/mm.h"
 #include "../../include/bk/sm.h"
 #include "../../include/bk/lib/os.h"
-#include "lib/hi_impl.h"
+#include "lib/hi_impl.tmplt"
 #include "pp.c"
 
 
@@ -48,8 +48,8 @@ pub BK_SM * SM_create(BK_MM *mm) {
     sm->symname_buf = os_vm_reserve(0, SM_MAX_NAME_STORAGE);
 
     sm->max_rp = os_page_size();
-    os_mprotect(sm->symname_buf, sm->max_rp, BK_M_READ | BK_M_WRITE);   // make first page of name storage R/W
-    os_madvise(sm->symname_buf, sm->max_rp, BK_AD_RANDOM);              // and advise as randomly accessed
+    os_mprotect(sm->symname_buf, sm->max_rp, BK_PROT_READ | BK_PROT_WRITE);   // make first page of name storage R/W
+    os_madvise(sm->symname_buf, sm->max_rp, BK_MADV_RANDOM);              // and advise as randomly accessed
 
     sm->max_symid = SM_MAX_SYM_ID_INC_SIZE;
     sm->next_symid = SM_NA_SYM + 1;
@@ -87,8 +87,8 @@ pub symid_t sm_id(BK_SM *sm, char *name) {
     if (needsAnotherPage) {
         // make next page r/w and mark as random access
         pageSize = os_page_size();
-        os_mprotect(sm->symname_buf + sm->max_rp, pageSize, BK_M_READ | BK_M_WRITE);
-        os_madvise(sm->symname_buf + sm->max_rp, pageSize, BK_AD_RANDOM);
+        os_mprotect(sm->symname_buf + sm->max_rp, pageSize, BK_PROT_READ | BK_PROT_WRITE);
+        os_madvise(sm->symname_buf + sm->max_rp, pageSize, BK_MADV_RANDOM);
     }
     if (sm->next_symid >= sm->max_symid) {
         // xxx_by_symid arrays need growing
@@ -109,7 +109,7 @@ pub symid_t sm_id(BK_SM *sm, char *name) {
     hi_replace_empty(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, idx, id);
 
     if (needsAnotherPage) {
-        os_mprotect(sm->symname_buf + sm->max_rp - pageSize, pageSize, BK_M_READ);     // make the prior last page read only
+        os_mprotect(sm->symname_buf + sm->max_rp - pageSize, pageSize, BK_PROT_READ);     // make the prior last page read only
         sm->max_rp += pageSize;
     }
 

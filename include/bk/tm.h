@@ -7,7 +7,7 @@
 
 #include "bk.h"
 #include "sm.h"
-#include "hi.h"
+#include "lib/hi.h"
 
 
 typedef u32 BTYPEID_T_TYPE;         /* currently ls 18 bits for 256k types */
@@ -220,6 +220,11 @@ typedef struct {
     };
 } TM_T1T2;
 
+typedef struct {
+    TM_SLID_T slid;
+    TM_TLID_T tlid;
+} TM_SLTL;
+
 
 #define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by symid_t and vm space is cheap */
 #define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
@@ -230,7 +235,8 @@ typedef struct {
 HI_STRUCT_WITH(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
 HI_STRUCT_WITH(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
 HI_STRUCT_WITH(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
-HI_STRUCT_WITH(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)    // for intersections, unions and tuples, OPEN: check we grow the tlid_by_xxxid
+HI_STRUCT_WITH(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)     // for intersections, unions and tuples, OPEN: check we grow the tlid_by_xxxid
+HI_STRUCT_WITH(TM_XXXID_BY_SLIDTLIDHASH, TM_XXXID_T, struct PVT_TM *tm;)        // for structs, records
 HI_STRUCT_WITH(TM_BTYPID_BY_SEQIDHASH, TM_XXXID_T, struct PVT_TM *tm;)
 HI_STRUCT_WITH(TM_XXXID_BY_T1T2HASH, TM_XXXID_T, TM_T1T2 *t1t2_by_xxxid;)       // for fns and maps, OPEN: check we grow the t1t2_by_xxid
 
@@ -291,14 +297,18 @@ typedef struct PVT_TM {
     // structs
     TM_XXXID_T max_strid;
     TM_XXXID_T next_strid;
-    TM_TLID_T *tlid_by_strid;
-    TM_TLID_T *slid_by_strid;
-    hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *strid_by_slidtlidhash;     // OPEN: hash on tl and sl values?
+    TM_TLID_T *tlid_by_strid;           // split into two arrays assuming we mainly just interact with the type list
+    TM_SLID_T *slid_by_strid;
+    hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *strid_by_slidtlidhash;
     btypeid_t *btypid_by_strid;
     
-    // records - replicate the same structure as for structs
-//    TM_XXXID_T max_recid;
-//    TM_XXXID_T next_recid;
+    // records
+    TM_XXXID_T max_recid;
+    TM_XXXID_T next_recid;
+    TM_TLID_T *tlid_by_recid;           // split into two arrays assuming we mainly just interact with the type list
+    TM_SLID_T *slid_by_recid;
+    hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *recid_by_slidtlidhash;
+    btypeid_t *btypid_by_recid;
     
     // sequences -> need hash map keyed by underlying type mapping to containing type - tmsummary_by_typeid[contining
     hi_struct(TM_BTYPID_BY_SEQIDHASH) *containerid_by_containedidhash;
@@ -318,9 +328,7 @@ typedef struct PVT_TM {
     btypeid_t *btypid_by_fncid;
 
     // schema variables
-    TM_XXXID_T max_svrid;
-    TM_XXXID_T next_svrid;
-    // OPEN: TBC
+
 } BK_TM;
 
 
@@ -342,6 +350,7 @@ pub btypeid_t tm_minus(BK_TM *, btypeid_t A, btypeid_t B, btypeid_t);
 pub char * tm_name(BK_TM *, btypeid_t);                 // OPEN: return symid instead
 pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char *);
 pub btypeid_t tm_nominal(BK_TM *, char *, btypeid_t);
+pub btypeid_t tm_rec(BK_TM *, symid_t *, btypeid_t *, btypeid_t);
 pub btypeid_t tm_schemavar(BK_TM *, char *, btypeid_t);
 pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained, btypeid_t);
 pub btypeid_t tm_seq_t(BK_TM *, btypeid_t);

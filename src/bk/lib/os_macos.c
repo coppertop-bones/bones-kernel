@@ -30,19 +30,31 @@
 
 // /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/mman.h
 
-//#define MADV_ZERO_WIRED_PAGES   6       /* zero the wired pages that have not been unwired before the entry is deleted */
-//#define MADV_FREE_REUSABLE      7       /* pages can be reused (by anyone) */
-//#define MADV_FREE_REUSE         8       /* caller wants to reuse those pages */
+//#define MADV_NORMAL             0   /* [MC1] no further special treatment */
+//#define MADV_RANDOM             1   /* [MC1] expect random page refs */
+//#define MADV_SEQUENTIAL         2   /* [MC1] expect sequential page refs */
+//#define MADV_WILLNEED           3   /* [MC1] will need these pages */
+//#define MADV_DONTNEED           4   /* [MC1] dont need these pages */
+//#define MADV_FREE               5   /* pages unneeded, discard contents */
+//#define MADV_ZERO_WIRED_PAGES   6   /* zero the wired pages that have not been unwired before the entry is deleted */
+//#define MADV_FREE_REUSABLE      7   /* pages can be reused (by anyone) */
+//#define MADV_FREE_REUSE         8   /* caller wants to reuse those pages */
 //#define MADV_CAN_REUSE          9
-//#define MADV_PAGEOUT            10      /* page out now (internal only) */
+//#define MADV_PAGEOUT            10  /* page out now (internal only) */
 
 
-#ifndef __BK_OS_MACOS_C
-#define __BK_OS_MACOS_C "bk/os_macos.c"
+// Protections are chosen from these bits, or-ed together
+// #define  PROT_NONE   0x00   /* [MC2] no permissions */
+// #define  PROT_READ   0x01   /* [MC2] pages can be read */
+// #define  PROT_WRITE  0x02   /* [MC2] pages can be written */
+// #define  PROT_EXEC   0x04   /* [MC2] pages can be executed */
 
+
+#ifndef SRC_BK_LIB_OS_MACOS_C
+#define SRC_BK_LIB_OS_MACOS_C "bk/os_macos.c"
 
 #include "../../../include/bk/bk.h"
-//#include "../../include/bk/os.h"
+#include "../../../include/bk/lib/os.h"
 #include "../pp.c"
 #include <sys/sysctl.h>
 #include <libc.h>
@@ -62,22 +74,23 @@ pub int os_page_size() {
     return getpagesize();
 }
 
-pub void * os_vm_reserve(void *addr, size_t len) {
+pub void * os_vm_reserve(void *addr, size_t sz) {
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mmap.2.html
-    void *p = mmap(addr, len, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void *p = mmap(addr, sz, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
     return p;
 }
 
-pub int os_vm_unreserve(void *addr, size_t len) {
+pub int os_vm_unreserve(void *addr, size_t sz) {
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/munmap.2.html
-    int ret = munmap(addr, len);
+    int ret = munmap(addr, sz);
     return ret;
 }
 
-pub int os_mprotect(void *addr, size_t len, int prot) {
+pub int os_mprotect(void *addr, size_t sz, int prot) {
+    // On success answer 0, on failure set errno and answer -1
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mprotect.2.html
     // OPEN: check start is page aligned and size is whole number of pages>
-    int ret = mprotect(addr, len, prot);
+    int ret = mprotect(addr, sz, prot);
     switch (ret) {
         case EACCES:
             PP(info, "The requested protection conflicts with the access permissions of the process on the specified "
@@ -91,18 +104,30 @@ pub int os_mprotect(void *addr, size_t len, int prot) {
     return ret;
 }
 
-pub int os_madvise(void *addr, size_t len, int advice) {
+pub int os_madvise(void *addr, size_t sz, int advice) {
+    // On success answer 0, on failure set errno and answer -1
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/madvise.2.html
     // https://man.freebsd.org/cgi/man.cgi?query=madvise&sektion=2&format=html
-    int ret = madvise(addr, len, advice);
+    if (advice < BK_MADV_NORMAL || advice > BK_MADV_WILLNEED) return -1;
+    return madvise(addr, sz, advice);
+}
+
+pub int os_mwipe(void *addr, size_t sz) {
+    // https://stackoverflow.com/questions/24171602/mmap-resetting-old-memory-to-a-zerod-non-resident-state
+    // https://man7.org/linux/man-pages/man2/madvise.2.html - MADV_DONTNEED
+    int ret = os_mprotect(addr, sz, PROT_NONE);
+    ret = madvise(addr, sz, MADV_DONTNEED);
     return ret;
 }
 
-pub int os_mfree(void *addr, size_t len) {
-    int ret = os_mprotect(addr, len, PROT_NONE);
-    ret = madvise(addr, len, MADV_FREE);
+pub int os_mreturn(void *addr, size_t sz) {
+    // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mprotect.2.html
+    // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/madvise.2.html
+    // https://man7.org/linux/man-pages/man2/madvise.2.html - MADV_FREE
+    int ret = os_mprotect(addr, sz, PROT_NONE);
+    ret = madvise(addr, sz, MADV_FREE);
     return ret;
 }
 
 
-#endif  // __BK_OS_MACOS_C
+#endif  // SRC_BK_LIB_OS_MACOS_C

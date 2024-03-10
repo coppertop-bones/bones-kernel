@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include "bk.h"
+#include "../bk.h"
 
 // TODO
 //  implement special values for unused (0) and tombstoned (-1) tokens, e.g. for type manager
