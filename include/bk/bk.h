@@ -114,10 +114,10 @@
 #define FN_NAME (char *)(__FUNCTION__)
 
 
-typedef unsigned int    RP;                // relative pointer
+typedef unsigned int    RP;             // relative pointer
 //typedef unsigned char   u8;
 typedef uint8_t         u8;
-typedef char            m8;                 // byte doesn't work in win10
+typedef char            m8;             // "byte" doesn't work in windows 10
 typedef char *          mem;
 typedef unsigned short  u16;
 //typedef char16_t      c16;
@@ -151,13 +151,13 @@ typedef struct {
 } S8;
 
 typedef struct {
-    size vtsz;    // 62 bits of length and 2 bits of meta
+    unsigned long vtsz;     // 62 bits of length and 2 bits of meta
     void *p;
 } TPN;
 
 #define s8_sz(s) (size)(s.sz)
 
-typedef u32 symid_t;    // 4 billion syms
+typedef u32 symid_t;
 #define SM_NA_SYM 0
 
 

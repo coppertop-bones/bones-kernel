@@ -203,40 +203,44 @@ tdd void _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusioncat_t e
 
 // ---------------------------------------------------------------------------------------------------------------------
 // pretty printing
+// pb - print buckets - return void
+// pp - print pad - answer text pad node
+// s8 - print s8 - answers an s8
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt void tm_pb(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {
+    // print buckets the btype
     struct btsummary *sum;  symid_t symid;  btypeid_t *tl;  i32 i;  char sep;
     if ((symid = tm->symid_by_btypeid[btypeid])) {
-        tp_buf_printf(tp, "%s", sm_name(tm->sm, symid));
+        tp_pb_printf(tp, "%s", sm_name(tm->sm, symid));
     } else {
         sum = tm->summary_by_btypeid + btypeid;
         switch (sum->bmtid) {
             case bmtnom:
-                tp_buf_printf(tp, "%s", sm_name(tm->sm, symid));
+                tp_pb_printf(tp, "%s", sm_name(tm->sm, symid));
                 break;
             case bmtint:
                 tl = tm->typelist_buf + tm->tlrp_by_tlid[tm->tlid_by_intid[sum->intId]];
                 sep = 0;
                 for (i = 1; i <= (i32) tl[0]; i++) {
-                    if (sep) tp_buf_printf(tp, " & ");
+                    if (sep) tp_pb_printf(tp, " & ");
                     sep = 1;
                     tm_pb(tm, tp, tl[i]);
                 }
                 break;
             case bmttup:
-                tp_buf_printf(tp, "tup");
+                tp_pb_printf(tp, "tup");
                 break;
             case bmtuni:
-                tp_buf_printf(tp, "uni");
+                tp_pb_printf(tp, "uni");
                 break;
             default:
-                tp_buf_printf(tp, "NAT");
+                tp_pb_printf(tp, "NAT");
         }
     }
 }
-pvt inline TPN tm_pp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_buf_flush(tp);}
-pvt inline S8 tm_s8(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_s8(tp, tp_buf_flush(tp));}
+pvt inline TPN tm_pp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_snap(tp);}
+pvt inline S8 tm_s8(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_s8(tp, tp_snap(tp));}
 
 
 pvt void tm_pb_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {
@@ -247,14 +251,24 @@ pvt void tm_pb_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {
             tm_pb(tm, tp, typelist[i]);
         }
         else {
-            tp_buf_printf(tp, ", ");
+            tp_pb_printf(tp, ", ");
             tm_pb(tm, tp, typelist[i]);
         }
     }
 }
 
-pvt inline TPN tm_pp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_buf_flush(tp);}
-pvt inline S8 tm_s8_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_s8(tp, tp_buf_flush(tp));}
+pvt void tm_pb_symlist(BK_TM *tm, BK_TP *tp, symid_t *symlist) {
+    // OPEN: where should this live?
+    for (u32 i = 1; i < symlist[0] + 1; i++) {
+        tp_pb_printf(tp, "`");
+        tp_pb_printf(tp, sm_name(tm->sm, symlist[i]));
+    }
+}
+
+pvt inline TPN tm_pp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_snap(tp);}
+pvt inline S8 tm_s8_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_s8(tp, tp_snap(tp));}
+pvt inline TPN tm_pp_symlist(BK_TM *tm, BK_TP *tp, symid_t *symlist) {tm_pb_symlist(tm, tp, symlist); return tp_snap(tp);}
+pvt inline S8 tm_s8_symlist(BK_TM *tm, BK_TP *tp, symid_t *symlist) {tm_pb_symlist(tm, tp, symlist); return tp_s8(tp, tp_snap(tp));}
 
 
 
@@ -521,7 +535,7 @@ pub btypeid_t * tm_inter_tl(BK_TM *tm, btypeid_t btypeid) {
 pub btypeid_t tm_map(BK_TM *tm, btypeid_t tK, btypeid_t tV, btypeid_t btypeid) {
     i32 outcome;  TM_XXXID_T mapid;  TM_T1T2 t1t2;  u32 idx;
 
-    // answers the validated function type corresponding to tK and tV, creating if necessary
+    // answers the validated map type corresponding to tK and tV, creating if necessary
 
     // check each typeid is valid
     if (!(0 < tK && tK < tm->next_btypeId)) return 0;
@@ -753,6 +767,32 @@ pub size tm_size(BK_TM *tm, btypeid_t btypeid) {
 }
 
 pub btypeid_t tm_size_as(BK_TM *tm, btypeid_t btypeid, size sz) {
+    // OPEN: implement
+    return 0;
+}
+
+pub btypeid_t tm_struct(BK_TM *tm, symid_t *symlist, btypeid_t *typelist, btypeid_t btypeid) {
+    // OPEN: implement
+    return 0;
+}
+
+pub btypeid_t tm_structv_sts(BK_TM *tm, u32 numTypes, ...) {
+    // OPEN: implement
+    return 0;
+}
+
+pub btypeid_t tm_structv_ssts(BK_TM *tm, u32 numTypes, ...) {
+    // OPEN: implement
+    return 0;
+}
+
+pub symid_t * tm_struct_sl(BK_TM *tm, btypeid_t btypeid) {
+    // OPEN: implement
+    return 0;
+}
+
+pub btypeid_t * tm_struct_tl(BK_TM *tm, btypeid_t btypeid) {
+    // OPEN: implement
     return 0;
 }
 
@@ -830,6 +870,11 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
             hi_replace_empty(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash, idx, tupid);
             return btypeid;
     }
+}
+
+pub btypeid_t tm_tuplev(BK_TM *tm, u32 numTypes, ...) {
+    // OPEN: implement
+    return 0;
 }
 
 pub btypeid_t * tm_tuple_tl(BK_TM *tm, btypeid_t btypeid) {
@@ -948,6 +993,11 @@ pvt btypeid_t _union_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
             hi_replace_empty(TM_XXXID_BY_TLIDHASH, tm->uniid_by_tlidhash, idx, uniid);
             return btypeid;
     }
+}
+
+pub btypeid_t tm_unionv(BK_TM *tm, u32 numTypes, ...) {
+    // OPEN: implement
+    return 0;
 }
 
 pub btypeid_t * tm_union_tl(BK_TM *tm, btypeid_t btypeid) {

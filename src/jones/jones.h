@@ -61,10 +61,10 @@ struct PyEM {
     BK_EM *em;
 };
 
-struct PyTM {
+typedef struct {
     PyObject_HEAD
     BK_TM *tm;
-};
+} PyTM;
 
 struct PyKernel {
     PyObject_HEAD

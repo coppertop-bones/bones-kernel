@@ -91,7 +91,7 @@ void test_exclusions() {
     BK_K *k = K_create(mm, &buckets);
     BK_TM *tm = k->tm;
     TP_init(&tp, 0, &buckets);
-    S8 txt = tp_s8(&tp, tp_printf(&tp, "kernel created"));
+    S8 txt = tp_s8(&tp, tp_pp_printf(&tp, "kernel created"));
     PP(debug, txt.cs);
 
     _GBP = tm_nominal(tm, "_GBP", 100);
@@ -154,8 +154,8 @@ int main() {
     TP_init(&tp, 0, &buckets);
 
 
-//    TPN fred = (TPN) {.p = cv._tp->buf + start, .vtsz = tp_as_s8((end - start))};
-    S8 txt = tp_s8(&tp, tp_printf(&tp, "kernel created"));
+//    TPN fred = (TPN) {.p = cv._tp->buf + start, .vtsz = tp_encode_as_s8((end - start))};
+    S8 txt = tp_s8(&tp, tp_pp_printf(&tp, "kernel created"));
 
 
     PP(debug, "%i", countArgs(1));

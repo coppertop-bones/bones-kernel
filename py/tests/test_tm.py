@@ -187,6 +187,7 @@ def test_struct():
     tm = sys._k.tm
 
     t1 = tm.nominal(f'f64')
+    t2 = tm.nominal(f'txt')
 
     tm.struct(('x', 'y'), (t1, t2)) >> check >> isType >> tm.struct(('x', 'y'), (t1, t2))
     tm.struct(('x', 'y'), (t1, t2)) >> check >> isNotType >> tm.struct(('y', 'x'), (t1, t2))

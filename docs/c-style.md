@@ -1,3 +1,22 @@
+# Abreviations
+
+pb - print buckets - return void
+pp - print pad - return a text pad node
+s8 - print s8 - return an s8
+
+
+# "Class" functions
+capitalise the type, e.g.
+```c
+pub void TP_init(BK_TP *tp, size initSz, Buckets *buckets) {
+```
+
+
+# "Instance" functions
+lower case the type
+```c
+pub TPN tp_pp_printf(BK_TP *tp, char const *format, ...) 
+```
 
 
 # Casing
