@@ -47,9 +47,14 @@ void test_tm() {
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
     btypeid_t *typelist = malloc(3 * sizeof(btypeid_t));
+    symid_t *symlist = malloc(3 * sizeof(symid_t));
     typelist[0] = 2;
-    typelist[1] = 1;
-    typelist[2] = 2;
+    typelist[1] = tm_btypeid(k->tm, "fred");
+    typelist[2] = tm_btypeid(k->tm, "joe");
+    symlist[0] = 2;
+    symlist[1] = sm_id(k->sm, "fred");
+    symlist[2] = sm_id(k->sm, "joe");
+
 
     // intersection
     t = tm_inter(k->tm, typelist, 0);
@@ -59,6 +64,7 @@ void test_tm() {
     t = tm_inter(k->tm, typelist, 0);
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
+
     // union
     t = tm_union(k->tm, typelist, 0);
     expected ++;
@@ -67,12 +73,26 @@ void test_tm() {
     t2 = tm_union(k->tm, typelist, 0);
     check(t2 == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t2, expected);
 
+
     // sequence
     t = tm_seq(k->tm, t2, 0);
     expected ++;
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
     t = tm_seq(k->tm, t2, 0);
+    check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
+
+
+    // struct
+    SM_SLID_T slid = sm_slid(k->sm, symlist);
+    btypeid_t tupid = tm_tuple(k->tm, typelist, 0);
+    expected ++;
+
+    t = tm_struct(k->tm, slid, tupid, 0);
+    expected ++;
+    check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
+
+    t = tm_struct(k->tm, slid, tupid, 0);
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
 

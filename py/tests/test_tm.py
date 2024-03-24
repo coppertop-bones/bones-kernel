@@ -407,7 +407,7 @@ def main():
     test_name_as() >> PP
     test_union() >> PP
     test_tuple() >> PP
-    # test_struct() >> PP
+    test_struct() >> PP
     test_sequence() >> PP
     test_map() >> PP
     test_function() >> PP

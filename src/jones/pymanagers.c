@@ -531,7 +531,9 @@ pvt PyObject * PyTM_struct(PyTM *self, PyObject **args, Py_ssize_t nargs) {
         tl[i] = ((PyBType *) btype)->btypeid;
     }
 
-    btypeid_t btypeid = tm_struct(self->tm, sl, tl, 0);
+    SM_SLID_T slid = sm_slid(self->tm->sm, sl);
+    btypeid_t tupid = tm_tuple(self->tm, tl, 0);
+    btypeid_t btypeid = tm_struct(self->tm, slid, tupid, 0);
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -540,8 +542,8 @@ pvt PyObject * PyTM_struct(PyTM *self, PyObject **args, Py_ssize_t nargs) {
         TP_init(&tp, 0, buckets);
         PyErr_Format(
             PyExc_TypeError,
-            "Error creating struct (%s, %s)",
-            tm_s8_symlist(self->tm, &tp, sl).cs,
+            "Error creating struct (%s, (%s))",
+            sm_s8_symlist(self->tm->sm, &tp, sl).cs,
             tm_s8_typelist(self->tm, &tp, tl).cs
         );
         resetToCheckpoint(buckets, &cp);

@@ -132,29 +132,29 @@ HI_IMPL(TM_XXXID_BY_T1T2HASH, TM_XXXID_T, TM_T1T2, t1t2_hash, t1t2HashableFound,
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// TM_XXXID_BY_SLIDTLIDHASH fns - structs and records
+// TM_XXXID_BY_SLIDTUPIDHASH fns - structs and records
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt inline TM_SLTL slidtlidFromXxxid(hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *hi, TM_XXXID_T xxxid) {
-    return (TM_SLTL) {.slid = hi->tm->slid_by_strid[xxxid], .tlid = hi->tm->tlid_by_strid[xxxid]};
+pvt inline TM_SLT slidtupidFromXxxid(hi_struct(TM_XXXID_BY_SLIDTUPIDHASH) *hi, TM_XXXID_T xxxid) {
+    return (TM_SLT) {.slid = hi->tm->slid_by_strid[xxxid], .tupid = hi->tm->tupid_by_strid[xxxid]};
 }
 
-pvt bool inline slidtlidHashableFound(hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *hi, TM_XXXID_T token, TM_SLTL hashable) {
-    TM_SLID_T slid = hi->tm->slid_by_strid[token];
-    TM_TLID_T tlid = hi->tm->tlid_by_strid[token];
-    return slid == hashable.slid && tlid == hashable.tlid;
+pvt bool inline slidtupidHashableFound(hi_struct(TM_XXXID_BY_SLIDTUPIDHASH) *hi, TM_XXXID_T token, TM_SLT hashable) {
+    SM_SLID_T slid = hi->tm->slid_by_strid[token];
+    TM_TLID_T tupid = hi->tm->tupid_by_strid[token];
+    return slid == hashable.slid && tupid == hashable.tupid;
 }
 
-pvt u32 slidtlid_hash(TM_SLTL sltl) {
+pvt u32 slidtupid_hash(TM_SLT sltl) {
     m8 *s = (mem) &sltl;
-    m8 *e = s + sizeof(TM_SLTL);
+    m8 *e = s + sizeof(TM_SLT);
     u32 hash = *s++;
     for (; s < e; s++) if (*s) hash = (hash << 5) - hash + *s;  // OPEN: explain why ignoring zeros
     return hash;
 }
 
 // HI_IMPL(name, token_t, hashable_t, __hash_fn, __found_fn, __hashable_from_token_fn)
-HI_IMPL(TM_XXXID_BY_SLIDTLIDHASH, TM_XXXID_T, TM_SLTL, slidtlid_hash, slidtlidHashableFound, slidtlidFromXxxid)
+HI_IMPL(TM_XXXID_BY_SLIDTUPIDHASH, TM_XXXID_T, TM_SLT, slidtupid_hash, slidtupidHashableFound, slidtupidFromXxxid)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
     if ((tlid = tm->next_tlid++) >= tm->max_tlid) {
         tm->max_tlid += TM_RP_BY_TLID_INC_SIZE;
         _growTo((void **)&tm->tlrp_by_tlid, tm->max_tlid * sizeof(RP), tm->mm, FN_NAME);
-        tm->intid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_intid;
+        tm->intid_by_tlidhash->tlid_by_xxxid = tm->tlid_by_intid;  // update the tm->intid_by_tlidhash with the new buffer
     }
     tm->tlrp_by_tlid[tlid] = tm->next_tlrp;
     hi_replace_empty(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, idx, tlid);
@@ -242,7 +242,6 @@ pvt void tm_pb(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {
 pvt inline TPN tm_pp(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_snap(tp);}
 pvt inline S8 tm_s8(BK_TM *tm, BK_TP *tp, btypeid_t btypeid) {tm_pb(tm, tp, btypeid); return tp_s8(tp, tp_snap(tp));}
 
-
 pvt void tm_pb_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {
     int firstTime = 1;
     for (u32 i = 1; i < typelist[0] + 1; i++) {
@@ -257,19 +256,8 @@ pvt void tm_pb_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {
     }
 }
 
-pvt void tm_pb_symlist(BK_TM *tm, BK_TP *tp, symid_t *symlist) {
-    // OPEN: where should this live?
-    for (u32 i = 1; i < symlist[0] + 1; i++) {
-        tp_pb_printf(tp, "`");
-        tp_pb_printf(tp, sm_name(tm->sm, symlist[i]));
-    }
-}
-
-pvt inline TPN tm_pp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_snap(tp);}
-pvt inline S8 tm_s8_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *typelist) {tm_pb_typelist(tm, tp, typelist); return tp_s8(tp, tp_snap(tp));}
-pvt inline TPN tm_pp_symlist(BK_TM *tm, BK_TP *tp, symid_t *symlist) {tm_pb_symlist(tm, tp, symlist); return tp_snap(tp);}
-pvt inline S8 tm_s8_symlist(BK_TM *tm, BK_TP *tp, symid_t *symlist) {tm_pb_symlist(tm, tp, symlist); return tp_s8(tp, tp_snap(tp));}
-
+pvt inline TPN tm_pp_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *tl) {tm_pb_typelist(tm, tp, tl); return tp_snap(tp);}
+pvt inline S8 tm_s8_typelist(BK_TM *tm, BK_TP *tp, btypeid_t *tl) {tm_pb_typelist(tm, tp, tl); return tp_s8(tp, tp_snap_with_null(tp));}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -771,9 +759,49 @@ pub btypeid_t tm_size_as(BK_TM *tm, btypeid_t btypeid, size sz) {
     return 0;
 }
 
-pub btypeid_t tm_struct(BK_TM *tm, symid_t *symlist, btypeid_t *typelist, btypeid_t btypeid) {
-    // OPEN: implement
-    return 0;
+pub btypeid_t tm_struct(BK_TM *tm, SM_SLID_T slid, btypeid_t tupid, btypeid_t btypeid) {
+    i32 outcome;  TM_XXXID_T strid;  TM_SLT slt;  u32 idx;
+
+    // answers the validated function type corresponding to tArgs and tRet, creating if necessary
+
+    // check each typeid is valid
+    if (!(0 < tupid && tupid < tm->next_btypeId)) return 0;
+    if ((tm->summary_by_btypeid + tupid)->bmtid != bmttup) return 0;
+
+    slt.slid = slid;
+    slt.tupid = tupid;
+
+    // get the btypeid for the t1t2
+    idx = hi_put_idx(TM_XXXID_BY_SLIDTUPIDHASH, tm->strid_by_slidtupidhash, slt, &outcome);
+    switch (outcome) {
+        default:
+            die("%s:%i: HI_TOMBSTONE!", FN_NAME, __LINE__);
+        case HI_LIVE:
+            strid = tm->strid_by_slidtupidhash->tokens[idx];
+            if (btypeid == 0) return tm->btypid_by_strid[strid];
+            else if (btypeid == tm->btypid_by_strid[strid]) return btypeid;
+            else return 0;
+        case HI_EMPTY:
+            // missing so commit the function type for t1t2
+            if (btypeid == 0)
+                btypeid = tm->next_btypeId;
+            else if (btypeid < tm->next_btypeId && tm->summary_by_btypeid[btypeid].bmtid != bmterr)
+                // btypeid is already in use so given the t1t2 lookup above we cannot be referring to the same btype
+                return B_NAT;
+            strid = tm->next_strid++;
+            if (strid >= tm->max_strid) {
+                tm->max_strid += TM_MAX_ID_INC_SIZE;
+                _growTo((void **)&tm->tupid_by_strid, tm->max_strid * sizeof(TM_T1T2), tm->mm, FN_NAME);
+                _growTo((void **)&tm->slid_by_strid, tm->max_strid * sizeof(TM_T1T2), tm->mm, FN_NAME);
+                _growTo((void **)&tm->btypid_by_strid, tm->max_strid * sizeof(btypeid_t), tm->mm, FN_NAME);
+            }
+            tm->tupid_by_strid[strid] = slt.tupid;
+            tm->slid_by_strid[strid] = slt.slid;
+            _new_type_summary_at(tm, bmtstr, btenone, btypeid, strid);
+            tm->btypid_by_strid[strid] = btypeid;
+            hi_replace_empty(TM_XXXID_BY_SLIDTUPIDHASH, tm->strid_by_slidtupidhash, idx, strid);
+            return btypeid;
+    }
 }
 
 pub btypeid_t tm_structv_sts(BK_TM *tm, u32 numTypes, ...) {
@@ -1043,15 +1071,14 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     tm->buckets = buckets;
     tm->sm = sm;
     tm->tp = tp;
-    tm->typelist_buf = os_vm_reserve(0, TM_MAX_TL_STORAGE);
 
     // typelists
+    tm->typelist_buf = os_vm_reserve(0, TM_MAX_TL_STORAGE);
     tm->max_tlrp = os_page_size() / sizeof(TM_TLID_T);
-    os_mprotect(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_PROT_READ | BK_PROT_WRITE);      // make first page of typelist storage R/W
+    os_mprotect(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_PROT_READ | BK_PROT_WRITE);  // make first page of typelist storage R/W
     os_madvise(tm->typelist_buf, tm->max_tlrp * sizeof(TM_TLID_T), BK_MADV_RANDOM);                 // and advise as randomly accessed
     tm->next_tlrp = 0;
-
-    tm->max_tlid = TM_MAX_TLID_INC_SIZE;
+    tm->max_tlid = TM_MAX_SLID_INC_SIZE;
     tm->next_tlid = 1;
     tm->tlrp_by_tlid = (RP *) mm->malloc(tm->max_tlid * sizeof(RP));
     memset(tm->tlrp_by_tlid, 0, tm->max_tlid * sizeof(RP));
@@ -1103,21 +1130,23 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, struct TPM *tp) {
     // structs
     tm->max_strid = TM_MAX_ID_INC_SIZE;
     tm->next_strid = 1;
-    tm->tlid_by_strid = (TM_TLID_T *) mm->malloc(tm->max_strid * sizeof(TM_TLID_T));
-    memset(tm->tlid_by_strid, 0, tm->max_strid * sizeof(TM_TLID_T));
+    tm->tupid_by_strid = (TM_TLID_T *) mm->malloc(tm->max_strid * sizeof(TM_TLID_T));
+    memset(tm->tupid_by_strid, 0, tm->max_strid * sizeof(TM_TLID_T));
+    tm->slid_by_strid = (SM_SLID_T *) mm->malloc(tm->max_strid * sizeof(SM_SLID_T));
+    memset(tm->slid_by_strid, 0, tm->max_strid * sizeof(SM_SLID_T));
     tm->btypid_by_strid = (btypeid_t *) mm->malloc(tm->max_strid * sizeof(btypeid_t));
     memset(tm->btypid_by_strid, 0, tm->max_strid * sizeof(btypeid_t));
-    tm->strid_by_slidtlidhash = hi_create(TM_XXXID_BY_SLIDTLIDHASH);
-    tm->strid_by_slidtlidhash->tm = tm;
+    tm->strid_by_slidtupidhash = hi_create(TM_XXXID_BY_SLIDTUPIDHASH);
+    tm->strid_by_slidtupidhash->tm = tm;
 
     // records
     tm->max_recid = TM_MAX_ID_INC_SIZE;
     tm->next_recid = 1;
-    tm->tlid_by_recid = (TM_TLID_T *) mm->malloc(tm->max_recid * sizeof(TM_TLID_T));
-    memset(tm->tlid_by_recid, 0, tm->max_recid * sizeof(TM_TLID_T));
+    tm->tupid_by_recid = (TM_TLID_T *) mm->malloc(tm->max_recid * sizeof(TM_TLID_T));
+    memset(tm->tupid_by_recid, 0, tm->max_recid * sizeof(TM_TLID_T));
     tm->btypid_by_recid = (btypeid_t *) mm->malloc(tm->max_recid * sizeof(btypeid_t));
     memset(tm->btypid_by_recid, 0, tm->max_recid * sizeof(btypeid_t));
-    tm->recid_by_slidtlidhash = hi_create(TM_XXXID_BY_SLIDTLIDHASH);
+    tm->recid_by_slidtlidhash = hi_create(TM_XXXID_BY_SLIDTUPIDHASH);
     tm->recid_by_slidtlidhash->tm = tm;
 
     // sequences
@@ -1153,6 +1182,7 @@ pub int TM_trash(BK_TM *tm) {
     // typelists
     tm->mm->free(tm->tlrp_by_tlid);
     hi_trash(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash);
+    os_vm_unreserve(tm->typelist_buf, TM_MAX_TL_STORAGE);
 
     // type names
     hi_trash(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash);
@@ -1177,16 +1207,16 @@ pub int TM_trash(BK_TM *tm) {
     hi_trash(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash);
 
     // structs
-    tm->mm->free(tm->tlid_by_strid);
+    tm->mm->free(tm->tupid_by_strid);
     tm->mm->free(tm->slid_by_strid);
     tm->mm->free(tm->btypid_by_strid);
-    hi_trash(TM_XXXID_BY_SLIDTLIDHASH, tm->strid_by_slidtlidhash);
+    hi_trash(TM_XXXID_BY_SLIDTUPIDHASH, tm->strid_by_slidtupidhash);
 
     // records
-    tm->mm->free(tm->tlid_by_recid);
+    tm->mm->free(tm->tupid_by_recid);
     tm->mm->free(tm->slid_by_recid);
     tm->mm->free(tm->btypid_by_recid);
-    hi_trash(TM_XXXID_BY_SLIDTLIDHASH, tm->recid_by_slidtlidhash);
+    hi_trash(TM_XXXID_BY_SLIDTUPIDHASH, tm->recid_by_slidtlidhash);
 
     // sequences
     hi_trash(TM_BTYPID_BY_SEQIDHASH, tm->containerid_by_containedidhash);
@@ -1207,8 +1237,6 @@ pub int TM_trash(BK_TM *tm) {
     tm->mm->free(tm);
     return 0;
 }
-
-
 
 
 pub btypeid_t tm_interv(BK_TM *tm, u32 numTypes, ...) {

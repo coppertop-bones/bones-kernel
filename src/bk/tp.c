@@ -135,7 +135,10 @@ pub TPN tp_snap(BK_TP *tp) {
 pub TPN tp_snap_with_null(BK_TP *tp) {
     // advances the buffer pointers and answers a null terminated tpn (copying if necessary)
     if (tp->end < tp->buf_sz) {
-        tp->end += 1;
+        size32 start = tp->start, end = tp->end;
+        *(tp->buf + end) = 0;
+        tp->start = tp->end = tp->end + 1;
+        return (TPN) {.p = tp->buf + start, .vtsz = tp_encode_as_s8(end - start)};
     } else {
         // OPEN: test this branch
         // allocate a new buffer from buckets that can contain the unflushed buffer and the new formatted output then
@@ -146,13 +149,13 @@ pub TPN tp_snap_with_null(BK_TP *tp) {
         char *buf = allocInBuckets(tp->buckets, buf_sz, 1);
         if (buf == 0) return (TPN) {.p = 0, .vtsz = 0};         // OPEN: check that allocInBuckets sets an error
         memcpy(buf, tp->buf + tp->start, tp->end - tp->start);
+        *(tp->buf + tp->end - 1) = 0;
         tp->buf = buf;
         tp->buf_sz = buf_sz;
         tp->start = 0;
         tp->end = n;
+        return (TPN) {.p = tp->buf, .vtsz = tp_encode_as_s8(n - 1)};
     }
-    *(tp->buf + tp->end - 1) = 0;
-    return (TPN) {.p = tp->buf + tp->start, .vtsz = tp_encode_as_s8(tp->end - tp->start - 1)};
 }
 
 // BK_TP *tp -> TPC ctx, ... ?

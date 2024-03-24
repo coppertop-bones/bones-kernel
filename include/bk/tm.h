@@ -17,7 +17,6 @@ typedef u16 BTSIZE_TYPE;            /* only allow types up to 64k in size */
 
 // typelist is length prefixed array of btypeid, i.e. a btypeid_t *
 typedef u32 TM_TLID_T;
-typedef u32 TM_SLID_T;
 typedef u32 TM_XXXID_T;
 #define TM_RP_BY_TLID_INC_SIZE (0x4000 / sizeof(RP))        /* DTM: i.e. 1 page on macos M1, 4 pages on windows intel */
 
@@ -221,22 +220,21 @@ typedef struct {
 } TM_T1T2;
 
 typedef struct {
-    TM_SLID_T slid;
-    TM_TLID_T tlid;
-} TM_SLTL;
+    SM_SLID_T slid;
+    TM_TLID_T tupid;
+} TM_SLT;
 
 
-#define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by symid_t and vm space is cheap */
-#define TM_MAX_TLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
-#define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(btypeid_t))    /* DTM: i.e. 1 page of ids on macos M1, 4 pages on windows intel */
-#define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macos M1, 1 page on windows intel */
+#define TM_MAX_TL_STORAGE 0xFFFFFFFF                            /* DTM: 4GB is max addressable by symid_t / btypeid_t and vm space is cheap */
+#define TM_MAX_SLID_INC_SIZE (0x4000 / sizeof(TM_TLID_T))       /* DTM: i.e. 1 page of ids on macOS M1, 4 pages on windows intel */
+#define TM_MAX_BTYPEID_INC_SIZE (0x4000 / sizeof(btypeid_t))    /* DTM: i.e. 1 page of ids on macOS M1, 4 pages on windows intel */
+#define TM_MAX_ID_INC_SIZE (0x1000 / sizeof(TM_XXXID_T))        /* DTM: i.e. 1/4 page of ids on macOS M1, 1 page on windows intel */
 
 // HI_STRUCT_WITH(name, token_t, extravars)
 HI_STRUCT_WITH(TM_BTYPEID_BY_SYMIDHASH, btypeid_t, struct PVT_TM *tm;)
 HI_STRUCT_WITH(TM_TLID_BY_TLHASH, TM_TLID_T, struct PVT_TM *tm;)
-HI_STRUCT_WITH(TM_SLID_BY_TLHASH, TM_SLID_T, struct PVT_TM *tm;)
 HI_STRUCT_WITH(TM_XXXID_BY_TLIDHASH, TM_XXXID_T, TM_TLID_T *tlid_by_xxxid;)     // for intersections, unions and tuples, OPEN: check we grow the tlid_by_xxxid
-HI_STRUCT_WITH(TM_XXXID_BY_SLIDTLIDHASH, TM_XXXID_T, struct PVT_TM *tm;)        // for structs, records
+HI_STRUCT_WITH(TM_XXXID_BY_SLIDTUPIDHASH, TM_XXXID_T, struct PVT_TM *tm;)       // for structs, records
 HI_STRUCT_WITH(TM_BTYPID_BY_SEQIDHASH, TM_XXXID_T, struct PVT_TM *tm;)
 HI_STRUCT_WITH(TM_XXXID_BY_T1T2HASH, TM_XXXID_T, TM_T1T2 *t1t2_by_xxxid;)       // for fns and maps, OPEN: check we grow the t1t2_by_xxid
 
@@ -264,15 +262,6 @@ typedef struct PVT_TM {
     TM_TLID_T next_tlid;
     hi_struct(TM_TLID_BY_TLHASH) *tlid_by_tlhash;
 
-    // sym lists - all sym lists are shared by structs, records and functions
-    symid_t *symlist_buf;                               // VM buffer of symid (symlist) indexed by RP
-    RP max_slrp;
-    RP next_slrp;
-    RP *slrp_by_slid;
-    TM_SLID_T max_slid;
-    TM_SLID_T next_slid;
-    hi_struct(TM_SLID_BY_SLHASH) *slid_by_slhash;
-
     // intersections
     TM_XXXID_T max_intid;
     TM_XXXID_T next_intid;
@@ -297,17 +286,17 @@ typedef struct PVT_TM {
     // structs
     TM_XXXID_T max_strid;
     TM_XXXID_T next_strid;
-    TM_TLID_T *tlid_by_strid;           // split into two arrays assuming we mainly just interact with the type list
-    TM_SLID_T *slid_by_strid;
-    hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *strid_by_slidtlidhash;
+    btypeid_t *tupid_by_strid;           // split into two arrays assuming we mainly just interact with the type list
+    SM_SLID_T *slid_by_strid;
+    hi_struct(TM_XXXID_BY_SLIDTUPIDHASH) *strid_by_slidtupidhash;
     btypeid_t *btypid_by_strid;
     
     // records
     TM_XXXID_T max_recid;
     TM_XXXID_T next_recid;
-    TM_TLID_T *tlid_by_recid;           // split into two arrays assuming we mainly just interact with the type list
-    TM_SLID_T *slid_by_recid;
-    hi_struct(TM_XXXID_BY_SLIDTLIDHASH) *recid_by_slidtlidhash;
+    btypeid_t *tupid_by_recid;           // split into two arrays assuming we mainly just interact with the type list
+    SM_SLID_T *slid_by_recid;
+    hi_struct(TM_XXXID_BY_SLIDTUPIDHASH) *recid_by_slidtlidhash;
     btypeid_t *btypid_by_recid;
     
     // sequences -> need hash map keyed by underlying type mapping to containing type - tmsummary_by_typeid[contining
@@ -356,7 +345,7 @@ pub btypeid_t tm_seq(BK_TM *, btypeid_t tContained, btypeid_t);
 pub btypeid_t tm_seq_t(BK_TM *, btypeid_t);
 pub size tm_size(BK_TM *, btypeid_t);
 pub btypeid_t tm_size_as(BK_TM *, btypeid_t, size);
-pub btypeid_t tm_struct(BK_TM *, symid_t *, btypeid_t *, btypeid_t);
+pub btypeid_t tm_struct(BK_TM *, SM_SLID_T, btypeid_t, btypeid_t);
 pub btypeid_t tm_structv_sts(BK_TM *, u32 numTypes, ...);
 pub btypeid_t tm_structv_ssts(BK_TM *, u32 numTypes, ...);
 pub symid_t * tm_struct_sl(BK_TM *, btypeid_t);
@@ -371,72 +360,6 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 #endif // BK_TM_H
 
 
-
-//// ---------------------------------------------------------------------------------------------------------------------
-//// SType - StructuralType
-//// ---------------------------------------------------------------------------------------------------------------------
-//// the following is a reduced physical description of structs / tuples and c arrays for tracing and copying - can be
-//// generated for ctypes and btypes - there will be less stypes than btypes / ctypes but don't know how many
-//
-//enum fieldtype : char {
-//    ptrToShallow = 1,       // offset to ptr to an object that contains no pointers
-//    ptrToDeep = 2,          // offset to ptr to object with pointers
-//    ptrToVariable = 3,      // offset to ptr to variable size object
-//    ptrToUnknown = 4,       // offset to void* (not managed)
-//    firstShallowElement = 5,
-//    firstPtrToShallowElement = 6,
-//    firstPtrToDeepElement = 7,
-//    firstPtrToVariableElement = 8,
-//    firstPtrToUnknownElement = 9,
-//};
-//
-//struct fielddesc {
-//    unsigned short offset;      // 2
-//    enum fieldtype type;            // 1 + 1 padding
-//};
-//
-//enum countType : char {
-//    given = 0,
-//    m8 = 1,
-//    m16 = 2,
-//    m32 = 3,
-//    m64 = 4,
-//};
-//
-//struct fields {
-//    unsigned short numfields;           // 2 + 2 padding
-//    struct fielddesc fielddescs[];      // numfields * 4
-//};
-//
-//struct SType {
-//    unsigned short basicSizeOf;         // 2 - size of the object without the array
-//    unsigned short elementSize;         // 2 - size of each array element
-//    unsigned short numElementsOffset;   // 2 - offset to the element count or the actual count
-//    enum countType numElementsType;     // 1
-//    char isDeep;                        // 1
-//    struct fields *fields;              // 8 - OPEN: could make this an id into an array reducing to 12 bytes
-//};                                      // 16
-//
-//// object size is layout.basicSizeOf + &(layout.numElementsOffset) * layout.elementSize
-//
-//// passing pointers to heap objects means the dispatch can work as can get type from pre area
-//// tagged unions can't be pass in registers but only in boxes that are at least 16 bytes for a double
-//// pass pointers to temporaries?
-//
-//
-//struct SType* stypes[0xFFFF];
-//typedef unsigned short stype;
-//
-//
-//// managed mode
-//enum managedmode : char {
-//    none = 0,           // nothing (0 bytes) is placed before aligned object
-//    moving = 2,         // stype (2 bytes) is placed before aligned object
-//    multi = 4,          // box by placing the btypeid_t (4 bytes) before aligned object
-//};
-
-// boxing on stack - a 16 byte struct is passed
-
 // https://stackoverflow.com/questions/74832688/how-to-determine-the-correct-way-to-pass-the-struct-parameters-in-arm64-assembly
 // https://github.com/ARM-software/abi-aa/blob/2982a9f3b512a5bfdc9e3fea5d3b298f9165c36b/aapcs64/aapcs64.rst#parameter-passing-rules
 // https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms
@@ -444,68 +367,9 @@ pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
 // https://github.com/ARM-software/abi-aa/blob/2982a9f3b512a5bfdc9e3fea5d3b298f9165c36b/aapcs64/aapcs64.rst#the-base-procedure-call-standard
 
 // https://github.com/ARM-software/abi-aa/releases
-
-//https://github.com/ivmai/bdwgc/
-
-
-//struct box8 {
-//    int pad;
-//    btypeid_t btype;        // type is held in upper 4 bytes to match heap organisation
-//    union {
-//        double d;
-//        long l;
-//        void *p;
-//    };
-//};                      // 16
-
-//struct box4 {
-//    btypeid_t btype;        // type is held in upper 4 bytes to match heap organisation
-//    union {
-//        char c;
-//        short s;
-//        int i;
-//        float f;
-//    };
-//};                      // 8
-
-//add_2(a:*double+err, b:*double+err) -> double+err
-//add_2(a:double+err, b:double+err) -> double+err
-
-
-// calling add_2(a:*double+err, b:*double+err) -> double+err with 2 doubles
-//
-// stack
-// ------- a -------
-// m32 pad
-// m32 btypeid
-// double a    <- *a
-// ------- b -------
-// m32 pad
-// m32 btypeid
-// double b    <- *b
-// -----------------
-
-// calling add_2(a:double, b:double) -> double with 2 doubles
-// get put in registers
-
-// CONCLUSION for moment bones just uses pointers for calling - can optimise to registers later (and we should)
-
-// my qbe code will need to allocate 16 bytes for doubles / longs, 8 bytes for ints, shorts, chars
+// https://github.com/ivmai/bdwgc/
 
 // https://stackoverflow.com/questions/68369577/how-to-control-the-abi-for-unions
 // https://www.open-std.org/jtc1/sc22/wg14/www/docs/n2289.pdf - exceptions proposal
 // discussion on above - https://news.ycombinator.com/item?id=17922715
 // arm abi - https://github.com/ARM-software/abi-aa/releases
-
-// calling add_2(a:double+err, b:double+err) -> double+err with 2 doubles
-//
-// stack
-// ------- a -------
-// m32 pad
-// m32 btypeid
-// double a    <- *a
-// ------- b -------
-// m32 pad
-// m32 btypeid
-// double b    <- *b
-// -----------------
