@@ -7,8 +7,8 @@ user init tracking
 
 ## NEXT
 - expose setNominalTo and setEnumTo (and maybe setSymTo?)
-- add BTypeError - a subclass of TypeError. multidispatch means CantFindError rather than TypeError, which means BTypeError 
-  indicates an error constructing the btype. BTypeError is nicer than BMetaTypeError
+- add BTypeError - a subclass of TypeError. multidispatch means CantFindError rather than TypeError, which means 
+  BTypeError indicates an error constructing the btype. BTypeError is nicer than BMetaTypeError
 - add BEnumError
 - organise c style docs
 
@@ -17,7 +17,7 @@ user init tracking
 
 
 ## MID
-- unions, tuples, structs, seq, map, fn, overload, family, schemavars, recursion
+- overload, family, schemavars, recursion
 - make above work with Python fitsWithin
 - fitsWithin with cache in C
 - rework minc types to use bk instead
@@ -38,6 +38,7 @@ user init tracking
 
 
 ## DONE
+- unions, tuples, structs, seq, map, fn
 - get size of tp list
 - render tp list
 - add tp functions and s8 as necessary

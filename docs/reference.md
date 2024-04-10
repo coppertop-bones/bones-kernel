@@ -62,10 +62,12 @@ https://man7.org/linux/man-pages/man3/open_memstream.3.html
 # subscripts and sizes should be signed
 https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1428r0.pdf
 
+
 # floating points
 https://possiblywrong.wordpress.com/2015/06/21/floating-point-round-trips/
 https://randomascii.wordpress.com/2012/03/08/float-precisionfrom-zero-to-100-digits-2/
 https://randomascii.wordpress.com/2023/10/17/localization-failure-temperature-is-hard/#more-4050
+
 
 # string libs
 https://github.com/antirez/sds
@@ -100,3 +102,18 @@ https://github.com/Arryboom/fmemopen_windows/
 
 https://github.com/eblot/newlib/blob/master/newlib/libc/stdio/fopencookie.c
 
+
+
+# setup.py
+
+https://apple.stackexchange.com/questions/254380/why-am-i-getting-an-invalid-active-developer-path-when-attempting-to-use-git-a
+
+https://docs.python.org/3/distutils/configfile.html
+
+https://stackoverflow.com/questions/27281785/python-setup-py-how-to-set-the-path-for-the-generated-so
+
+https://autopilot-docs.readthedocs.io/en/latest/license_list.html
+
+https://pypi.org/classifiers/
+
+setuptools.find_packages()
