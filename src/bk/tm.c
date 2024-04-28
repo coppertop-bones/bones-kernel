@@ -305,6 +305,21 @@ pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl, btype
     }
 }
 
+pub btexclusioncat_t tm_exclusion_cat(BK_TM *tm, char *name, btexclusioncat_t excl) {
+    // answers the exclusion category for the name creating if necessary. if excl is given checks for consistency
+    if (excl == 0) {
+        if (strcmp(name, "mem") == 0) return btememory;
+        if (strcmp(name, "ptr") == 0) return bteptr;
+        if (strcmp(name, "ccy") == 0) return bteccy;
+    }
+    else {
+        if (strcmp(name, "mem") == 0 && excl == btememory) return btememory;
+        if (strcmp(name, "ptr") == 0 && excl == bteptr) return bteptr;
+        if (strcmp(name, "ccy") == 0 && excl == bteccy) return bteccy;
+    }
+    return btenone;
+}
+
 pub btypeid_t tm_fn(BK_TM *tm, btypeid_t tArgs, btypeid_t tRet, btypeid_t btypeid) {
     i32 outcome;  TM_XXXID_T fncid;  TM_T1T2 t1t2;  u32 idx;
 
@@ -355,21 +370,6 @@ pub TM_T1T2 tm_Fn(BK_TM *tm, btypeid_t btypeid) {
     struct btsummary *sum = tm->summary_by_btypeid + btypeid;       // OPEN: in general use pointer to summary rather than copying the struct
     if (sum->bmtid != bmtfnc) return (TM_T1T2) {{0}, {0}};
     return tm->t1t2_by_fncid[sum->fncId];
-}
-
-pub btexclusioncat_t tm_exclusion_cat(BK_TM *tm, char *name, btexclusioncat_t excl) {
-    // answers the exclusion category for the name creating if necessary. if excl is given checks for consistency
-    if (excl == 0) {
-        if (strcmp(name, "mem") == 0) return btememory;
-        if (strcmp(name, "ptr") == 0) return bteptr;
-        if (strcmp(name, "ccy") == 0) return bteccy;
-    }
-    else {
-        if (strcmp(name, "mem") == 0 && excl == btememory) return btememory;
-        if (strcmp(name, "ptr") == 0 && excl == bteptr) return bteptr;
-        if (strcmp(name, "ccy") == 0 && excl == bteccy) return bteccy;
-    }
-    return btenone;
 }
 
 // set of values intersection ((1 2 3) + (4 5)) & ((1 2 3) + (6 7)) = (1 2 3 4 5) & (1 2 3 6 7) = (1 2 3)
@@ -829,11 +829,11 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     u32 idx;
 
     // answers the validated tuple type corresponding to typelist, creating if necessary
-    if (!(numTypes = typelist[0])) return 0;
+    numTypes = typelist[0];
 
     // check each typeid in the list is valid
     // OPEN: can this loop be merged with the copying loop?
-    for (i = 1; i <= (i32)typelist[0]; i++) {
+    for (i = 1; i <= numTypes; i++) {
         if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmterr) return 0;
@@ -852,7 +852,7 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     // copy typelist into typelist_buf
     p1 = nextTypelist;
     *p1++ = numTypes;
-    for (i = 1; i <= (i32)typelist[0]; i++) {
+    for (i = 1; i <= numTypes; i++) {
         *p1++ = typelist[i];
     }
 
@@ -922,7 +922,7 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     if (!(numTypes = typelist[0])) return 0;
 
     // check typeid is in range, and figure total possible length (including possible duplicate from child unions)
-    for (i = 1; i <= (i32)typelist[0]; i++) {
+    for (i = 1; i <= numTypes; i++) {
         if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtuni) {
@@ -944,7 +944,7 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     // copy typelist into typelist_buf unpacking any unions
     p1 = nextTypelist;
     *p1++ = numTypes;
-    for (i = 1; i <= (i32)typelist[0]; i++) {
+    for (i = 1; i <= numTypes; i++) {
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmtuni) {
             // we have a union type - expand it

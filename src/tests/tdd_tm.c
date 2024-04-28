@@ -83,10 +83,20 @@ void test_tm() {
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
 
+    // tuple
+    typelist[0] = 0;
+    t = tm_tuple(k->tm, typelist, 0);
+    expected ++;
+    check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
+
+    typelist[0] = 2;
+    t = tm_tuple(k->tm, typelist, 0);
+    expected ++;
+    check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
+
     // struct
     SM_SLID_T slid = sm_slid(k->sm, symlist);
     btypeid_t tupid = tm_tuple(k->tm, typelist, 0);
-    expected ++;
 
     t = tm_struct(k->tm, slid, tupid, 0);
     expected ++;

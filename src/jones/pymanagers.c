@@ -580,7 +580,6 @@ pvt PyObject * PyTM_structTl(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 pvt PyObject * PyTM_tuple(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answers a new tuple type of the given btypes
     BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl;
-    if (nargs == 0) return PyErr_Format(PyExc_TypeError, "Must provide at least one type");
     checkpointBuckets((buckets = self->tm->buckets), &cp);
 
     // create a type list of the correct length

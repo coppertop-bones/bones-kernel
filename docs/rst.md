@@ -1,5 +1,40 @@
 
 
+# block without parameter
+
+# block with parameter
+
+# function
+
+# get value, overloads, family
+
+# set value, function
+
+# call
+Python
+C
+etc
+
+# early return - ^
+
+# signal - ^^
+
+# lit
+
+# seq
+
+# type-lang
+
+# coerce
+
+# check type
+
+# load
+
+# import
+
+
+
 a.b: ()
 a.c[2]: `fred      <<< struct and seq access
 a[`c].2: `joe      <<< map and tuple access
