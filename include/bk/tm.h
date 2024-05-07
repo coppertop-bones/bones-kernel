@@ -53,6 +53,7 @@ typedef enum {
     B_RP64,
     B_LITINT,
     B_LITDEC,
+    B_LITUTF8,
 
     B_EXTERN,
     B_STATIC,
@@ -92,6 +93,8 @@ typedef enum {
     B_T17,      // aka B_TQ
     B_T18,      // aka B_TR
     B_T19,      // aka B_TS
+
+    // we don't need to distinguish N from M or any other index so can just alias N as M, I, J, K etc
 
     B_N,
     B_N1,
@@ -186,12 +189,15 @@ typedef enum {
 
 
 // OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
-// also will store recursion, exclusivecat
+// also will store recursion
 // OPEN: hasT etc
+
+// stores hasT, isRecursive?
 struct btsummary {
     bmetatypeid_t bmtid;        // 1
     btexclusioncat_t excl;      // 1
-    btypesize_t unused2;        // 2
+    u8 flags;                   // 1
+    u8 padding;                 // 1
     union {
         btypeid_t _id;
         btypeid_t intId;
@@ -205,6 +211,9 @@ struct btsummary {
         btypeid_t svrId;
     };                          // 4
 };
+
+#define TM_HAS_T_MASK 0b00000001
+
 
 typedef struct {
     union {
@@ -245,7 +254,7 @@ typedef struct PVT_TM {
     struct TPM *tp;
 
     // type summaries
-    struct btsummary *summary_by_btypeid;        
+    struct btsummary *summary_by_btypeid;
     btypeid_t max_btypeId;
     btypeid_t next_btypeId;
     
@@ -330,6 +339,7 @@ pub btypeid_t tm_exclnominal(BK_TM *, char *, btexclusioncat_t, btypesize_t, bty
 pub btexclusioncat_t tm_exclusion_cat(BK_TM *, char *, btexclusioncat_t);
 pub btypeid_t tm_fn(BK_TM *, btypeid_t tArgs, btypeid_t tRet, btypeid_t);
 pub TM_T1T2 tm_Fn(BK_TM *, btypeid_t);
+pub bool tm_hasT(BK_TM *, btypeid_t);
 pub btypeid_t tm_inter(BK_TM *, btypeid_t *, btypeid_t);
 pub btypeid_t tm_interv(BK_TM *, u32 numTypes, ...);
 pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);

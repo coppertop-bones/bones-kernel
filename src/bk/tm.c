@@ -186,7 +186,7 @@ tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
     return tlid;
 }
 
-tdd void _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusioncat_t excl, btypeid_t btypeid, u32 _id) {
+tdd void _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusioncat_t excl, btypeid_t btypeid, u32 _id, bool hasT) {
     // OPEN: add size
     // OPEN: do we restrict the range of directly assigned btypeids?
     while (btypeid >= tm->max_btypeId) {
@@ -197,6 +197,7 @@ tdd void _new_type_summary_at(BK_TM *tm, bmetatypeid_t bmtid, btexclusioncat_t e
     tm->summary_by_btypeid[btypeid].bmtid = bmtid;
     tm->summary_by_btypeid[btypeid].excl = excl;
     tm->summary_by_btypeid[btypeid]._id = _id;
+    tm->summary_by_btypeid[btypeid].flags = hasT ? TM_HAS_T_MASK : 0;
     if (btypeid >= tm->next_btypeId) tm->next_btypeId = btypeid + 1;
 }
 
@@ -299,7 +300,7 @@ pub btypeid_t tm_exclnominal(BK_TM *tm, char *name, btexclusioncat_t excl, btype
             if (btypeid == 0) btypeid = tm->next_btypeId;
             hi_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
             tm->symid_by_btypeid[btypeid] = symid;
-            _new_type_summary_at(tm, bmtnom, excl, btypeid, 0);
+            _new_type_summary_at(tm, bmtnom, excl, btypeid, 0, false);
             return btypeid;
         }
     }
@@ -321,15 +322,15 @@ pub btexclusioncat_t tm_exclusion_cat(BK_TM *tm, char *name, btexclusioncat_t ex
 }
 
 pub btypeid_t tm_fn(BK_TM *tm, btypeid_t tArgs, btypeid_t tRet, btypeid_t btypeid) {
-    i32 outcome;  TM_XXXID_T fncid;  TM_T1T2 t1t2;  u32 idx;
+    i32 outcome;  TM_XXXID_T fncid;  TM_T1T2 t1t2;  u32 idx;  bool hasT;
 
     // answers the validated function type corresponding to tArgs and tRet, creating if necessary
 
     // check each typeid is valid
     if (!(0 < tArgs && tArgs < tm->next_btypeId)) return 0;
-    if ((tm->summary_by_btypeid + tArgs)->bmtid != bmttup) return 0;
+    if ((tm->summary_by_btypeid[tArgs]).bmtid != bmttup) return 0;
     if (!(0 < tRet && tRet < tm->next_btypeId)) return 0;
-    if ((tm->summary_by_btypeid + tRet)->bmtid == bmterr) return 0;
+    if ((tm->summary_by_btypeid[tRet]).bmtid == bmterr) return 0;
 
     t1t2.tArgs = tArgs;
     t1t2.tRet = tRet;
@@ -358,7 +359,8 @@ pub btypeid_t tm_fn(BK_TM *tm, btypeid_t tArgs, btypeid_t tRet, btypeid_t btypei
                 _growTo((void **)&tm->btypid_by_fncid, tm->max_fncid * sizeof(btypeid_t), tm->mm, FN_NAME);
             }
             tm->t1t2_by_fncid[fncid] = t1t2;
-            _new_type_summary_at(tm, bmtfnc, btenone, btypeid, fncid);
+            hasT = (tm->summary_by_btypeid[tArgs].flags & TM_HAS_T_MASK) || ((tm->summary_by_btypeid[tRet].flags & TM_HAS_T_MASK));
+            _new_type_summary_at(tm, bmtfnc, btenone, btypeid, fncid, hasT);
             tm->btypid_by_fncid[fncid] = btypeid;
             hi_replace_empty(TM_XXXID_BY_T1T2HASH, tm->fncid_by_t1t2hash, idx, fncid);
             return btypeid;
@@ -385,6 +387,15 @@ pvt void _make_next_page_of_typelist_buf_writable_if_necessary(BK_TM *tm, int nu
         os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_MADV_RANDOM);
     }
 }
+
+pub bool tm_hasT(BK_TM *tm, btypeid_t btypeid) {
+    if (btypeid < 1 || btypeid >= tm->next_btypeId) return 0;
+    return tm->summary_by_btypeid[btypeid].flags & TM_HAS_T_MASK;
+}
+
+// set of values intersection ((1 2 3) + (4 5)) & ((1 2 3) + (6 7)) = (1 2 3 4 5) & (1 2 3 6 7) = (1 2 3)
+// (int + str) & (int + bool) => (int+int) & (int+bool) & (str+int) & (str+bool)
+// types only make sense in the context of fitsWithin a LHS might not behaviour as a RHS
 
 pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     i32 i, j, numTypes, hasUnions;  TM_TLID_T tlid;  btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist;
@@ -451,7 +462,7 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     return _inter_for_emplaced_tl(tm, btypeid);
 }
 pvt btypeid_t _inter_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
-    u32 idx;  i32 i, outcome;  TM_TLID_T tlid;  TM_XXXID_T intid;  btexclusioncat_t excl = 0;  btypeid_t *p1;
+    u32 idx;  i32 i, outcome;  TM_TLID_T tlid;  TM_XXXID_T intid;  btexclusioncat_t excl = 0;  btypeid_t *p1;  bool hasT;
     struct btsummary *sum;  btypeid_t *nextTypelist; i32 numTypes;
 
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
@@ -459,9 +470,11 @@ pvt btypeid_t _inter_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
 
     // check for exclusion conflicts
     p1 = nextTypelist;
+    hasT = false;
     for (i = 1; i <= numTypes; i++) {
         sum = tm->summary_by_btypeid + p1[i];
         if (excl & sum->excl) return 0;
+        hasT = hasT || (sum->flags & TM_HAS_T_MASK);
         excl |= sum->excl;
     }
 
@@ -503,7 +516,7 @@ pvt btypeid_t _inter_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
                 _growTo((void **)&tm->btypid_by_intid, tm->max_intid * sizeof(btypeid_t), tm->mm, FN_NAME);
             }
             tm->tlid_by_intid[intid] = tlid;
-            _new_type_summary_at(tm, bmtint, excl, btypeid, intid);
+            _new_type_summary_at(tm, bmtint, excl, btypeid, intid, hasT);
             tm->btypid_by_intid[intid] = btypeid;
             hi_replace_empty(TM_XXXID_BY_TLIDHASH, tm->intid_by_tlidhash, idx, intid);
             return btypeid;
@@ -521,7 +534,7 @@ pub btypeid_t * tm_inter_tl(BK_TM *tm, btypeid_t btypeid) {
 }
 
 pub btypeid_t tm_map(BK_TM *tm, btypeid_t tK, btypeid_t tV, btypeid_t btypeid) {
-    i32 outcome;  TM_XXXID_T mapid;  TM_T1T2 t1t2;  u32 idx;
+    i32 outcome;  TM_XXXID_T mapid;  TM_T1T2 t1t2;  u32 idx;  bool hasT;
 
     // answers the validated map type corresponding to tK and tV, creating if necessary
 
@@ -558,7 +571,8 @@ pub btypeid_t tm_map(BK_TM *tm, btypeid_t tK, btypeid_t tV, btypeid_t btypeid) {
                 _growTo((void **)&tm->btypid_by_mapid, tm->max_mapid * sizeof(btypeid_t), tm->mm, FN_NAME);
             }
             tm->t1t2_by_mapid[mapid] = t1t2;
-            _new_type_summary_at(tm, bmtmap, btenone, btypeid, mapid);
+            hasT = (tm->summary_by_btypeid[tK].flags & TM_HAS_T_MASK) || ((tm->summary_by_btypeid[tV].flags & TM_HAS_T_MASK));
+            _new_type_summary_at(tm, bmtmap, btenone, btypeid, mapid, hasT);
             tm->btypid_by_mapid[mapid] = btypeid;
             hi_replace_empty(TM_XXXID_BY_T1T2HASH, tm->mapid_by_t1t2hash, idx, mapid);
             return btypeid;
@@ -675,7 +689,7 @@ pub btypeid_t tm_nominal(BK_TM *tm, char *name, btypeid_t btypeid) {
             if (btypeid == 0) btypeid = tm->next_btypeId;
             hi_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
             tm->symid_by_btypeid[btypeid] = symid;
-            _new_type_summary_at(tm, bmtnom, btenone, btypeid, 0);
+            _new_type_summary_at(tm, bmtnom, btenone, btypeid, 0, false);
             return btypeid;
         }
     }
@@ -703,7 +717,7 @@ pub btypeid_t tm_schemavar(BK_TM *tm, char *name, btypeid_t btypeid) {
             if (btypeid == 0) btypeid = tm->next_btypeId;
             hi_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btypeid);
             tm->symid_by_btypeid[btypeid] = symid;
-            _new_type_summary_at(tm, bmtsvr, btenone, btypeid, 0);
+            _new_type_summary_at(tm, bmtsvr, btenone, btypeid, 0, true);
             return btypeid;
         }
     }
@@ -736,7 +750,7 @@ pub btypeid_t tm_seq(BK_TM *tm, btypeid_t containedid, btypeid_t btypeid) {
             else if (btypeid < tm->next_btypeId && tm->summary_by_btypeid[btypeid].bmtid != bmterr)
                 // btypeid is already in use so given the type list lookup above we cannot be referring to the same btype
                 return 0;
-            _new_type_summary_at(tm, bmtseq, btenone, btypeid, containedid);
+            _new_type_summary_at(tm, bmtseq, btenone, btypeid, containedid, sum->flags & TM_HAS_T_MASK);
             hi_replace_empty(TM_BTYPID_BY_SEQIDHASH, tm->containerid_by_containedidhash, idx, btypeid);
             return btypeid;
     }
@@ -797,7 +811,7 @@ pub btypeid_t tm_struct(BK_TM *tm, SM_SLID_T slid, btypeid_t tupid, btypeid_t bt
             }
             tm->tupid_by_strid[strid] = slt.tupid;
             tm->slid_by_strid[strid] = slt.slid;
-            _new_type_summary_at(tm, bmtstr, btenone, btypeid, strid);
+            _new_type_summary_at(tm, bmtstr, btenone, btypeid, strid, tm->summary_by_btypeid[tupid].flags & TM_HAS_T_MASK);
             tm->btypid_by_strid[strid] = btypeid;
             hi_replace_empty(TM_XXXID_BY_SLIDTUPIDHASH, tm->strid_by_slidtupidhash, idx, strid);
             return btypeid;
@@ -826,17 +840,19 @@ pub btypeid_t * tm_struct_tl(BK_TM *tm, btypeid_t btypeid) {
 
 pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     i32 i, outcome, numTypes;  struct btsummary *sum;  TM_XXXID_T tupid;  TM_TLID_T tlid;  btypeid_t *p1, *nextTypelist;
-    u32 idx;
+    u32 idx;  bool hasT;
 
     // answers the validated tuple type corresponding to typelist, creating if necessary
     numTypes = typelist[0];
 
     // check each typeid in the list is valid
     // OPEN: can this loop be merged with the copying loop?
+    hasT = false;
     for (i = 1; i <= numTypes; i++) {
         if (!(0 < typelist[i] && typelist[i] < tm->next_btypeId)) return 0;
         sum = tm->summary_by_btypeid + typelist[i];
         if (sum->bmtid == bmterr) return 0;
+        hasT = hasT | (sum->flags & TM_HAS_T_MASK);
     }
 
     // make next page of tm->typelist_buf writable if necessary
@@ -893,7 +909,7 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
                 _growTo((void **)&tm->btypid_by_tupid, tm->max_tupid * sizeof(btypeid_t), tm->mm, FN_NAME);
             }
             tm->tlid_by_tupid[tupid] = tlid;
-            _new_type_summary_at(tm, bmttup, btenone, btypeid, tupid);
+            _new_type_summary_at(tm, bmttup, btenone, btypeid, tupid, hasT);
             tm->btypid_by_tupid[tupid] = btypeid;
             hi_replace_empty(TM_XXXID_BY_TLIDHASH, tm->tupid_by_tlidhash, idx, tupid);
             return btypeid;
@@ -974,7 +990,7 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t *typelist, btypeid_t btypeid) {
     return _union_for_emplaced_tl(tm, btypeid);
 }
 pvt btypeid_t _union_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
-    u32 idx;  i32 outcome;  TM_TLID_T tlid;  TM_XXXID_T uniid;  btypeid_t *nextTypelist; i32 numTypes;
+    u32 idx;  i32 outcome, i;  TM_TLID_T tlid;  TM_XXXID_T uniid;  btypeid_t *nextTypelist; i32 numTypes;  bool hasT;
 
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
     numTypes = *nextTypelist;
@@ -1016,7 +1032,9 @@ pvt btypeid_t _union_for_emplaced_tl(BK_TM *tm, btypeid_t btypeid) {
                 _growTo((void **)&tm->btypid_by_uniid, tm->max_uniid * sizeof(btypeid_t), tm->mm, FN_NAME);
             }
             tm->tlid_by_uniid[uniid] = tlid;
-            _new_type_summary_at(tm, bmtuni, btenone, btypeid, uniid);
+            hasT = false;
+            for (i = 1; i <= numTypes; i++) hasT = hasT || (tm->summary_by_btypeid[nextTypelist[i]].flags & TM_HAS_T_MASK);
+            _new_type_summary_at(tm, bmtuni, btenone, btypeid, uniid, hasT);
             tm->btypid_by_uniid[uniid] = btypeid;
             hi_replace_empty(TM_XXXID_BY_TLIDHASH, tm->uniid_by_tlidhash, idx, uniid);
             return btypeid;

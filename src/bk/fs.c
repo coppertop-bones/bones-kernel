@@ -32,11 +32,11 @@ typedef unsigned short PAYLOAD;
 #define NOT_HC_MASK 0x00FF
 #define HC_INC  0x0100
 
-struct FunctionSelector {
+typedef struct {
     unsigned char slot_width;       // in count of u16
     unsigned char num_slots;        // number of slots in the array (plus scratch slot for the query)
     unsigned short buf[];
-};
+} FS;
 
 #define P_QUERY(fs) (&(fs)->buf[0])
 #define P_SIG_ARRAY(fs) (&(fs)->buf[1 * (fs)->slot_width])
@@ -50,7 +50,7 @@ struct FunctionSelector {
 // |         UBT         |         LBT         |
 // | 0000 0000 0000 0TTT | UTTT TTTT TTTT TTTT |
 
-pvt void FS_at_array_put(struct FunctionSelector *fs, int index, unsigned short sig[], PAYLOAD payload) {
+pvt void FS_at_array_put(FS *fs, int index, unsigned short sig[], PAYLOAD payload) {
     // index is one based, sig is size prefixed array of T1|T2
     unsigned short *dest = P_SIG_ARRAY(fs) + (index - 1) * fs->slot_width;
     int size = sig[0] & SIZE_MASK;
@@ -63,7 +63,7 @@ pvt void FS_at_array_put(struct FunctionSelector *fs, int index, unsigned short 
     dest[o_last] = 0x0000 | ((payload & LOWER_PAYLOAD_MASK) << LOWER_PAYLOAD_SHIFT);
 }
 
-pvt int FS_next_free_array_index(struct FunctionSelector *fs) {
+pvt int FS_next_free_array_index(FS *fs) {
     int num_slots = fs->num_slots;
     int slot_width = fs->slot_width;
     unsigned short *array = P_SIG_ARRAY(fs);
@@ -100,18 +100,18 @@ pvt int fast_probe_sigs(unsigned short query[], unsigned short sigs[], int slot_
 //pvt size_t FS_required_size(int num_args, int num_slots) {
 //    // OPEN check range and return err (like in FS_create)
 //    int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
-//    return sizeof(struct FunctionSelector) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
+//    return sizeof(FS) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
 //}
 
 pvt err FS_required_size(int num_args, int num_slots, size_t *size) {
     if (!(1 <= num_args && num_args <=16)) SIGNAL("num_args is not within {1, 16}");         // OPEN add num_args value to msg
     if (!(1 <= num_slots && num_slots <=128)) SIGNAL("num_slots is not within {1, 128}");
     int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
-    *size = sizeof(struct FunctionSelector) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
+    *size = sizeof(FS) + sizeof(unsigned short) * (num_slots + 1) * slot_width + sizeof(unsigned short) * num_slots;
     return BK_NO_ERROR;
 }
 
-pvt err FS_create(struct FunctionSelector *fs, int num_args, int num_slots) {
+pvt err FS_create(FS *fs, int num_args, int num_slots) {
     int i, iHC;
     int slot_width = SLOT_WIDTH_FROM_NUM_ARGS(num_args);
     if (!(1 <= num_args && num_args <=16)) SIGNAL("num_args is not within {1, 16}");         // OPEN add num_args value to msg
@@ -127,7 +127,7 @@ pvt err FS_create(struct FunctionSelector *fs, int num_args, int num_slots) {
     return BK_NO_ERROR;
 }
 
-pvt void FS_trash(struct FunctionSelector *fs) {
+pvt void FS_trash(FS *fs) {
 }
 
 

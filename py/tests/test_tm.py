@@ -1,3 +1,30 @@
+import sys
+from bones import jones
+
+#
+# sys._k = jones.Kernel()
+# tm = sys._k.tm
+#
+# t1 = tm.nominal("u8")
+# assert not tm.hasT(t1)
+#
+# T1 = tm.schemavar(f'T1')
+# assert tm.hasT(T1)
+#
+# assert tm.hasT(tm.intersection(t1, T1))
+# assert tm.hasT(tm.union(t1, T1))
+# assert tm.hasT(tm.tuple(t1, T1))
+# assert tm.hasT(tm.seq(T1))
+# assert tm.hasT(tm.map(t1, T1))
+# assert tm.hasT(tm.fn((t1, t1), T1))
+# assert tm.hasT(tm.struct(("x",), (T1,)))
+#
+#
+# del sys.__dict__['_k']
+
+
+
+
 from coppertop.pipe import *
 from dm.core.types import pylist, pytuple
 from dm.testing import check, raises, equals, gt, different
@@ -38,6 +65,7 @@ def test_sm():
     sm.name >> apply_ >> 0 >> check >> raises >> ValueError
     sm.name >> apply_ >> 100000 >> check >> raises >> ValueError
 
+    del sys.__dict__['_k']
     return "test_sm passed"
 
 
@@ -96,12 +124,14 @@ def test_nominal():
     tm = sys._k.tm
 
     tm.exists('u32') >> check >> equals >> False
-    tm.btype >> apply_ >> ['u32'] >> check >> raises >> TypeError
+    tm.fromName >> apply_ >> ['u32'] >> check >> raises >> TypeError
     t = tm.nominal(f'u32')
     tm.exists('u32') >> check >> equals >> True
-    tm.btype('u32') >> check >> isType >> t
-    # tm.btype('u32') >> check >> equals >> t
+    tm.fromName('u32') >> check >> isType >> t
+    # tm.fromName('u32') >> check >> equals >> t
     tm.name(t) >> check >> equals >> 'u32'
+
+    tm.nominal >> apply_ >> ['u32'] >> check >> raises >> TypeError
 
     return "test_nominal passed"
 
@@ -238,10 +268,10 @@ def test_schemavar():
     tm = sys._k.tm
 
     tm.exists('T1') >> check >> equals >> False
-    tm.btype >> apply_ >> ['T1'] >> check >> raises >> TypeError
+    tm.fromName >> apply_ >> ['T1'] >> check >> raises >> TypeError
     t = tm.schemavar(f'T1')
     tm.exists('T1') >> check >> equals >> True
-    tm.btype('T1') >> check >> isType >> t
+    tm.fromName('T1') >> check >> isType >> t
     tm.name(t) >> check >> equals >> 'T1'
 
     return "test_schemavar passed"
@@ -304,7 +334,7 @@ def test_hasT():
     tm.hasT(tm.seq(T1)) >> check >> equals >> True
     tm.hasT(tm.map(t1, T1)) >> check >> equals >> True
     tm.hasT(tm.function((t1, t1), T1)) >> check >> equals >> True
-    # tm.hasT(tm.struct(("x",), (T1,))) >> check >> equals >> True
+    tm.hasT(tm.struct(("x",), (T1,))) >> check >> equals >> True
 
     return "test_hasT passed"
 

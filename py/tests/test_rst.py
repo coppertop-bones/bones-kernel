@@ -27,7 +27,7 @@ def test_deepAssign():
     sys._k.initCommon()
     tm = sys._k.tm
 
-    i32 = tm.btype('i32')
+    i32 = tm.fromName('i32')
     N_i32 = tm.seq(i32)
 
     # create a symtab and add to local scope

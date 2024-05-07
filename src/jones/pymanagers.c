@@ -20,7 +20,7 @@
 btypeid_t _num_btypes = 0;
 PyObject * *_btypes = 0;        // OPEN: move this to the Python Kernel object?
 
-//OPEN: add BTypeError (as a subclass of PyTypeError?)
+// OPEN: add BTypeError as a subclass of PyTypeError,
 
 // ---------------------------------------------------------------------------------------------------------------------
 // PySM
@@ -110,21 +110,19 @@ pvt PyObject * newPyBTypeRef(btypeid_t btypeid) {
         new->btypeid = btypeid;
         _btypes[btypeid] = (PyObject *) new;
     }
-    Py_INCREF(_btypes[btypeid]);
-    return _btypes[btypeid];
+    return Py_NewRef(_btypes[btypeid]);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// btype: (name:str) -> PyBType + PyException
+// bmetatypeid: (btype) -> PyLong + PyException
 // ---------------------------------------------------------------------------------------------------------------------
-pvt PyObject * PyTM_btype(PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    // answer a new BType given a name or a TypeError if there is no btype with that name
+pvt PyObject * PyTM_bmetatypeid(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer the bmetatypeid of the given btype
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
-    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
-    btypeid_t btypeid = tm_btypeid(self->tm, name);
-    if (!btypeid) return PyErr_Format(PyExc_TypeError, "'%s' is not a btype", name);
-    return newPyBTypeRef(btypeid);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
+    // OPEN: what to do if there is no name (use t123?) - 0 means invalid type?
+    long bmtid = (long) tm_bmetatypeid(self->tm, ((PyBType *) args[0])->btypeid);
+    return PyLong_FromLong(bmtid);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -264,6 +262,42 @@ pvt PyObject * PyTM_fnTRet(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     btypeid_t tFn = ((PyBType *) args[0])->btypeid;
     if (tm_bmetatypeid(self->tm, tFn) != bmtfnc) return PyErr_Format(PyExc_TypeError, "btype is not a fn type");
     return newPyBTypeRef(tm_Fn(self->tm, tFn).tRet);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// fromId: (btypeid) -> PyBType + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_fromId(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    int overflow;
+    // answer a PyBType given its btypeid
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyLong_Check(args[0])) return PyErr_Format(PyExc_TypeError, "btypeid must be an int");
+    btypeid_t btypeid = (btypeid_t) PyLong_AsLongAndOverflow(args[0], &overflow);
+    if (overflow != 0 || btypeid <= 0 || btypeid >= self->tm->next_btypeId) return PyErr_Format(PyExc_TypeError, "btypeid is outside the range of all BTypes");
+    return newPyBTypeRef(btypeid);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// fromName: (name:str) -> PyBType + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_fromName(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer a new BType given a name or a TypeError if there is no btype with that name
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
+    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    btypeid_t btypeid = tm_btypeid(self->tm, name);
+    if (!btypeid) return PyErr_Format(PyExc_TypeError, "Unknown type '%s'", name);
+    return newPyBTypeRef(btypeid);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// hasT: (btype) -> PyBool + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * PyTM_hasT(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    // answer if the given btype contains a schemavar
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
+    return tm_hasT(self->tm, ((PyBType *) args[0])->btypeid) ? Py_NewRef(Py_True) : Py_NewRef(Py_False);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -412,15 +446,23 @@ pvt PyObject * PyTM_name(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 // nameAs: (btype, name:str) -> PyBType + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * PyTM_nameAs(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    char *newname, *oldname;  btypeid_t btypeid;
     // answer a new reference to the given btype, naming it in the process if it hasn't already got one
     if (nargs != 2) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype is not a BType");
     if (!PyUnicode_Check(args[1]) || (PyUnicode_KIND(args[1]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
 
     PyBType *btype = (PyBType *) args[0];
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[1]);
-    btypeid_t btypeid = tm_name_as(self->tm, btype->btypeid, name);
-    return btypeid ? Py_NewRef(args[0]) : PyErr_Format(PyExc_ValueError, "Name already in use");
+    newname = (char *) PyUnicode_AsUTF8(args[1]);       // PyUnicode_1BYTE_DATA
+    if ((btypeid = tm_name_as(self->tm, btype->btypeid, newname))) {
+        return newPyBTypeRef(btypeid);
+    } else {
+        if ((oldname = tm_name(self->tm, btype->btypeid))) {
+            return strcmp(newname, oldname) == 0 ? newPyBTypeRef(btypeid) : PyErr_Format(PyExc_TypeError, "t%i is already named \"%s\"", btype->btypeid, oldname);
+        } else {
+            return PyErr_Format(PyExc_TypeError, "\"%s\" is already in use by another btype", newname);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -680,7 +722,10 @@ pvt PyObject * PyTM_unionTl(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyMethodDef PyTM_methods[] = {
-    {"btype",               (PyCFunction) PyTM_btype, METH_FASTCALL, "btype(name)\n\nanswers the btype called 'name' or None"},
+    {"bmetatypeid",         (PyCFunction) PyTM_bmetatypeid, METH_FASTCALL,
+        "bmetatypeid(t)\n\n"
+        "Answers the bmetatypeid of the type if it exists else throws an error."
+    },
     {"exclusionCat",        (PyCFunction) PyTM_exclusionCat, METH_FASTCALL,
         "exclusionCat(name, exclusionCat)\n\n"
         "Answers the exclusionCat with name, creating it if it doesn't exist, or throws an error if it already does and exclusionCat is different."
@@ -704,6 +749,17 @@ pvt PyMethodDef PyTM_methods[] = {
     {"fnTRet",              (PyCFunction) PyTM_fnTRet, METH_FASTCALL,
         "fnRetT(tFn)\n\n"
         "Answers tRet of a function."
+    },
+    {"fromName",            (PyCFunction) PyTM_fromName, METH_FASTCALL,
+        "fromName(name)\n\nanswers the btype called 'name' else throws an error."
+    },
+    {"fromId",              (PyCFunction) PyTM_fromId, METH_FASTCALL,
+        "fromId(btypeid)\n\n"
+        "Answers the type corresponding to btypeid if it exists else throws an error."
+    },
+    {"hasT",                (PyCFunction) PyTM_hasT, METH_FASTCALL,
+        "hasT(btypeid)\n\n"
+        "Answers True if the type has a schema variable."
     },
     {"intersection",        (PyCFunction) PyTM_intersection, METH_FASTCALL,
         "intersection(t1, t2, ...)\n\n"

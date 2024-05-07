@@ -369,10 +369,8 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         if (partial->pipe1 == 0) return PyErr_Format(PyExc_SyntaxError, "Trying to pipe the 2nd argument into ternary style partial fn %s.%s but the first argument hasn't been piped yet", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         if (partial->pipe1 != 0 && partial->pipe2 == 0) {
             // keeping argument 2
-            partial->pipe2 = rhs;
-            Py_INCREF(rhs);
-            Py_INCREF(partial);                 // we're handing out another ref to partial to the caller
-            return (PyObject *) partial;
+            partial->pipe2 = Py_NewRef(rhs);
+            return Py_NewRef((PyObject *) partial);
         }
         // dispatch
         if (Py_SIZE(partial) == 0)
@@ -528,8 +526,7 @@ pvt PyObject * _Partial__call__(struct Partial *partial, PyObject *args, PyObjec
             if (arg == TBC) {
                 Py_DECREF(arg);
                 PyObject * new_arg = PyTuple_GET_ITEM(args, oNextArg);
-                new_partial->args[o] = new_arg;
-                Py_INCREF(new_arg);
+                new_partial->args[o] = Py_NewRef(new_arg);
                 oNextArg ++;
             }
         }
@@ -567,10 +564,9 @@ pvt PyObject * Partial_args(struct Partial *partial, void* closure) {
     if (answer == 0) return 0;
     for (Py_ssize_t o=0; o < full_size; o++) {
         if (args[o] == TBC)
-            PyTuple_SET_ITEM(answer, o, Py_None);
+            PyTuple_SET_ITEM(answer, o, Py_NewRef(Py_None));
         else
-            PyTuple_SET_ITEM(answer, o, args[o]);
-        Py_INCREF(args[o]);                             // PyTuple_SET_ITEM steals a reference so inc
+            PyTuple_SET_ITEM(answer, o, Py_NewRef(args[o]));
     }
     return answer;
 }
@@ -602,15 +598,12 @@ pvt PyObject * Partial_args(struct Partial *partial, void* closure) {
 // fred.__array_ufunc__   args: (<ufunc 'right_shift'>, '__call__', array(5), fred)
 
 pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *args, PyObject *kwds) {
-//pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject **args, Py_ssize_t num_args) {
     Py_ssize_t num_args = PyTuple_GET_SIZE(args);
     if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "fn %s.%s.__array_ufunc__ does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     if (num_args != 4) return PyErr_Format(PyExc_SyntaxError, "Wrong number of args to fn %s.%s.__array_ufunc__ - %l expected, %l given", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), 4, num_args);
     // MORE ERROR DETECTION?
     PyObject *lhs = PyTuple_GET_ITEM(args, 2);
-    Py_INCREF(lhs);
     PyObject *rhs = PyTuple_GET_ITEM(args, 3);
-    Py_INCREF(lhs);
     PyTypeObject *cls = Py_TYPE(rhs);
     if (cls == &PyUnaryCls) return _unary_nb_rshift(lhs, rhs);
     if (cls == &PyBinaryCls) return _binary_nb_rshift(lhs, rhs);
@@ -628,30 +621,27 @@ pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *args, PyObject *k
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt void Fn_dealloc(struct Fn *self) {
-    Py_DECREF(self->name);
-    Py_DECREF(self->bmod);
-    Py_DECREF(self->d);
-    Py_DECREF(self->TBCSentinel);
+    Py_XDECREF(self->name);
+    Py_XDECREF(self->bmod);
+    Py_XDECREF(self->d);
+    Py_XDECREF(self->TBCSentinel);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 pvt PyObject * Fn_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     if (PyTuple_GET_SIZE(args) != 4) return PyErr_Format(ProgrammerError, "Must be created as Fn(name, bmod, d, TBCSentinel)");
-    struct Fn *instance = (struct Fn *) type->tp_alloc(type, 0);
-    if (instance == 0) return 0;
-    return (PyObject *) instance;
+    return type->tp_alloc(type, 0);
 }
 
 pvt int Fn_init(struct Fn *self, PyObject *args, PyObject *kwds) {
-    if (!PyArg_ParseTuple(args, "UUOO:", &self->name, &self->bmod, &self->d, &self->TBCSentinel)) return -1;
-    Py_INCREF(self->name);
-    Py_INCREF(self->bmod);
-    Py_INCREF(self->d);
-    Py_INCREF(self->TBCSentinel);
-    if (!PyCallable_Check(self->d)) {
-        PyErr_Format(PyExc_TypeError, "d is not a callable");
-        return -1;
-    }
+    PyObject *name, *bmod, *d, *TBCSentinel;
+    if (!PyArg_ParseTuple(args, "UUOO:", &name, &bmod, &d, &TBCSentinel)) return -1;
+    // OPEN: check type of other args
+    self->name = Py_NewRef(name);
+    self->bmod = Py_NewRef(bmod);
+    if (!PyCallable_Check(d)) {PyErr_Format(PyExc_TypeError, "d is not a callable"); return -1;}
+    self->d = Py_NewRef(d);
+    self->TBCSentinel = Py_NewRef(TBCSentinel);
     return 0;
 }
 
@@ -681,28 +671,20 @@ pvt void Partial_dealloc(struct Partial *self) {
 pvt int Partial_initFromFn(
         struct Partial *self, PyObject *name, PyObject *bmod, PyObject *d, PyObject *TBCSentinel, unsigned char num_tbc,
         PyObject *pipe1, PyObject *args[]) {
-
-    self->Fn.name = name;
-    self->Fn.bmod = bmod;
-    self->Fn.d = d;
-    self->Fn.TBCSentinel = TBCSentinel;
+    Py_ssize_t num_args;  Py_ssize_t i;
+    self->Fn.name = Py_NewRef(name);
+    self->Fn.bmod = Py_NewRef(bmod);
+    self->Fn.d = Py_NewRef(d);
+    self->Fn.TBCSentinel = Py_NewRef(TBCSentinel);
     self->num_tbc = num_tbc;
-    self->pipe1 = pipe1;
+    self->pipe1 = Py_XNewRef(pipe1);
     self->pipe2 = 0;
-    Py_INCREF(name);
-    Py_INCREF(bmod);
-    Py_INCREF(d);
-    Py_INCREF(TBCSentinel);
-    Py_XINCREF(pipe1);
-
-    Py_ssize_t num_args = Py_SIZE(self);
+    num_args = Py_SIZE(self);
     if (args != 0) {
-        for (Py_ssize_t o=0; o < num_args ; o++) {
-            self->args[o] = args[o];
-            Py_XINCREF(args[o]);
+        for (i = 0; i < num_args ; i++) {
+            self->args[i] = Py_XNewRef(args[i]);
         }
     }
-
     return 0;
 }
 
@@ -717,8 +699,7 @@ pvt PyObject * Fn_get_doc(struct Fn *self, void *closure) {
 }
 
 pvt PyObject * Fn_get_d(struct Fn *self, void *closure) {
-    Py_INCREF(self->d);
-    return self->d;
+    return Py_NewRef(self->d);
 }
 
 pvt int Fn_set_d(struct Fn *self, PyObject *d, void* closure) {
@@ -726,8 +707,8 @@ pvt int Fn_set_d(struct Fn *self, PyObject *d, void* closure) {
         PyErr_Format(PyExc_TypeError, "d is not a callable");
         return -1;
     }
-    self->d = d;
-    Py_INCREF(d);
+    Py_XDECREF(self->d);
+    self->d = Py_NewRef(d);
     return 0;
 }
 
