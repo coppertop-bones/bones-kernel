@@ -29,7 +29,7 @@ PyObject * *_btypes = 0;        // OPEN: move this to the Python Kernel object?
 pvt PyObject * PySM_symid(struct PySM *self, PyObject **args, Py_ssize_t nargs) {
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    char *name = (char *) PyUnicode_AsUTF8(args[0]);
     return PyLong_FromLong(sm_id(self->sm, name));
 }
 
@@ -132,7 +132,7 @@ pvt PyObject * PyTM_exists(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answer True if there is a btype with the given name, else False
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    char *name = (char *) PyUnicode_AsUTF8(args[0]);
     return PyBool_FromLong(tm_btypeid(self->tm, name));
 }
 
@@ -143,7 +143,7 @@ pvt PyObject * PyTM_exclusionCat(PyTM *self, PyObject **args, Py_ssize_t nargs) 
     // answer the exclusion category for the given name, creating if necessary
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    char *name = (char *) PyUnicode_AsUTF8(args[0]);
     btexclusioncat_t res = tm_exclusion_cat(self->tm, name, 0);
     if (res == 0) return PyErr_Format(PyExc_TypeError, "Couldn't create exclusion category for name = \"%s\"", name);
     return PyLong_FromLong(res);
@@ -169,7 +169,7 @@ pvt PyObject * PyTM_exclusiveNominal(PyTM *self, PyObject **args, Py_ssize_t nar
         return PyErr_Format(PyExc_TypeError, "invalid exclusion category");
     }
     // OPEN: add size for btememory
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    char *name = (char *) PyUnicode_AsUTF8(args[0]);
     btypesize_t sz = 0;
     btypeid_t btypeid = tm_exclnominal(self->tm, name, excl, sz, 0);
     if (btypeid)
@@ -284,7 +284,7 @@ pvt PyObject * PyTM_fromName(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answer a new BType given a name or a TypeError if there is no btype with that name
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    char *name = (char *) PyUnicode_AsUTF8(args[0]);
     btypeid_t btypeid = tm_btypeid(self->tm, name);
     if (!btypeid) return PyErr_Format(PyExc_TypeError, "Unknown type '%s'", name);
     return newPyBTypeRef(btypeid);
@@ -453,7 +453,7 @@ pvt PyObject * PyTM_nameAs(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     if (!PyUnicode_Check(args[1]) || (PyUnicode_KIND(args[1]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
 
     PyBType *btype = (PyBType *) args[0];
-    newname = (char *) PyUnicode_AsUTF8(args[1]);       // PyUnicode_1BYTE_DATA
+    newname = (char *) PyUnicode_AsUTF8(args[1]);       // OPEN: why move from PyUnicode_1BYTE_DATA?
     if ((btypeid = tm_name_as(self->tm, btype->btypeid, newname))) {
         return newPyBTypeRef(btypeid);
     } else {
@@ -472,7 +472,7 @@ pvt PyObject * PyTM_nominal(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answer a new nominal with the given name, or an exception if already taken
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    char *name = (char *) PyUnicode_AsUTF8(args[0]);
     btypeid_t btypeid = tm_nominal(self->tm, name, 0);
     if (btypeid)
         return newPyBTypeRef(btypeid);
@@ -487,7 +487,7 @@ pvt PyObject * PyTM_schemavar(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     // answer a new schema variable with the given name, or an exception if already taken
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
-    char *name = (char *) PyUnicode_1BYTE_DATA(args[0]);
+    char *name = (char *) PyUnicode_AsUTF8(args[0]);
     btypeid_t btypeid = tm_schemavar(self->tm, name, 0);
     if (btypeid)
         return newPyBTypeRef(btypeid);
@@ -568,7 +568,7 @@ pvt PyObject * PyTM_struct(PyTM *self, PyObject **args, Py_ssize_t nargs) {
             resetToCheckpoint(buckets, &cp);
             return PyErr_Format(PyExc_TypeError, "type%i is not a BType", i);
         }
-        name = (char *) PyUnicode_1BYTE_DATA(s);
+        name = (char *) PyUnicode_AsUTF8(s);
         sl[i] = sm_id(self->tm->sm, name);
         tl[i] = ((PyBType *) btype)->btypeid;
     }

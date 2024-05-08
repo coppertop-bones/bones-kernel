@@ -53,7 +53,7 @@ typedef enum {
     B_RP64,
     B_LITINT,
     B_LITDEC,
-    B_LITUTF8,
+    B_LITTXT,
 
     B_EXTERN,
     B_STATIC,

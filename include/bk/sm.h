@@ -71,7 +71,7 @@ pub int SM_trash(BK_SM *);
 pub symid_t sm_id(BK_SM *, char *);
 pub bool sm_id_le(BK_SM *, symid_t a, symid_t b);
 pvt inline RP sm_id_2_RP(BK_SM *sm, symid_t symid) {return sm->rp_by_symid[symid];};
-pub char * sm_name(BK_SM *, RP);
+pub char * sm_name(BK_SM *, symid_t);
 pub SM_SLID_T sm_slid(BK_SM *, symid_t *);
 
 #endif // INC_BK_SM_H

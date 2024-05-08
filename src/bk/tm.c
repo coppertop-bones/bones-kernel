@@ -651,7 +651,7 @@ pub btypeid_t tm_name_as(BK_TM *tm, btypeid_t btypeid, char *name) {
     else {
         if ((symid = tm->symid_by_btypeid[btypeid]) != 0)
             // already named - check the given name is the same as the existing name
-            return strcmp(sm_name(tm->sm, sm_id_2_RP(tm->sm, symid)), name) == 0 ? btypeid : B_NAT;
+            return strcmp(sm_name(tm->sm, symid), name) == 0 ? btypeid : B_NAT;
         else {
             // not named so check name is not already in use
             symid = sm_id(tm->sm, name);

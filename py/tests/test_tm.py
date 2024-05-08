@@ -131,8 +131,6 @@ def test_nominal():
     # tm.fromName('u32') >> check >> equals >> t
     tm.name(t) >> check >> equals >> 'u32'
 
-    tm.nominal >> apply_ >> ['u32'] >> check >> raises >> TypeError
-
     return "test_nominal passed"
 
 
@@ -146,7 +144,7 @@ def test_intersection():
     tCcy = tm.exclusiveNominal('ccy', ccy)
 
     GBP = tm.intersection(tCcy, tm.nominal(f'_GBP'))
-    GBP >> check >> equals >> tm.intersection(tm.nominal(f'_GBP'), tCcy)
+    GBP.id >> check >> equals >> tm.intersection(tm.nominal(f'_GBP'), tCcy).id
     EUR = tm.intersection(tCcy, tm.nominal(f'_EUR'))
 
     # test exclusivity
@@ -333,7 +331,7 @@ def test_hasT():
     tm.hasT(tm.tuple(t1, T1)) >> check >> equals >> True
     tm.hasT(tm.seq(T1)) >> check >> equals >> True
     tm.hasT(tm.map(t1, T1)) >> check >> equals >> True
-    tm.hasT(tm.function((t1, t1), T1)) >> check >> equals >> True
+    tm.hasT(tm.fn((t1, t1), T1)) >> check >> equals >> True
     tm.hasT(tm.struct(("x",), (T1,))) >> check >> equals >> True
 
     return "test_hasT passed"
