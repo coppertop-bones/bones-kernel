@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------------------------------------------------
-// module functions
+// low level hacks - functions to hack memory from Python
 // ---------------------------------------------------------------------------------------------------------------------
-#ifndef SRC_JONES_MOD_C
-#define SRC_JONES_MOD_C "jones/mod.c"
+#ifndef SRC_JONES_PYLLH_C
+#define SRC_JONES_PYLLH_C "jones/pyllh.c"
 
 
 #include "../../include/bk/bk.h"
@@ -128,4 +128,4 @@ pvt PyObject * _atU8Put(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
 
 
 
-#endif  // SRC_JONES_MOD_C
+#endif  //     SRC_JONES_PYLLH_C

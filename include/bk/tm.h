@@ -189,6 +189,12 @@ typedef enum {
 
 
 // OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
+// btypeid - 18 bits (256k)
+// bmetatypeid - 4 bits (16 types)
+// exclid - 4 bits (16 types)
+// has_T
+// recursive
+
 // also will store recursion
 // OPEN: hasT etc
 

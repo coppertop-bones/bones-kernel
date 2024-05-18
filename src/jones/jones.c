@@ -3,12 +3,12 @@
 
 
 #include "jones.h"
-#include "pyfns.c"
 #include "../bk/lib/os.c"
+#include "pyfns.c"
 #include "pybtype.c"
 #include "pymanagers.c"
 #include "pyfs.c"
-#include "mod.c"
+#include "pyllh.c"
 
 #ifdef JONES_INCLUDE_PLAY
 #include "play.c"
@@ -19,7 +19,7 @@
 // init module
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt PyMethodDef free_fns[] = {
+pvt PyMethodDef jones_fns[] = {
     {"toAddress", (PyCFunction)                 _toAddress, METH_FASTCALL, "toAddress(object)\n\nanswer the address of object and it's refcount"},
     {"toPtr", (PyCFunction)                     _toPtr, METH_FASTCALL, "toPtr(object)\n\nanswer the address of object"},
     {"toObj",                                   _toObj, METH_VARARGS, "toObj(address)\n\nreturn the ptr as an object"},
@@ -61,7 +61,7 @@ pvt PyModuleDef jones_module = {
     .m_name = "jones",
     .m_doc = "as in archibald",
     .m_size = -1,
-    free_fns
+    jones_fns
 };
 
 

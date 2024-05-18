@@ -234,6 +234,76 @@ NOTES
 
 
 
+To do a X <: Y we partition the two types into three sets:
+
+- X intersect Y' - stuff in Y but not in X - anything here then it's not a fit
+- X intersect Y - common stuff, if we only have common stuff then it's an exact fit
+- X' intersect Y - we term this the residual
+
+X & Y' = X - X & Y
+X & Y
+X' & Y = Y - X & Y
+
+| X    <:   Y   | fitsWithin | X - X&Y | X&Y | Y - X&Y |
+|---------------|------------|---------|-----|---------|
+| A    <:   A   | exact      | {}      | A   | {}      |
+| A    <:   B   | false      | A       | {}  | B       |
+| A&B  <:   A   | true       | {}      | A&B | A - A&B |
+| A    <:   A&B | false      | A - A&B | A&B | {}      |
+| A    <:   A+B | true       | {}      | A   | B       | 
+| A+B  <:   A   | false      | B       | A   | {}      |
+
+C = A&B
+D 
+C <: C + D
+
+
+{} - A = {} we have no negative numbers with sets or rather this implies A = {}
+
+
+C = A&B
+C + D = A
+D = A - C
+D = A - A&B
+
+
+A&B + (B - A&B) + (A - A&B)
+
+
+
+
+
+(A,A&B)      <:  (A+B,B)            all elements must fit within
+(A,A)        <:  (A,A) + (B,B)
+(A,A)&(B,B)  <:  (A,A)
+```
+
+
+
+
+when types are in the residual set we allow them to behave in exlusively one of the following ways:
+
+generic - the default of all types, e.g. matrix (i.e. N**N**num), matrix&left, right, upper, lower, orthogonal,
+identity, diagonal, tridiagonal, banddiagonal, positivedefinite, positivesemidefinite etc
+all matrix operations are available and some are optimisable. e.g. cov = AT @ A can return identity for the
+orthogonal case
+i.e. generics do not prevent matching, thus effectively are discarded from the matching decision
+
+implicit - e.g. anon, named, aliased with aliased as the implicit default, defaults do not prevent matching, and
+non-defaults can be explicity weakened to the default to provide the right behaviour
+
+familial - e.g. ISIN, CUSIP, inches, cm, all instances in the signature must have the same residual, i.e. like a T1,
+thus add(num, num) called with (cm, inches) will not match as cm and inches are both familial, and (cm, num) will
+not match as cm is familial to all other types
+
+explicit - e,g, ccy, fx, anything explicit in a residual results in no match
+
+orthogonal - e.g. listOfLists, dtup, ascii, txt (typically classes / structs / values / etc) only one orthogonal type
+may exist in the residual and common. Currently classes are the only orthogonal type I can think of - maybe null set,
+void, missing, are too. But what about void&num?
+
+
+generic / vanilla / tags / occasional / unremarkable / exceptional / partial / minor /
 
 
 
