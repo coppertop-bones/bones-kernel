@@ -40,6 +40,41 @@ pvt PyObject * Py_qu_b76_call(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// b76_call_greeks: p:PyFloat -> PyFloat + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * Py_qu_b76_call_greeks(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    double t, r, df;  black_greeks greeks;  PyObject *answer;
+    // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
+    if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
+    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "tenor is not a float");
+    if (!PyFloat_Check(args[1])) return PyErr_Format(PyExc_TypeError, "strike is not a float");
+    if (!PyFloat_Check(args[2])) return PyErr_Format(PyExc_TypeError, "forward is not a float");
+    if (!PyFloat_Check(args[3])) return PyErr_Format(PyExc_TypeError, "vol is not a float");
+    if (!PyFloat_Check(args[4])) return PyErr_Format(PyExc_TypeError, "r is not a float");
+    t = PyFloat_AsDouble(args[0]);
+    r = PyFloat_AsDouble(args[4]);
+    df = exp(- r * t);
+    greeks = qu_b76_call_greeks(
+        PyFloat_AsDouble(args[0]),
+        PyFloat_AsDouble(args[1]),
+        PyFloat_AsDouble(args[2]),
+        PyFloat_AsDouble(args[3]),
+        r,
+        df,
+        qu_cn_Hart
+    );
+    answer = PyTuple_New(6);
+    if (answer == 0) return 0;
+    PyTuple_SET_ITEM(answer, 0, PyFloat_FromDouble(greeks.price));
+    PyTuple_SET_ITEM(answer, 1, PyFloat_FromDouble(greeks.delta));
+    PyTuple_SET_ITEM(answer, 2, PyFloat_FromDouble(greeks.gamma));
+    PyTuple_SET_ITEM(answer, 3, PyFloat_FromDouble(greeks.vega));
+    PyTuple_SET_ITEM(answer, 4, PyFloat_FromDouble(greeks.theta));
+    PyTuple_SET_ITEM(answer, 5, PyFloat_FromDouble(greeks.rho));
+    return answer;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // b76_put: p:PyFloat -> PyFloat + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * Py_qu_b76_put(PyTM *self, PyObject **args, Py_ssize_t nargs) {
@@ -64,6 +99,41 @@ pvt PyObject * Py_qu_b76_put(PyTM *self, PyObject **args, Py_ssize_t nargs) {
             qu_cn_Hart
         )
     );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// b76_put_greeks: p:PyFloat -> PyFloat + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * Py_qu_b76_put_greeks(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    double t, r, df;  black_greeks greeks;  PyObject *answer;
+    // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
+    if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
+    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "tenor is not a float");
+    if (!PyFloat_Check(args[1])) return PyErr_Format(PyExc_TypeError, "strike is not a float");
+    if (!PyFloat_Check(args[2])) return PyErr_Format(PyExc_TypeError, "forward is not a float");
+    if (!PyFloat_Check(args[3])) return PyErr_Format(PyExc_TypeError, "vol is not a float");
+    if (!PyFloat_Check(args[4])) return PyErr_Format(PyExc_TypeError, "r is not a float");
+    t = PyFloat_AsDouble(args[0]);
+    r = PyFloat_AsDouble(args[4]);
+    df = exp(- r * t);
+    greeks = qu_b76_put_greeks(
+        PyFloat_AsDouble(args[0]),
+        PyFloat_AsDouble(args[1]),
+        PyFloat_AsDouble(args[2]),
+        PyFloat_AsDouble(args[3]),
+        r,
+        df,
+        qu_cn_Hart
+    );
+    answer = PyTuple_New(6);
+    if (answer == 0) return 0;
+    PyTuple_SET_ITEM(answer, 0, PyFloat_FromDouble(greeks.price));
+    PyTuple_SET_ITEM(answer, 1, PyFloat_FromDouble(greeks.delta));
+    PyTuple_SET_ITEM(answer, 2, PyFloat_FromDouble(greeks.gamma));
+    PyTuple_SET_ITEM(answer, 3, PyFloat_FromDouble(greeks.vega));
+    PyTuple_SET_ITEM(answer, 4, PyFloat_FromDouble(greeks.theta));
+    PyTuple_SET_ITEM(answer, 5, PyFloat_FromDouble(greeks.rho));
+    return answer;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
