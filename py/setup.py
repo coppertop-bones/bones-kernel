@@ -6,12 +6,12 @@ python_include_dir = os.path.abspath(os.path.join(sys.executable, 'include'))
 setuptools.setup(ext_modules=[
     setuptools.Extension(
         "bones.jones",
-        [os.path.join(parent_folder, "src/jones/jones.c")],
+        [os.path.join(parent_folder, "src/jones/mod_jones.c")],
         include_dirs=[python_include_dir]
     ),
     setuptools.Extension(
         "bones.qu",
-        [os.path.join(parent_folder, "src/jones/jones_qu.c")],
+        [os.path.join(parent_folder, "src/jones/mod_qu.c")],
         include_dirs=[python_include_dir],
     ),
 ])

@@ -107,4 +107,4 @@ pub double qu_bs_call(double t, double k, double s, double sigma, double r, doub
     return CN(d1) * s - CN(d2) * k * exp(-rt);
 }
 
-#endif // SRC_QU_BLACK_C
+#endif  // SRC_QU_BLACK_C

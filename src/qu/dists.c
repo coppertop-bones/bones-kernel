@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------------------------------------------------
-// QU - Quant Utilities
+// distributions
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef SRC_BK_QU_C
-#define SRC_BK_QU_C "bk/qu.c"
+#ifndef SRC_QU_DISTS_C
+#define SRC_QU_DISTS_C "qu/dists.c"
 
 #include <math.h>
 #include "../../include/qu/qu.h"
@@ -89,4 +89,4 @@ pub double qu_invcn_Acklam(double p) {
 }
 
 
-#endif // SRC_BK_QU_C
+#endif  // SRC_QU_DISTS_C

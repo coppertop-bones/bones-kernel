@@ -1,5 +1,5 @@
-#ifndef SRC_JONES_JONES_C
-#define SRC_JONES_JONES_C "jones/jones.c"
+#ifndef SRC_JONES_MOD_JONES_C
+#define SRC_JONES_MOD_JONES_C "jones/mod_jones.c"
 
 
 #include "jones.h"
@@ -225,4 +225,4 @@ pvt void die_(char *preamble, char *msg, va_list args) {
     exit(1);
 }
 
-#endif  // SRC_JONES_JONES_C
+#endif  // SRC_JONES_MOD_JONES_C

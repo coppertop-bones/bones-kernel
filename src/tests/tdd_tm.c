@@ -94,6 +94,7 @@ void test_tm() {
     expected ++;
     check(t == expected, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, expected);
 
+
     // struct
     SM_SLID_T slid = sm_slid(k->sm, symlist);
     btypeid_t tupid = tm_tuple(k->tm, typelist, 0);

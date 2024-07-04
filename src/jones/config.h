@@ -5,10 +5,11 @@
 //#define JONES_INCLUDE_PLAY
 
 
-#define BK_PYTHON_H "Python.h"
+//#define BK_PYTHON_H "Python.h"
 #define BK_DESCROBJECT_H "descrobject.h"
 #define BK_STRUCTMEMBER_H "structmember.h"
-//#define BK_PYTHON_H "/Users/david/miniforge3/envs/b311/include/python3.11/Python.h"
+#define BK_PYTHON_H "/Users/david/miniforge3/envs/b311/include/python3.11/Python.h"
+#define BK_NUMPY_ARRAYOBJECT_H "/Users/david/miniforge3/envs/b311/lib/python3.11/site-packages/numpy/core/include/numpy/arrayobject.h"
 //#define BK_DESCROBJECT_H "/Users/david/miniforge3/envs/b311/include/python3.11/descrobject.h"
 //#define BK_STRUCTMEMBER_H "/Users/david/miniforge3/envs/b311/include/python3.11/structmember.h"
 

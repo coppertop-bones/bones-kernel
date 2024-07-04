@@ -1,9 +1,10 @@
-#ifndef SRC_JONES_JONES_C
-#define SRC_JONES_JONES_C "jones/jones.c"
+#ifndef SRC_JONES_MOD_QU_C
+#define SRC_JONES_MOD_QU_C "jones/mod_qu.c"
 
 
 #include "jones.h"
 #include "pyqu.c"
+#include BK_NUMPY_ARRAYOBJECT_H
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -19,6 +20,11 @@ pvt PyMethodDef qu_fns[] = {
     {"b76_put", (PyCFunction)           Py_qu_b76_put, METH_FASTCALL, "b76_put(tenor, strike, forward, vol, r) -> price"},
     {"b76_put_greeks", (PyCFunction)    Py_qu_b76_put_greeks, METH_FASTCALL, "b76_put_greeks(tenor, strike, forward, vol, r) -> greeks"},
 
+    {"new_mersennes_f64", (PyCFunction)     Py_qu_new_mersennes_f64, METH_FASTCALL, "new_mersennes_f64(n [, m]) -> matrix"},
+    {"new_mersennes_norm", (PyCFunction)    Py_qu_new_mersennes_norm, METH_FASTCALL, "new_mersennes_norm(n [, m]) -> matrix"},
+    {"fill_mersennes_norm", (PyCFunction)   Py_qu_fill_mersennes_norm, METH_FASTCALL, "fill_mersennes_norm(matrix, i1, i2, j1, j2)"},
+    {"fill_matrix", (PyCFunction)           Py_qu_fill_matrix, METH_FASTCALL | METH_KEYWORDS, "fill_matrix(matrix, j, op, **kwargs)"},
+
     {0, 0, 0, 0}
 };
 
@@ -33,11 +39,12 @@ pvt PyModuleDef qu_module = {
 
 pub PyMODINIT_FUNC PyInit_qu(void) {
     PyObject *m;
+    import_array();  // Initialize NumPy C-API
     m = PyModule_Create(&qu_module);
     if (m == 0) return 0;
     return m;
 }
 
 
-#endif  // SRC_JONES_JONES_C
+#endif  // SRC_JONES_MOD_QU_C
 
