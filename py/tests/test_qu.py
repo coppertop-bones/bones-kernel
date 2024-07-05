@@ -21,6 +21,36 @@ def apply_(fn, arg:pylist+pytuple):
     return lambda : fn(*arg)
 
 
+# PHILOSPHY OF QUANT TESTING
+#   - important write test first (or really early on in worst case) to figure api
+#   - visual output is always necessary but noteable absolutely fine to start with
+#   - out test checks does the code run, the visual output allows the quant to validate the results
+#   - add useful checks for assert the results are in error
+#   - over time we want to compare two or more ways of getting the same result, e.g. b76 closed form and mc
+#   - make it super easy to run subsets of tests
+
+
+# QU GOALS
+#   - verify b76 formulas (both pricing and hedging) via MC
+#       - delta requires bumps to underlier price, gamma requires more bumps, vega bumps to process, etc
+#   - determine std error for delta hedging to defend price
+#   - show diff between right vol and wrong vol is the diff in price
+#   - show diff between using normal delta to hedge lognormal process and vice versa
+#   - develop rules of thumb for how big an MC is needed for 99% confidence
+#   - similar for std SABR etc
+
+
+# TASKS
+#   - discrete lognormal df = f.dt + ito drift + sigma dW
+#   - various SABR etc
+#   - and ran0, ran1, box-muller etc
+#   - other faster / more accuate CN and InvCN implementations - and compare results for b76 pricing
+
+
+# OPEN:
+# - auto convert PyLong to PyDouble where sensible
+# - seed=
+
 
 def test_black():
     r = 0.0
@@ -50,6 +80,7 @@ def test_invcn_Acklam():
     print(qu.invcn_Acklam(0.00001))
     print(qu.invcn_Acklam(0.99999))
     print(qu.invcn_Acklam(1.0))
+    return "test_invcn_Acklam passed"
 
 
 
@@ -111,8 +142,6 @@ def test_lognormal_martingale():
         runsNoIto[0,:] = f0
         runsIto[0,:] = f0
         t2 = time.perf_counter_ns()
-        # OPEN: make j=0 by default, i1=1 by default, can override using j= or j1=0 and j2=M-1 but not both
-        # OPEN: seed=
         runsIto = qu.fill_matrix(runsIto, "log", j1=0, j2=M-1, dt=dt, sigma=sigma, mu=0.0)
         runsNoIto = qu.fill_matrix(runsNoIto, "log", j1=0, j2=M-1, dt=dt, sigma=sigma, mu=muNoIto)
         t3 = time.perf_counter_ns()
