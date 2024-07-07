@@ -1,3 +1,4 @@
+import math
 import time
 
 import numpy as np
@@ -127,7 +128,7 @@ def test_fill_matrix():
 
 
 def test_lognormal_martingale():
-    N, M, numRuns = 365, 10_000, 100
+    N, M, numRuns = 365, 10_000, 10
     f0 = 0.05
     dt = 1.0 / N
     sigma = 0.20
@@ -163,6 +164,64 @@ def test_lognormal_martingale():
     return "test_lognormal_martingale passed"
 
 
+def test_check_b76():
+    N, M = 2, 100_000
+    f = 0.05
+    T = 1.0
+    sigma = 0.10
+    r = 0.0
+    k1 = 0.0375
+    k2 = 0.0800
+    muNoIto = sigma * sigma * T * 0.5   # to kill the ito drift added in fill_matrix("log")
+
+    putStrikes = k1, f, 0.0025
+    callStrikes = f, k2, 0.0025
+
+
+    closed = {}
+    for k in np.arange(*putStrikes):
+        closed[k] = qu.b76_put(T, k, f, sigma, r)
+    for k in np.arange(*callStrikes):
+        closed[k] = qu.b76_call(T, k, f, sigma, r)
+    qu.new_mersennes_norm(2)
+
+    ito = {}
+    runsIto = qu.new_mersennes_norm(N, M)
+    runsIto[0,:] = f
+    runsIto = qu.fill_matrix(runsIto, "log", j1=0, j2=M-1, dt=T, sigma=sigma)
+    t = np.zeros((N,M))
+    for k in np.arange(*putStrikes):
+        t[1,:] = k - runsIto[1,:]
+        payouts = np.max(t, axis=0)
+        ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+    for k in np.arange(*callStrikes):
+        t[1,:] = runsIto[1,:] - k
+        payouts = np.max(t, axis=0)
+        ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+
+    noito = {}
+    runsNoIto = qu.new_mersennes_norm(N, M)
+    runsNoIto[0,:] = f
+    runsNoIto = qu.fill_matrix(runsNoIto, "log", j1=0, j2=M-1, dt=T, sigma=sigma, mu=muNoIto)
+    payouts = np.zeros((N,M))
+    for k in np.arange(*putStrikes):
+        t[1,:] = k - runsNoIto[1,:]
+        payouts = np.max(t, axis=0)
+        noito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+    for k in np.arange(*callStrikes):
+        t[1,:] = runsNoIto[1,:] - k
+        payouts = np.max(t, axis=0)
+        noito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+
+
+    print("strike     b76         mc ito      no-ito err")
+    for ((k, p), (mc1, se1), (mc2, se2)) in zip(closed.items(), ito.values(), noito.values()):
+        dpk = 2
+        dpp = 1
+        dpse = 2
+        print(f"{k*100:>5,.{dpk}f}%   {p*10_000:>5,.{dpp}f}bp   {mc1*10_000:>5,.{dpp}f}bp ± {se1*10_000:>4,.{dpse}f}    {(mc2-mc1) / se1:>5,.{dpp}f}se")
+
+
 
 def _PPMeanStd(means, stds):
     dp = 6
@@ -185,6 +244,7 @@ def main():
     test_mersenne() >> PP
     test_fill_matrix() >> PP
     test_lognormal_martingale() >> PP
+    test_check_b76()
 
 
 if __name__ == '__main__':
