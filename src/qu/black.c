@@ -107,4 +107,29 @@ pub double qu_bs_call(double t, double k, double s, double sigma, double r, doub
     return CN(d1) * s - CN(d2) * k * exp(-rt);
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// bachelier
+// ---------------------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------------------------------------------
+// qu_bachelier_call
+// ---------------------------------------------------------------------------------------------------------------------
+pub double qu_bachelier_call(double t, double k, double f, double sigma, double df, double (* CN)(double), double (* NPDF)(double)) {
+    double sigmaRootT, D;
+    sigmaRootT = sigma * sqrt(t);
+    D = (f - k) / sigmaRootT;
+    return df * ((f - k) * CN(D) + sigmaRootT * NPDF(D));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// qu_bachelier_put
+// ---------------------------------------------------------------------------------------------------------------------
+pub double qu_bachelier_put(double t, double k, double f, double sigma, double df, double (* CN)(double), double (* NPDF)(double)) {
+    double sigmaRootT, D;
+    sigmaRootT = sigma * sqrt(t);
+    D = (f - k) / sigmaRootT;
+    return df * ((k - f) * CN(-D) + sigmaRootT * NPDF(D));
+}
+
 #endif  // SRC_QU_BLACK_C

@@ -13,60 +13,42 @@
 #include BK_NUMPY_ARRAYOBJECT_H
 
 
+#define __TO_DOUBLE_OR_ERR(VARNAME, ARG, MSG)                                                                           \
+if (PyFloat_Check(ARG)) {VARNAME = PyFloat_AsDouble(ARG);}                                                              \
+else if (PyLong_Check(ARG)) {VARNAME = (double) PyLong_AS_LONG(ARG);}                                                   \
+else return PyErr_Format(PyExc_TypeError, MSG);
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // b76_call: p:PyFloat -> PyFloat + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * Py_qu_b76_call(PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    double t, r, df;
+    double t, k, f, v, r, df;
     // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
     if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
-    // OPEN: convert ints to floats
-    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "tenor is not a float");
-    if (!PyFloat_Check(args[1])) return PyErr_Format(PyExc_TypeError, "strike is not a float");
-    if (!PyFloat_Check(args[2])) return PyErr_Format(PyExc_TypeError, "forward is not a float");
-    if (!PyFloat_Check(args[3])) return PyErr_Format(PyExc_TypeError, "vol is not a float");
-    if (!PyFloat_Check(args[4])) return PyErr_Format(PyExc_TypeError, "r is not a float");
-    t = PyFloat_AsDouble(args[0]);
-    r = PyFloat_AsDouble(args[4]);
+    __TO_DOUBLE_OR_ERR(t, args[0], "tenor must be a float or int");
+    __TO_DOUBLE_OR_ERR(k, args[1], "strike must be a float or int");
+    __TO_DOUBLE_OR_ERR(f, args[2], "forward must be a float or int");
+    __TO_DOUBLE_OR_ERR(v, args[3], "vol must be a float or int");
+    __TO_DOUBLE_OR_ERR(r, args[4], "r must be a float or int");
     df = exp(- r * t);
-    return PyFloat_FromDouble(
-        qu_b76_call(
-            PyFloat_AsDouble(args[0]),
-            PyFloat_AsDouble(args[1]),
-            PyFloat_AsDouble(args[2]),
-            PyFloat_AsDouble(args[3]),
-            df,
-            qu_cn_Hart
-        )
-    );
+    return PyFloat_FromDouble(qu_b76_call(t, k, f, v, df, qu_cn_Hart));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // b76_call_greeks: p:PyFloat -> PyFloat + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * Py_qu_b76_call_greeks(PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    double t, r, df;  black_greeks greeks;  PyObject *answer;
+    double t, k, f, v, r, df;  black_greeks greeks;  PyObject *answer;
     // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
     if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
-    // OPEN: convert ints to floats
-    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "tenor is not a float");
-    if (!PyFloat_Check(args[1])) return PyErr_Format(PyExc_TypeError, "strike is not a float");
-    if (!PyFloat_Check(args[2])) return PyErr_Format(PyExc_TypeError, "forward is not a float");
-    if (!PyFloat_Check(args[3])) return PyErr_Format(PyExc_TypeError, "vol is not a float");
-    if (!PyFloat_Check(args[4])) return PyErr_Format(PyExc_TypeError, "r is not a float");
-    t = PyFloat_AsDouble(args[0]);
-    r = PyFloat_AsDouble(args[4]);
+    __TO_DOUBLE_OR_ERR(t, args[0], "tenor must be a float or int");
+    __TO_DOUBLE_OR_ERR(k, args[1], "strike must be a float or int");
+    __TO_DOUBLE_OR_ERR(f, args[2], "forward must be a float or int");
+    __TO_DOUBLE_OR_ERR(v, args[3], "vol must be a float or int");
+    __TO_DOUBLE_OR_ERR(r, args[4], "r must be a float or int");
     df = exp(- r * t);
-    greeks = qu_b76_call_greeks(
-        PyFloat_AsDouble(args[0]),
-        PyFloat_AsDouble(args[1]),
-        PyFloat_AsDouble(args[2]),
-        PyFloat_AsDouble(args[3]),
-        r,
-        df,
-        qu_cn_Hart
-    );
+    greeks = qu_b76_call_greeks(t, k, f, v, r, df, qu_cn_Hart);
     answer = PyTuple_New(6);
     if (answer == 0) return 0;
     PyTuple_SET_ITEM(answer, 0, PyFloat_FromDouble(greeks.price));
@@ -82,28 +64,16 @@ pvt PyObject * Py_qu_b76_call_greeks(PyTM *self, PyObject **args, Py_ssize_t nar
 // b76_put: p:PyFloat -> PyFloat + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * Py_qu_b76_put(PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    double t, r, df;
+    double t, k, f, v, r, df;
     // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
     if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
-    // OPEN: convert ints to floats
-    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "tenor is not a float");
-    if (!PyFloat_Check(args[1])) return PyErr_Format(PyExc_TypeError, "strike is not a float");
-    if (!PyFloat_Check(args[2])) return PyErr_Format(PyExc_TypeError, "forward is not a float");
-    if (!PyFloat_Check(args[3])) return PyErr_Format(PyExc_TypeError, "vol is not a float");
-    if (!PyFloat_Check(args[4])) return PyErr_Format(PyExc_TypeError, "r is not a float");
-    t = PyFloat_AsDouble(args[0]);
-    r = PyFloat_AsDouble(args[4]);
+    __TO_DOUBLE_OR_ERR(t, args[0], "tenor must be a float or int");
+    __TO_DOUBLE_OR_ERR(k, args[1], "strike must be a float or int");
+    __TO_DOUBLE_OR_ERR(f, args[2], "forward must be a float or int");
+    __TO_DOUBLE_OR_ERR(v, args[3], "vol must be a float or int");
+    __TO_DOUBLE_OR_ERR(r, args[4], "r must be a float or int");
     df = exp(- r * t);
-    return PyFloat_FromDouble(
-        qu_b76_put(
-            PyFloat_AsDouble(args[0]),
-            PyFloat_AsDouble(args[1]),
-            PyFloat_AsDouble(args[2]),
-            PyFloat_AsDouble(args[3]),
-            df,
-            qu_cn_Hart
-        )
-    );
+    return PyFloat_FromDouble(qu_b76_put(t, k, f, v, df, qu_cn_Hart));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -111,27 +81,17 @@ pvt PyObject * Py_qu_b76_put(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 //      (p:PyFloat) -> PyFloat + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * Py_qu_b76_put_greeks(PyTM *self, PyObject **args, Py_ssize_t nargs) {
-    double t, r, df;  black_greeks greeks;  PyObject *answer;
+    double t, k, f, v, r, df;  black_greeks greeks;  PyObject *answer;
     // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
     if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
-    // OPEN: convert ints to floats
-    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "tenor is not a float");
-    if (!PyFloat_Check(args[1])) return PyErr_Format(PyExc_TypeError, "strike is not a float");
-    if (!PyFloat_Check(args[2])) return PyErr_Format(PyExc_TypeError, "forward is not a float");
-    if (!PyFloat_Check(args[3])) return PyErr_Format(PyExc_TypeError, "vol is not a float");
-    if (!PyFloat_Check(args[4])) return PyErr_Format(PyExc_TypeError, "r is not a float");
-    t = PyFloat_AsDouble(args[0]);
+    __TO_DOUBLE_OR_ERR(t, args[0], "tenor must be a float or int");
+    __TO_DOUBLE_OR_ERR(k, args[1], "strike must be a float or int");
+    __TO_DOUBLE_OR_ERR(f, args[2], "forward must be a float or int");
+    __TO_DOUBLE_OR_ERR(v, args[3], "vol must be a float or int");
+    __TO_DOUBLE_OR_ERR(r, args[4], "r must be a float or int");
     r = PyFloat_AsDouble(args[4]);
     df = exp(- r * t);
-    greeks = qu_b76_put_greeks(
-        PyFloat_AsDouble(args[0]),
-        PyFloat_AsDouble(args[1]),
-        PyFloat_AsDouble(args[2]),
-        PyFloat_AsDouble(args[3]),
-        r,
-        df,
-        qu_cn_Hart
-    );
+    greeks = qu_b76_put_greeks(t, k, f, v, r, df, qu_cn_Hart);
     answer = PyTuple_New(6);
     if (answer == 0) return 0;
     PyTuple_SET_ITEM(answer, 0, PyFloat_FromDouble(greeks.price));
@@ -144,15 +104,45 @@ pvt PyObject * Py_qu_b76_put_greeks(PyTM *self, PyObject **args, Py_ssize_t narg
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// bachelier_call: p:PyFloat -> PyFloat + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * Py_qu_bachelier_call(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    double t, k, f, v, r, df;
+    // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
+    if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
+    __TO_DOUBLE_OR_ERR(t, args[0], "tenor must be a float or int");
+    __TO_DOUBLE_OR_ERR(k, args[1], "strike must be a float or int");
+    __TO_DOUBLE_OR_ERR(f, args[2], "forward must be a float or int");
+    __TO_DOUBLE_OR_ERR(v, args[3], "vol must be a float or int");
+    __TO_DOUBLE_OR_ERR(r, args[4], "r must be a float or int");
+    df = exp(- r * t);
+    return PyFloat_FromDouble(qu_bachelier_call(t, k, f, v, df, qu_cn_Hart, qu_norm_pdf));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// bachelier_call: p:PyFloat -> PyFloat + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * Py_qu_bachelier_put(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    double t, k, f, v, r, df;
+    // OPEN: assert tenor, strike, vol, r >= 0 and forward > 0
+    if (nargs != 5) return jErrWrongNumberOfArgs(FN_NAME, 5, nargs);
+    __TO_DOUBLE_OR_ERR(t, args[0], "tenor must be a float or int");
+    __TO_DOUBLE_OR_ERR(k, args[1], "strike must be a float or int");
+    __TO_DOUBLE_OR_ERR(f, args[2], "forward must be a float or int");
+    __TO_DOUBLE_OR_ERR(v, args[3], "vol must be a float or int");
+    __TO_DOUBLE_OR_ERR(r, args[4], "r must be a float or int");
+    df = exp(- r * t);
+    return PyFloat_FromDouble(qu_bachelier_put(t, k, f, v, df, qu_cn_Hart, qu_norm_pdf));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // invcn_Acklam
 //      (p:PyFloat) -> PyFloat + PyException
 // ---------------------------------------------------------------------------------------------------------------------
 pvt PyObject * Py_qu_invcn_Acklam(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     double p;
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
-    // OPEN: convert ints to floats
-    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "p is not a float");
-    p = PyFloat_AsDouble(args[0]);
+    __TO_DOUBLE_OR_ERR(p, args[0], "p must be a float or int");
     return PyFloat_FromDouble(qu_invcn_Acklam(p));
 }
 
@@ -163,10 +153,30 @@ pvt PyObject * Py_qu_invcn_Acklam(PyTM *self, PyObject **args, Py_ssize_t nargs)
 pvt PyObject * Py_qu_cn_Hart(PyTM *self, PyObject **args, Py_ssize_t nargs) {
     double x;
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
-    // OPEN: convert ints to floats
-    if (!PyFloat_Check(args[0])) return PyErr_Format(PyExc_TypeError, "x is not a float");
-    x = PyFloat_AsDouble(args[0]);
+    __TO_DOUBLE_OR_ERR(x, args[0], "p must be a float or int");
     return PyFloat_FromDouble(qu_cn_Hart(x));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// invcn_h
+//      (p:PyFloat) -> PyFloat + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * Py_qu_invcn_h(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    double p;
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    __TO_DOUBLE_OR_ERR(p, args[0], "p must be a float or int");
+    return PyFloat_FromDouble(qu_invcn_h(p));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// cn_h
+//      (x:PyFloat) -> PyFloat + PyException
+// ---------------------------------------------------------------------------------------------------------------------
+pvt PyObject * Py_qu_cn_h(PyTM *self, PyObject **args, Py_ssize_t nargs) {
+    double x;
+    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
+    __TO_DOUBLE_OR_ERR(x, args[0], "x must be a float or int");
+    return PyFloat_FromDouble(qu_cn_h(x));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -193,13 +203,6 @@ pvt PyObject * Py_qu_cn_Hart(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 // ndarray filling macros
 //      DATA is a N*M matrix and must be laid out must be laid out in col major (fortran) style
 // ---------------------------------------------------------------------------------------------------------------------
-
-#define __INIT_ARRAY(DATA, TYPE, BLOCK)                                                                                 \
-{                                                                                                                       \
-    TYPE __attribute__((unused)) *_data;                                                                                \
-    _data = DATA;                                                                                                       \
-    BLOCK                                                                                                               \
-}
 
 #define __FILL_ARRAY(DATA, TYPE, I, J, I1, I2, J1, J2, N, P, BLOCK)                                                     \
 /* DATA is a N*M matrix and must be laid out must be laid out in col major (fortran) style */                           \

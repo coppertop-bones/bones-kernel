@@ -43,9 +43,12 @@ def apply_(fn, arg:pylist+pytuple):
 
 # TASKS
 #   - discrete lognormal df = f.dt + ito drift + sigma dW
+#   - determine how many discrete steps are needed to approximate a log-space step
 #   - various SABR etc
 #   - and ran0, ran1, box-muller etc
-#   - other faster / more accuate CN and InvCN implementations - and compare results for b76 pricing
+#   - compare b76 pricing with other cn
+#   - how to select best cn / invcn implementations
+#   - brent root finder - implied vol
 
 
 # OPEN:
@@ -75,13 +78,25 @@ def test_cn_Hart():
     return "test_cn_Hart passed"
 
 
-
 def test_invcn_Acklam():
     print(qu.invcn_Acklam(0.0))
     print(qu.invcn_Acklam(0.00001))
     print(qu.invcn_Acklam(0.99999))
     print(qu.invcn_Acklam(1.0))
     return "test_invcn_Acklam passed"
+
+
+def test_cn_h():
+    print([qu.cn_h(x * 1.0) for x in range(-3, 4)])
+    return "test_cn_h passed"
+
+
+def test_invcn_h():
+    print(qu.invcn_h(0.0))
+    print(qu.invcn_h(0.00001))
+    print(qu.invcn_h(0.99999))
+    print(qu.invcn_h(1.0))
+    return "test_invcn_h passed"
 
 
 
@@ -127,8 +142,8 @@ def test_fill_matrix():
 
 
 
-def test_lognormal_martingale():
-    N, M, numRuns = 365, 10_000, 10
+def test_lognormal_martingale(numRuns):
+    N, M = 365, 10_000
     f0 = 0.05
     dt = 1.0 / N
     sigma = 0.20
@@ -174,9 +189,11 @@ def test_check_b76():
     k2 = 0.0800
     muNoIto = sigma * sigma * T * 0.5   # to kill the ito drift added in fill_matrix("log")
 
-    putStrikes = k1, f, 0.0025
+    putStrikes = k1, f - 0.0025, 0.0025
     callStrikes = f, k2, 0.0025
 
+    t = np.zeros((N,M))             # to keep (k - F) and 0 for option payout
+    seChunkSize = 10_000
 
     closed = {}
     for k in np.arange(*putStrikes):
@@ -186,42 +203,70 @@ def test_check_b76():
     qu.new_mersennes_norm(2)
 
     ito = {}
-    runsIto = qu.new_mersennes_norm(N, M)
-    runsIto[0,:] = f
-    runsIto = qu.fill_matrix(runsIto, "log", j1=0, j2=M-1, dt=T, sigma=sigma)
-    t = np.zeros((N,M))
+    mc = qu.new_mersennes_norm(N, M)
+    mc[0,:] = f
+    mc = qu.fill_matrix(mc, "log", j1=0, j2=M-1, dt=T, sigma=sigma)
     for k in np.arange(*putStrikes):
-        t[1,:] = k - runsIto[1,:]
+        t[1,:] = k - mc[1,:]
         payouts = np.max(t, axis=0)
-        ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+        ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(seChunkSize), cse(payouts, seChunkSize)
     for k in np.arange(*callStrikes):
-        t[1,:] = runsIto[1,:] - k
+        t[1,:] = mc[1,:] - k
         payouts = np.max(t, axis=0)
-        ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+        ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(seChunkSize), cse(payouts, seChunkSize)
+
+    anti_ito = {}
+    mc = qu.new_mersennes_norm(N, M)
+    for j in range(M, 0, -2):
+        mc[1,j-1] = mc[1,int(j/2)-1]
+        mc[1,j-2] = -mc[1,int(j/2)-1]
+    mc[0,:] = f
+    mc = qu.fill_matrix(mc, "log", j1=0, j2=M-1, dt=T, sigma=sigma)
+    for k in np.arange(*putStrikes):
+        t[1,:] = k - mc[1,:]
+        payouts = np.max(t, axis=0)
+        anti_ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(seChunkSize), cse(payouts, seChunkSize)
+    for k in np.arange(*callStrikes):
+        t[1,:] = mc[1,:] - k
+        payouts = np.max(t, axis=0)
+        anti_ito[k] = np.average(payouts), np.std(payouts) / math.sqrt(seChunkSize), cse(payouts, seChunkSize)
 
     noito = {}
-    runsNoIto = qu.new_mersennes_norm(N, M)
-    runsNoIto[0,:] = f
-    runsNoIto = qu.fill_matrix(runsNoIto, "log", j1=0, j2=M-1, dt=T, sigma=sigma, mu=muNoIto)
-    payouts = np.zeros((N,M))
+    mc = qu.new_mersennes_norm(N, M)
+    mc[0,:] = f
+    mc = qu.fill_matrix(mc, "log", j1=0, j2=M-1, dt=T, sigma=sigma, mu=muNoIto)
     for k in np.arange(*putStrikes):
-        t[1,:] = k - runsNoIto[1,:]
+        t[1,:] = k - mc[1,:]
         payouts = np.max(t, axis=0)
-        noito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+        noito[k] = np.average(payouts), np.std(payouts) / math.sqrt(seChunkSize), cse(payouts, seChunkSize)
     for k in np.arange(*callStrikes):
-        t[1,:] = runsNoIto[1,:] - k
+        t[1,:] = mc[1,:] - k
         payouts = np.max(t, axis=0)
-        noito[k] = np.average(payouts), np.std(payouts) / math.sqrt(M)
+        noito[k] = np.average(payouts), np.std(payouts) / math.sqrt(seChunkSize), cse(payouts, seChunkSize)
 
 
-    print("strike     b76         mc ito      no-ito err")
-    for ((k, p), (mc1, se1), (mc2, se2)) in zip(closed.items(), ito.values(), noito.values()):
+    print("strike     b76            mc ito              antithetic mc ito   no-ito err")
+    for ((k, p), (mc1, se1, cse1), (amc1, ase1, acse1), (mc2, se2, cse2)) in zip(closed.items(), ito.values(), anti_ito.values(), noito.values()):
         dpk = 2
         dpp = 1
         dpse = 2
-        print(f"{k*100:>5,.{dpk}f}%   {p*10_000:>5,.{dpp}f}bp   {mc1*10_000:>5,.{dpp}f}bp ± {se1*10_000:>4,.{dpse}f}    {(mc2-mc1) / se1:>5,.{dpp}f}se")
+        print(
+            f"{k*100:>5,.{dpk}f}%   {p*10_000:>5,.{dpp}f}bp   "
+            f"{mc1*10_000:>5,.{dpp}f}bp ± {cse1*10_000:>4,.{dpse}f} / {se1*10_000:>4,.{dpse}f}   "
+            f"{amc1*10_000:>5,.{dpp}f}bp ± {acse1*10_000:>4,.{dpse}f} / {ase1*10_000:>4,.{dpse}f}   "
+            f"{(mc2-mc1) / se1:>5,.{dpp}f}se"
+        )
+
+    return "test_check_b76 passed"
 
 
+def cse(payouts, chunkSize):
+    # chunked standard error
+    means = []
+    for s1 in range(0, len(payouts), chunkSize):
+        s2 = s1 + chunkSize
+        means.append(np.average(payouts[s1:s2]))
+    return np.std(means)
 
 def _PPMeanStd(means, stds):
     dp = 6
@@ -239,12 +284,14 @@ def _PPTimesUs(times, N):
 
 def main():
     test_cn_Hart() >> PP
+    test_cn_h() >> PP
     test_invcn_Acklam() >> PP
+    test_invcn_h() >> PP
     test_black() >> PP
-    test_mersenne() >> PP
-    test_fill_matrix() >> PP
-    test_lognormal_martingale() >> PP
-    test_check_b76()
+    # test_mersenne() >> PP
+    # test_fill_matrix() >> PP
+    # test_lognormal_martingale(10) >> PP
+    test_check_b76() >> PP
 
 
 if __name__ == '__main__':
