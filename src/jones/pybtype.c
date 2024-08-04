@@ -5,11 +5,13 @@
 #ifndef SRC_JONES_PYBTYPE_C
 #define SRC_JONES_PYBTYPE_C "jones/pybtype.c"
 
-#include "jones.h"
-#include "../../include/bk/tm.h"
+#include "../../include/jones/jones.h"
 
 
-// OPEN: for performance could keep track of instances and use ref counting rather than PyBType creation to answer a btype
+
+// ---------------------------------------------------------------------------------------------------------------------
+// PyBTypeCls
+// ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyObject * PyBType_create(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     PyBType *self = (PyBType *) type->tp_alloc(type, 0);

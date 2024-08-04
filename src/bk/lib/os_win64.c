@@ -119,7 +119,7 @@ pub int os_mwipe(void *addr, size_t sz) {
     return ret;
 }
 
-pub int os_mreturn(void *addr, size_t sz) {
+pub int os_mrelease(void *addr, size_t sz) {
     // https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc
     return VirtualFree(addr, sz, MEM_DECOMMIT);
 }

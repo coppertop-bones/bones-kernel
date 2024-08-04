@@ -2,13 +2,13 @@
 #define SRC_JONES_MOD_QU_C "jones/mod_qu.c"
 
 
-#include "jones.h"
+#include "../../include/jones/jones.h"
 #include "pyqu.c"
 #include BK_NUMPY_ARRAYOBJECT_H
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// init module
+// qu module
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyMethodDef qu_fns[] = {
@@ -30,7 +30,7 @@ pvt PyMethodDef qu_fns[] = {
     {"fill_mersennes_norm", (PyCFunction)   Py_qu_fill_mersennes_norm, METH_FASTCALL, "fill_mersennes_norm(matrix, i1, i2, j1, j2)"},
     {"fill_matrix", (PyCFunction)           Py_qu_fill_matrix, METH_FASTCALL | METH_KEYWORDS, "fill_matrix(matrix, j, op, **kwargs)"},
 
-    {0, 0, 0, 0}
+    {0}
 };
 
 pvt PyModuleDef qu_module = {
@@ -41,7 +41,6 @@ pvt PyModuleDef qu_module = {
     qu_fns
 };
 
-
 pub PyMODINIT_FUNC PyInit_qu(void) {
     PyObject *m;
     import_array();  // Initialize NumPy C-API
@@ -49,7 +48,6 @@ pub PyMODINIT_FUNC PyInit_qu(void) {
     if (m == 0) return 0;
     return m;
 }
-
 
 #endif  // SRC_JONES_MOD_QU_C
 

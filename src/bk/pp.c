@@ -26,7 +26,7 @@ int g_logging_level = info;     // OPEN: add filter as well as level?
 
 
 // define die_ in client
-pvt void die_(char *preamble, char *msg, va_list args);
+pvt void die_(char const *preamble, char const *msg, va_list args);
 //{
 //    fprintf(stderr, "%s", preamble);
 //    vfprintf(stderr, msg, args);
@@ -35,8 +35,12 @@ pvt void die_(char *preamble, char *msg, va_list args);
 
 
 // OPEN: could distinguish between void * to an S* and char * by making the first byte of an S8 > 128?
-pvt void PP(i32 level, char *msg, ...) {
-    if (level & g_logging_level) {
+pvt void PP(i32 level, char const *msg, ...) {
+    bool log = false;
+    if (g_logging_level == debug) log = true;
+    else if (g_logging_level == info && (level == info || level == error)) log = true;
+    else if (g_logging_level == error && (level == error)) log = true;
+    if (log) {
         va_list args;
         va_start(args, msg);
         FILE *f = level == error ? stderr : stdout;
@@ -55,14 +59,14 @@ pvt void onOomDie(void *p, S8 msg, ...) {
     }
 }
 
-pvt void die(char *msg, ...) {
+pvt void die(char const *msg, ...) {
     va_list args;
     va_start(args, msg);
     die_("", msg, args);
     va_end(args);
 }
 
-pvt void nyi(char *msg, ...) {
+pvt void nyi(char const *msg, ...) {
     va_list args;
     va_start(args, msg);
     die_("nyi: ", msg, args);
@@ -75,14 +79,14 @@ _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wunused-function\"")
 #endif
 
-pvt void bug(char *msg, ...) {
+pvt void bug(char const *msg, ...) {
     va_list args;
     va_start(args, msg);
     die_("bug: ", msg, args);
     va_end(args);
 }
 
-pvt void check(bool truth, char *msg, ...) {
+pvt void check(bool truth, char const *msg, ...) {
     if (! truth) {
         va_list args;
         va_start(args, msg);
