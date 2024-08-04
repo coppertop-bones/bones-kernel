@@ -1,3 +1,7 @@
+This doc describes the bones types system
+
+
+
 # Bones type system
 
 In bones, we can think of a type as just a label that is used by the type system to check program consistency,
@@ -236,9 +240,9 @@ NOTES
 
 To do a X <: Y we partition the two types into three sets:
 
-- X intersect Y' - stuff in Y but not in X - anything here then it's not a fit
-- X intersect Y - common stuff, if we only have common stuff then it's an exact fit
-- X' intersect Y - we term this the residual
+- X intersect Y' - anything here then it's not a fit
+- X intersect Y  - common stuff, if we only have common stuff then it's an exact fit
+- X' intersect Y - stuff not in X but in Y - we term this the residual
 
 X & Y' = X - X & Y
 X & Y
@@ -286,7 +290,7 @@ when types are in the residual set we allow them to behave in exlusively one of 
 generic - the default of all types, e.g. matrix (i.e. N**N**num), matrix&left, right, upper, lower, orthogonal,
 identity, diagonal, tridiagonal, banddiagonal, positivedefinite, positivesemidefinite etc
 all matrix operations are available and some are optimisable. e.g. cov = AT @ A can return identity for the
-orthogonal case
+orthonormal case
 i.e. generics do not prevent matching, thus effectively are discarded from the matching decision
 
 implicit - e.g. anon, named, aliased with aliased as the implicit default, defaults do not prevent matching, and

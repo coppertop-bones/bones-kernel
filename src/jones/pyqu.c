@@ -13,10 +13,29 @@
 #include BK_NUMPY_ARRAYOBJECT_H
 
 
-#define __TO_DOUBLE_OR_ERR(VARNAME, ARG, MSG)                                                                           \
+#define __TO_DOUBLE_OR_ERR(VARNAME, ARG, ...)                                                                           \
 if (PyFloat_Check(ARG)) {VARNAME = PyFloat_AsDouble(ARG);}                                                              \
 else if (PyLong_Check(ARG)) {VARNAME = (double) PyLong_AS_LONG(ARG);}                                                   \
-else return PyErr_Format(PyExc_TypeError, MSG);
+else return PyErr_Format(PyExc_TypeError, __VA_ARGS__);
+
+#define __TO_INT_OR_ERR(VARNAME, ARG, ...)                                                                              \
+if (PyLong_Check(ARG)) {VARNAME = (int) PyLong_AS_LONG(ARG);}                                                           \
+else return PyErr_Format(PyExc_TypeError, __VA_ARGS__);
+
+#define __CHECK(EXPR, CLASS, ...)                                                                                       \
+if (!(EXPR)) return PyErr_Format(CLASS, __VA_ARGS__);
+
+#define __CHECK_NOT(EXPR, CLASS, ...)                                                                                   \
+if (EXPR) return PyErr_Format(CLASS, __VA_ARGS__);
+
+#define __GET_KWARG(KWARGNAME, ARG, SETTER)                                                                             \
+if (strcmp(KWARGNAME, PyUnicode_AsUTF8(ARG)) == 0) { SETTER; }
+
+#define __OR_GET_KWARG(KWARGNAME, ARG, SETTER)                                                                          \
+else if (strcmp(KWARGNAME, PyUnicode_AsUTF8(ARG)) == 0) { SETTER; }
+
+#define checkPyLong(x, msg) {if (!PyLong_Check(x)) return PyErr_Format(PyExc_TypeError, msg);}
+#define checkPyFloat(x, msg) {if (!PyFloat_Check(x)) return PyErr_Format(PyExc_TypeError, msg);}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -221,9 +240,6 @@ pvt PyObject * Py_qu_cn_h(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 #pragma push_macro("__P")
 #define __P(I, J, N) (_data + (J) * (N) + (I))
 
-#define checkPyLong(x, msg) {if (!PyLong_Check(x)) return PyErr_Format(PyExc_TypeError, msg);}
-#define checkPyFloat(x, msg) {if (!PyFloat_Check(x)) return PyErr_Format(PyExc_TypeError, msg);}
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // new_mersennes_f64:
@@ -233,21 +249,18 @@ pvt PyObject * Py_qu_cn_h(PyTM *self, PyObject **args, Py_ssize_t nargs) {
 pvt PyObject * Py_qu_new_mersennes_f64(PyObject *self, PyObject **args, Py_ssize_t nargs) {
     int n, m;  PyObject *mat;
     if (nargs == 1) {
-        if (!PyLong_Check(args[0])) return PyErr_Format(PyExc_TypeError, "n must be an int");
-        n = (int) PyLong_AsLong(args[0]);
+        __TO_INT_OR_ERR(n, args[0], "n must be an int");
         npy_intp dims[1] = {n};
-        if ((mat=PyArray_SimpleNew(1, dims, NPY_FLOAT64)) == 0) PyErr_Format(PyExc_TypeError, "could not create np.ndarray");
+        if ((mat=PyArray_SimpleNew(1, dims, NPY_FLOAT64)) == 0) PyErr_Format(PyExc_RuntimeError, "could not create np.ndarray");
         __FILL_ARRAY(PyArray_DATA(mat), double, i, j, 0, n-1, 0, 0, n, p, {
             *p = qu_mt_f64_oo();
         })
         return mat;
     } else if (nargs == 2) {
-        if (!PyLong_Check(args[0])) return PyErr_Format(PyExc_TypeError, "n must be an int");
-        if (!PyLong_Check(args[1])) return PyErr_Format(PyExc_TypeError, "m must be an int");
-        n = (int) PyLong_AsLong(args[0]);
-        m = (int) PyLong_AsLong(args[1]);
+        __TO_INT_OR_ERR(n, args[0], "n must be an int");
+        __TO_INT_OR_ERR(m, args[1], "m must be an int");
         npy_intp dims[2] = {n, m};
-        if ((mat=PyArray_New(&PyArray_Type, 2, dims, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_F_CONTIGUOUS, NULL)) == 0) PyErr_Format(PyExc_TypeError, "could not create np.ndarray");
+        if ((mat=PyArray_New(&PyArray_Type, 2, dims, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_F_CONTIGUOUS, NULL)) == 0) PyErr_Format(PyExc_RuntimeError, "could not create np.ndarray");
         __FILL_ARRAY(PyArray_DATA(mat), double, i, j, 0, n-1, 0, m-1, n, p, {
             *p = qu_mt_f64_oo();
         })
@@ -265,23 +278,19 @@ pvt PyObject * Py_qu_new_mersennes_f64(PyObject *self, PyObject **args, Py_ssize
 pvt PyObject * Py_qu_new_mersennes_norm(PyObject *self, PyObject **args, Py_ssize_t nargs) {
     PyArrayObject *mat;  int n, m;
     if (nargs == 1) {
-        if (!PyLong_Check(args[0])) return PyErr_Format(PyExc_TypeError, "n must be an int");
-        n = (int) PyLong_AsLong(args[0]);
+        __TO_INT_OR_ERR(n, args[0], "n must be an int");
         npy_intp dims[1] = {n};
-        if ((mat=(PyArrayObject *)PyArray_SimpleNew(1, dims, NPY_FLOAT64)) == 0) PyErr_Format(PyExc_TypeError, "could not create np.ndarray");
+        if ((mat=(PyArrayObject *)PyArray_SimpleNew(1, dims, NPY_FLOAT64)) == 0) PyErr_Format(PyExc_RuntimeError, "could not create np.ndarray");
 
         __FILL_ARRAY(PyArray_DATA((PyArrayObject *) mat), double, i, j, 0, n-1, 0, 0, n, p, {
             *p = qu_invcn_Acklam(qu_mt_f64_oo());
         })
         return (PyObject *) mat;
     } else if (nargs == 2) {
-        if (!PyLong_Check(args[0])) return PyErr_Format(PyExc_TypeError, "n must be an int");
-        if (!PyLong_Check(args[1])) return PyErr_Format(PyExc_TypeError, "m must be an int");
-        n = (int) PyLong_AsLong(args[0]);
-        m = (int) PyLong_AsLong(args[1]);
+        __TO_INT_OR_ERR(n, args[0], "n must be an int");
+        __TO_INT_OR_ERR(m, args[1], "m must be an int");
         npy_intp dims[2] = {n, m};
-        if ((mat=(PyArrayObject *)PyArray_New(&PyArray_Type, 2, dims, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_F_CONTIGUOUS, NULL)) == 0) PyErr_Format(PyExc_TypeError, "could not create np.ndarray");
-
+        if ((mat=(PyArrayObject *)PyArray_New(&PyArray_Type, 2, dims, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_F_CONTIGUOUS, NULL)) == 0) PyErr_Format(PyExc_RuntimeError, "could not create np.ndarray");
         __FILL_ARRAY(PyArray_DATA((PyArrayObject *) mat), double, i, j, 0, n-1, 0, m-1, n, p, {
             *p = qu_invcn_Acklam(qu_mt_f64_oo());
         })
@@ -298,22 +307,22 @@ pvt PyObject * Py_qu_new_mersennes_norm(PyObject *self, PyObject **args, Py_ssiz
 pvt PyObject * Py_qu_fill_mersennes_norm(PyObject *self, PyObject **args, Py_ssize_t nargs) {
     PyArrayObject *mat;  int n, m, i1, i2, j1, j2, ndim;  npy_intp *shape;  double *data;
     if (nargs != 5) return PyErr_Format(PyExc_TypeError, "fill_mersennes_norm(matrix, i1, i2, j1, j2) takes 5 args but %i were given", nargs);
-    if (!PyArray_Check(args[0])) return PyErr_Format(PyExc_TypeError, "matrix must be a numpy array");
+    __CHECK(PyArray_Check(args[0]), PyExc_TypeError, "matrix must be a numpy array");
     if (!PyLong_Check(args[1]) || !PyLong_Check(args[2]) || !PyLong_Check(args[3]) || !PyLong_Check(args[4])) return PyErr_Format(PyExc_TypeError, "i1, i2, j1 & j2 must be an int");
     mat = (PyArrayObject *) args[0];
-    if ((PyArray_TYPE(mat) != NPY_FLOAT64)) return PyErr_Format(PyExc_TypeError, "matrix must have dtype np.float64");
-    if (!(PyArray_FLAGS(mat) & NPY_ARRAY_F_CONTIGUOUS)) return PyErr_Format(PyExc_TypeError, "matrix must be in fortran (col major) form");
+    __CHECK(PyArray_TYPE(mat) == NPY_FLOAT64, PyExc_TypeError, "matrix must have dtype np.float64");
+    __CHECK(PyArray_FLAGS(mat) & NPY_ARRAY_F_CONTIGUOUS, PyExc_TypeError, "matrix must be in fortran (col major) form");
     i1 = (int) PyLong_AsLong(args[1]);
     i2 = (int) PyLong_AsLong(args[2]);
     j1 = (int) PyLong_AsLong(args[3]);
     j2 = (int) PyLong_AsLong(args[4]);
     ndim = PyArray_NDIM(mat);
-    if (ndim < 1 || 2 < ndim) return PyErr_Format(PyExc_TypeError, "matrix must have 1 or 2 dimensions but has %i", ndim);
+    __CHECK(ndim == 1 || ndim == 2, PyExc_TypeError, "matrix must have 1 or 2 dimensions but has %i", ndim);
     shape = PyArray_DIMS(mat);
     n = shape[0];
     m = ndim == 2 ? shape[1] : 0;
-    if (i1 < 0 || i1 >= n || i2 < 0 || i2 >= n || i1 > i2) return PyErr_Format(PyExc_TypeError, "i1 and i2 must be in range 0 <= i1 <= i2 < n");
-    if (j1 < 0 || j1 >= m || j2 < 0 || j2 >= m || j1 > j2) return PyErr_Format(PyExc_TypeError, "j1 and j2 must be in range 0 <= j1 <= j2 < m");
+    __CHECK(0 <= i1 && i1 <= i2 && i2 < n, PyExc_ValueError, "i1 and i2 must be in range 0 <= i1 <= i2 < n");
+    __CHECK(0 <= j1 && j1 <= j2 && j2 < m, PyExc_ValueError, "i1 and i2 must be in range 0 <= j1 <= j2 < m");
 
     data = PyArray_DATA((PyArrayObject *) mat);
     __FILL_ARRAY(data, double, i, j, i1, i2, j1, j2, n, p, {
@@ -336,76 +345,119 @@ pvt PyObject * Py_qu_fill_mersennes_norm(PyObject *self, PyObject **args, Py_ssi
 //      OPEN:
 //          add SABR, SLNSAR, NSAR, discrete versions, logspace, moment matching, etc
 // ---------------------------------------------------------------------------------------------------------------------
-#define ARG_MAT 0
-#define ARG_OP 1
+#define IARG_MAT 0
+#define IARG_OP 1
 pvt PyObject * Py_qu_fill_matrix(PyObject *self, PyObject *const *args, Py_ssize_t nargs, PyObject *argnames) {
     // OPEN: "SABR", {"wa":0, "wf":1, "a":0.10, "nu":0.40, ...}) , "sobol", "mersenne_norm", "SLN", "N", "SLNSAR", STEPS:, DT:, etc
-    PyArrayObject *mat;  int N, M, jj, jj1=0, jj2=0, ndim;  npy_intp *shape;  double *pmat;  char *op;  PyObject *pyJ=0, *pyJ1=0, *pyJ2=0;
-    if (nargs != 2) return PyErr_Format(PyExc_TypeError, "fill_matrix(matrix, op, **kwargs) only takes 2 args but %i were given", nargs);
+    PyArrayObject *pyMat;  int N, M, jj, jj1=0, jj2=0, ndim;  npy_intp *shape;  double *pmat;  char *op;  PyObject *pyJ=0, *pyJ1=0, *pyJ2=0;
+    __CHECK(nargs == 2, PyExc_TypeError, "fill_matrix(matrix, op, **kwargs) only takes 2 args but %i were given", nargs);
 
     // matrix
-    if (!PyArray_Check(args[ARG_MAT])) return PyErr_Format(PyExc_TypeError, "matrix must be a numpy array");
-    mat = (PyArrayObject *) args[ARG_MAT];
-    if ((PyArray_TYPE(mat) != NPY_FLOAT64)) return PyErr_Format(PyExc_TypeError, "matrix must have dtype np.float64");
-    if (!(PyArray_FLAGS(mat) & NPY_ARRAY_F_CONTIGUOUS)) return PyErr_Format(PyExc_TypeError, "matrix must be in fortran (col major) form");
-    ndim = PyArray_NDIM(mat);
-    if (ndim != 2) return PyErr_Format(PyExc_TypeError, "matrix must have 2 dimensions but has %i", ndim);
-    shape = PyArray_DIMS(mat);
+    __CHECK(PyArray_Check(args[IARG_MAT]), PyExc_TypeError, "matrix must be a numpy array");
+    pyMat = (PyArrayObject *) args[IARG_MAT];
+    __CHECK(PyArray_TYPE(pyMat) == NPY_FLOAT64, PyExc_TypeError, "matrix must have dtype np.float64");
+    __CHECK(PyArray_FLAGS(pyMat) & NPY_ARRAY_F_CONTIGUOUS, PyExc_TypeError, "matrix must be in fortran (col major) form");
+    ndim = PyArray_NDIM(pyMat);
+    __CHECK(ndim == 2, PyExc_TypeError, "matrix must have 2 dimensions but has %i", ndim);
+    shape = PyArray_DIMS(pyMat);
     N = shape[0];
     M = shape[1];
-    pmat = PyArray_DATA((PyArrayObject *) mat);
+    pmat = PyArray_DATA((PyArrayObject *) pyMat);
 
     // op
-    if (!PyUnicode_Check(args[ARG_OP]) || (PyUnicode_KIND(args[ARG_OP]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "op must be utf8");
-    op = (char *) PyUnicode_AsUTF8(args[ARG_OP]);
+    __CHECK(PyUnicode_Check(args[IARG_OP]) && PyUnicode_KIND(args[IARG_OP]) == PyUnicode_1BYTE_KIND, PyExc_TypeError, "op must be utf8");
+    op = (char *) PyUnicode_AsUTF8(args[IARG_OP]);
 
     // j, j1, j2
     for (int i = 0; i < PyTuple_Size(argnames); i++) {
-        if (strcmp("j", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyJ = args[i + nargs];
-        else if (strcmp("j1", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyJ1 = args[i + nargs];
-        else if (strcmp("j2", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyJ2 = args[i + nargs];
+        __GET_KWARG("j", PyTuple_GET_ITEM(argnames, i), pyJ = args[i + nargs])
+        __OR_GET_KWARG("j1", PyTuple_GET_ITEM(argnames, i), pyJ1 = args[i + nargs])
+        __OR_GET_KWARG("j2", PyTuple_GET_ITEM(argnames, i), pyJ2 = args[i + nargs])
     }
-    if (pyJ && (pyJ1 || pyJ2)) return PyErr_Format(PyExc_SyntaxError, "Either specify j or both j1 and j2");
-    if ((pyJ1 && !pyJ2) || (!pyJ1 && pyJ2)) return PyErr_Format(PyExc_SyntaxError, "Must specify both j1 and j2");
+    __CHECK_NOT(pyJ && (pyJ1 || pyJ2), PyExc_SyntaxError, "Either specify j or both j1 and j2");
+    __CHECK((pyJ1 && pyJ2) || (!pyJ1 && !pyJ2), PyExc_SyntaxError, "Must specify both j1 and j2");
     if (pyJ) {
-        checkPyLong(pyJ, "j must be an int");  jj = (int) PyLong_AsLong(pyJ);
-        if (jj < 0 || jj >= M) return PyErr_Format(PyExc_ValueError, "j must be in range 0 <= j < M");
+        __TO_INT_OR_ERR(jj, pyJ, "j must be an int");
+        __CHECK(0 <= jj && jj < M, PyExc_ValueError, "j must be in range 0 <= j < M");
     }
     if (pyJ1) {
-        checkPyLong(pyJ1, "j1 must be an int");  jj1 = (int) PyLong_AsLong(pyJ1);
-        if (jj1 < 0 || jj1 >= M) return PyErr_Format(PyExc_ValueError, "j1 must be in range 0 <= j1 < M");
+        __TO_INT_OR_ERR(jj1, pyJ1, "j1 must be an int");
+        __CHECK(0 <= jj1 && jj1 < M, PyExc_ValueError, "j1 must be in range 0 <= j1 < M");
     }
     if (pyJ2) {
-        checkPyLong(pyJ2, "j2 must be an int");  jj2 = (int) PyLong_AsLong(pyJ2);
-        if (jj2 < 0 || jj2 >= M) return PyErr_Format(PyExc_ValueError, "j2 must be in range 0 <= j2 < M");
+        __TO_INT_OR_ERR(jj2, pyJ2, "j2 must be an int");
+        __CHECK(0 <= jj2 && jj2 < M, PyExc_ValueError, "j2 must be in range 0 <= j2 < M");
     }
-    if (jj1 > jj2) return PyErr_Format(PyExc_ValueError, "j1 must be in range j1 <= j2");
+    __CHECK(jj1 <= jj2, PyExc_ValueError, "j1 must be in range j1 <= j2");
+
+    // op == "ran"
+    if (strcmp(op, "ran") == 0) {
+        // options: i1, i2, j1, j2, dist="norm", anti=1 => AA', 2 => AB, A'B, AB', A'B'
+
+    }
+
+    // op == "shuffleTake"
+    if (strcmp(op, "shuffleTake") == 0) {
+        // options: i1, i2, j1, j2, src
+
+    }
+
+    // op == "cho2"
+    if (strcmp(op, "cho2") == 0) {
+        // options: i1, i2, j1, j2, rho
+        PyObject *pyI1=0, *pyI2=0, *pyRho=0;  double rho, rhoBar;  int i1, i2;
+        if (!pyJ1 || !pyJ2) return PyErr_Format(PyExc_SyntaxError, "If cho2 is specified then j1 and j2 must also be specified");
+        for (int i = 0; i < PyTuple_Size(argnames); i++) {
+            __GET_KWARG("i1", PyTuple_GET_ITEM(argnames, i), pyI1 = args[i + nargs])
+            __OR_GET_KWARG("i2", PyTuple_GET_ITEM(argnames, i), pyI2 = args[i + nargs])
+            __OR_GET_KWARG("rho", PyTuple_GET_ITEM(argnames, i), pyRho = args[i + nargs])
+        }
+        if (pyI1) {
+            __TO_INT_OR_ERR(i1, pyI1, "i1 must be an int");
+            if (i1 < 0 || i1 >= N || i1 > i2) return PyErr_Format(PyExc_ValueError, "i1 must be in range 0 <= i1 <= i2 < N");
+        }
+        if (pyI2) {
+            __TO_INT_OR_ERR(i2, pyI2, "i2 must be an int");
+            if (i2 < 0 || i2 >= N || i1 > i2) return PyErr_Format(PyExc_ValueError, "i2 must be in range 0 <= i1 <= i2 < N");
+        }
+        __CHECK(pyRho, PyExc_SyntaxError, "If cho2 is specified then rho also be specified");
+        __TO_DOUBLE_OR_ERR(rho, pyRho, "rho must be an double");
+        __CHECK(-1.0 <= rho && rho <= 1.0, PyExc_ValueError, "rho must be in range -1 <= rho <= 1");
+
+        rhoBar = sqrt(1 - rho * rho);
+        // OPEN: transform independent vars
+        return PyErr_Format(PyExc_ValueError, "Not Yet Implemented");
+//        return Py_NewRef(pyMat);
+    }
+
+    // op == "eigen"
+
 
     // op == "norm"
     if (strcmp(op, "norm") == 0) {
         // options: jW - the col containing the N(0,1), dt, sigma, mu
         PyObject *pyJW=0, *pyDt=0, *pySigma=0, *pyMu=0;  int jW=jj;  double dt=1, sigma=1, mu=0, sigmaRootDt, muDt;
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            if (strcmp("jW", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyJW = args[i + nargs];
-            else if (strcmp("dt", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyDt = args[i + nargs];
-            else if (strcmp("sigma", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pySigma = args[i + nargs];
-            else if (strcmp("mu", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyMu = args[i + nargs];
+            __GET_KWARG("jW", PyTuple_GET_ITEM(argnames, i), pyJW = args[i + nargs])
+            __OR_GET_KWARG("dt", PyTuple_GET_ITEM(argnames, i), pyDt = args[i + nargs])
+            __OR_GET_KWARG("sigma", PyTuple_GET_ITEM(argnames, i), pySigma = args[i + nargs])
+            __OR_GET_KWARG("mu", PyTuple_GET_ITEM(argnames, i), pyMu = args[i + nargs])
         }
         if (pyJW) {
             if (pyJ1) return PyErr_Format(PyExc_SyntaxError, "Cannot specify jW if j1 and j2 are specified");
-            checkPyLong(pyJW, "jW must be an int");  jW = (int) PyLong_AsLong(pyJW);
-            if (jW < 0 || jW >= M) return PyErr_Format(PyExc_ValueError, "jW must be in range 0 <= jW < M");
+            __TO_INT_OR_ERR(jW, pyJW, "jW must be an int");
+            __CHECK(0 <= jW && jW < M, PyExc_ValueError, "jW must be in range 0 <= jW < M");
         }
         if (pyDt) {
-            checkPyFloat(pyDt, "dt must be an double");  dt = PyFloat_AsDouble(pyDt);
-            if (dt < 0) return PyErr_Format(PyExc_ValueError, "dt must be in range 0 < dt < +inf");
+            __TO_DOUBLE_OR_ERR(dt, pyDt, "dt must be an double");
+            __CHECK(0 <= dt, PyExc_ValueError, "dt must be in range 0 < dt < +inf");
         }
         if (pySigma) {
-            checkPyFloat(pySigma, "sigma must be an double");  sigma = PyFloat_AsDouble(pySigma);
-            if (sigma <= 0 || sigma > 2) return PyErr_Format(PyExc_ValueError, "sigma must be in range 0% <= sigma <= 200%");
+            __TO_DOUBLE_OR_ERR(sigma, pySigma, "sigma must be an double");
+            __CHECK(0.0 < sigma && sigma <= 2, PyExc_ValueError, "sigma must be in range 0% < sigma <= 200%");
         }
         if (pyMu) {
-            checkPyFloat(pyMu, "mu must be an double");  mu = PyFloat_AsDouble(pyMu);
+            __TO_DOUBLE_OR_ERR(mu, pyMu, "mu must be an double");
         }
         sigmaRootDt = sigma * sqrt(dt);
         muDt = mu * dt;
@@ -424,7 +476,7 @@ pvt PyObject * Py_qu_fill_matrix(PyObject *self, PyObject *const *args, Py_ssize
                 *p = *__P(i-1, j, N) + muDt + sigmaRootDt * w;
             })
         }
-        return Py_NewRef(mat);
+        return Py_NewRef(pyMat);
     }
 
     // op == "log"
@@ -432,25 +484,25 @@ pvt PyObject * Py_qu_fill_matrix(PyObject *self, PyObject *const *args, Py_ssize
         // options: jW - the col containing the N(0,1), dt, sigma, mu
         PyObject *pyJW=0, *pyDt=0, *pySigma=0, *pyMu=0;  int jW=jj;  double dt=1, sigma=1, mu=0, sigmaRootDt, muDt, itoDrift;
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            if (strcmp("jW", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyJW = args[i + nargs];
-            else if (strcmp("dt", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyDt = args[i + nargs];
-            else if (strcmp("sigma", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pySigma = args[i + nargs];
-            else if (strcmp("mu", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i))) == 0) pyMu = args[i + nargs];
+            __GET_KWARG("jW", PyTuple_GET_ITEM(argnames, i), pyJW = args[i + nargs])
+            __OR_GET_KWARG("dt", PyTuple_GET_ITEM(argnames, i), pyDt = args[i + nargs])
+            __OR_GET_KWARG("sigma", PyTuple_GET_ITEM(argnames, i), pySigma = args[i + nargs])
+            __OR_GET_KWARG("mu", PyTuple_GET_ITEM(argnames, i), pyMu = args[i + nargs])
         }
         if (pyJW) {
-            checkPyLong(pyJW, "jW must be an int");  jW = (int) PyLong_AsLong(pyJW);
+            __TO_INT_OR_ERR(jW, pyJW, "jW must be an int");
             if (jW < 0 || jW >= M) return PyErr_Format(PyExc_ValueError, "jW must be in range 0 <= jW < M");
         }
         if (pyDt) {
-            checkPyFloat(pyDt, "dt must be an double");  dt = PyFloat_AsDouble(pyDt);
+            __TO_DOUBLE_OR_ERR(dt, pyDt, "dt must be an double");
             if (dt < 0) return PyErr_Format(PyExc_ValueError, "dt must be in range 0 < dt < +inf");
         }
         if (pySigma) {
-            checkPyFloat(pySigma, "sigma must be an double");  sigma = PyFloat_AsDouble(pySigma);
+            __TO_DOUBLE_OR_ERR(sigma, pySigma, "sigma must be an double");
             if (sigma <= 0 || sigma > 2) return PyErr_Format(PyExc_ValueError, "sigma must be in range 0% <= sigma <= 200%");
         }
         if (pyMu) {
-            checkPyFloat(pyMu, "mu must be an double");  mu = PyFloat_AsDouble(pyMu);
+            __TO_DOUBLE_OR_ERR(mu, pyMu, "mu must be an double");
         }
         sigmaRootDt = sigma * sqrt(dt);
         muDt = mu * dt;
@@ -460,7 +512,7 @@ pvt PyObject * Py_qu_fill_matrix(PyObject *self, PyObject *const *args, Py_ssize
         __FILL_ARRAY(pmat, double, i, j, 0, 0, jj1, jj2, N, p, {
             double first;
             first = *__P(i, j, N);
-            if (first <= 0) return PyErr_Format(PyExc_ValueError, "matrix[0,%i] must be in range 0 < x < +inf", j);
+            __CHECK(0 < first, PyExc_ValueError, "matrix[0,%i] must be in range 0 < x < +inf", j);
             *__P(0, j, N) = log(first);
         })
         if (pyJW) {
@@ -479,7 +531,7 @@ pvt PyObject * Py_qu_fill_matrix(PyObject *self, PyObject *const *args, Py_ssize
         __FILL_ARRAY(pmat, double, i, j, 0, N-1, jj1, jj2, N, p, {
             *p = exp(*p);
         })
-        return Py_NewRef(mat);
+        return Py_NewRef(pyMat);
     }
 
     else {
@@ -487,8 +539,8 @@ pvt PyObject * Py_qu_fill_matrix(PyObject *self, PyObject *const *args, Py_ssize
     }
 
 }
-#undef ARG_MAT
-#undef ARG_OP
+#undef IARG_MAT
+#undef IARG_OP
 
 #pragma pop_macro("__P")
 #endif      // SRC_JONES_PYQU_C

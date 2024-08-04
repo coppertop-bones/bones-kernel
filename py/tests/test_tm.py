@@ -1,5 +1,4 @@
 import sys
-from bones import jones
 
 #
 # sys._k = jones.Kernel()
@@ -132,6 +131,44 @@ def test_nominal():
     tm.name(t) >> check >> equals >> 'u32'
 
     return "test_nominal passed"
+
+
+def test_family():
+    # OPEN: tm.exclusiveNominal -> tm.nominalIn, add intersectionIn, isRecursive, parents, roots, BTError
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    ccyfx = tm.nominal('ccyfx')
+    ccy = tm.nominalIn('ccy', ccyfx)
+    fx = tm.nominalIn('fx', ccyfx)
+
+    mem = tm.nominal('mem')
+    py = tm.nominal('py')
+
+    sz = tm.nominal('sz')
+    m64 = tm.nominalIn('m64', sz)
+
+    f64 = tm.intersectionIn('f64', m64, mem)
+    GBP = tm.intersectionIn('GBP', f64, ccy)
+    USD = tm.intersectionIn('USD', f64, ccy)
+
+    assert tm.isRecursive(GBP)
+    assert tm.parents(GBP) == [ccy, mem]
+    assert tm.roots(GBP) == [ccyfx, mem]
+
+    tm.intersection >> apply_ >> (GBP, USD) >> check >> raises >> jones.BTError
+
+    pylist = tm.intersectionIn('pylist', list, py)
+    pytup = tm.intersectionIn('pytup', tuple, py)
+
+    pyToBones[list] = pylist
+    pyToBones[tuple] = pytup
+
+    lit = tm.nominal('lit')
+    littxt = tm.intersectionIn('littxt', lit)
+
+
+    return "test_family passed"
 
 
 def test_intersection():
@@ -431,6 +468,7 @@ def main():
     # test_sm_sort_order()            # not needed for dispatch
     # test_em()                       # not needed for dispatch
     test_nominal() >> PP
+    test_family() >> PP
     test_intersection() >> PP
     test_name_as() >> PP
     test_union() >> PP

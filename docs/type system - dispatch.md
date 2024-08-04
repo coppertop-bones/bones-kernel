@@ -1,4 +1,165 @@
 
+Much of the time we prefer to overload functions rather than accept unions.
+
+In many ways we are just defining an algebra over objects and arrows that is amenable to subtyping
+
+
+function selection
+for all the overloads (function name and number of args) calculate the distance from the calling signature
+choose the shortest (raising an error if it's ambiguous)
+
+
+describe without templates / generics
+(common and simpler)
+
+
+DO WE NEED EXPLICIT TYPES? THE FAMILY RELATIONSHIP SEEMS TO SOLVE THE ORTHOGONAL
+
+
+
+generics
+select(N**T1[T2], (T1)->bool) -> N**T1[T2]
+
+
+examples fx, matrix library
+
+the following fx is a bit odd as we are shifting the currecy into to type system
+
+fx and ccy are imiscuable
+
+GBP + GBPUSD is a type error
+
++(fx, fx) -> fx
++(ccy, ccy) -> ccy
+
+<:GBP: fx('GBP')>
+<:USD: fx('USD')>
+
+<:ccyfx: orthogonal('ccyfx')>       // where orthogonal is a built-in thing 
+<:fx: ccyfx('fx')>
+
+
+individual types may be marked implicit??
+
+
+
+so actually we want
++(fx[T1], fx[T1]) -> fx[T1]
++(ccy[T1], ccy[T1]) -> ccy[T1]
+
+10 <:+GBP> + 20 <:+GBP> is okay
+
+since GBP decomposes in to fx & GBP, i.e. T1 = GBP
+
++: {[a:fx[T1], b:fx[T1]] -> fx[T1]
+    (a_, b_): a <:f64>, b <:f64>
+    ^ (a + b) fx[T1]
+}
+
+f64 is part of the memory family and thus maynot be intersectioned with any other type from the memory family
+rational - ditto
+
+<:fx: f64('fx')> ???? no
+
+<:fx: 'fx'>
+
+10 <:+GBP> + 20 <:+GBP>
+
+T1 is litint & 'fx' & 'GBP'
+
+
+
++: {[a:f64[T1], b:f64[T1]] -> f64[T1]
+    ^ (a <:-T1> + b<:-T1>)<+T1>
+}
+
+*: {[a:f64[T1], b:f64[T1]] -> f64[T1]
+    ^ (a <:-T1> * b<:-T1>)<+T1>
+}
+
+*: {[a:f64&ccy[T1], b:f64&ccy[T1]] -> f64&ccy[T1]}   // there is no implementation so the compiler knows it's illegal
+alternatives:
+*: {[a:f64&ccy[T1], b:f64&ccy[T1]] -> f64&ccy[T1] void}   // more explicit
+*: {[a:f64&ccy[T1], b:f64&ccy[T1]] -> f64&ccy[T1] null}   // more explicit
+
+
+*:  {[a:ccy[T1], b:fx&{dom:T1,for:T2}] -> ccy[T2]
+    ^ (a <:-ccy[T1]>) * (b <:-fx&{dom:T1,for:T2}>) <:+ccy[T2]>
+}
+
+
+literal is not a memory type??
+
+
+auto conversions aka weakening
+
+
+<:ccyfx: family('ccyfx')>
+<:ccy: 'fx' in ccyfx>
+<:GBP: 'GBP' in ccy>
+
+<:ISIN: txt['ISIN'] in bond_identifier>
+
+
+fx is a family so GBP cannot be intersected with USD, ccy is too and similarly for GBPUSD, EURJPY. GBP cannot be 
+intersected with GBPUSD
+- 
+- but so is ccyfx family
+height, length, width, depth, breadth can be intersected with cm
+
+dimension cannot be intersected with members including:
+cm, inches, mile, microns, are distancem seconds, hours etc time, mass, force, are in the bigger family of dimension 
+
+bond identifiers - CUSIP, ISIN
+bond fut identifiers
+families can be part of families (tree? or DAG?)
+
+family memebers are distinct and cannot be intersected (this is checked on construction, thus family relationships
+cannot be done dynamically)
+
+if a type is a member of a specific family that family cannot be changed, thus a family is immutable and the parent(s) 
+must be set on construction, so 
+
+<:seconds: 'seconds' family: dimension>
+<:seconds: dimension['seconds']>
+
+<:GBP: f64 & '
+
+
+implicit types are availble if the type do not define an instance in a family
+
+N**ccy - is really N**(GBP+USD+JPY) i.e. a sequence of a union
+
+
+
+3.14 & GBP & fx
+
+
+GBP, USD are members of the ccy family
+GBPUSD, EURJPY are members of the fx family
+ccy and fx are members of the 
+
+fx can be multiplied but ccy cannot so they need separate families
+
+i8, u8, f64, u64 big end, u64 little end, pylist are members of the memory layout family
+m8, m16, m32, m64, m128 are members of the memory size family
+
+matrix is a nominal
+
+
+not all static analysis labels should be modeled in the type system - anon, aliased for example are better handled 
+with ref counts (need for the GC) even if we can figure somethings out from static analysis
+
+
+so the purpose of our type system is to support multidispath with subtyping to segregate code into smaller distinct 
+functions, and identify clear mistakes and areas of potential runtime dispatch errors (doesNotUnderstand / partial typing)
+
+
+
+
+
+
+
 
 bones types 
 

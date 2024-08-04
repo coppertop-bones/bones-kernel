@@ -76,7 +76,10 @@ struct PyKernel {
 
 
 pvt PyObject *PyJonesError;
-pvt PyObject *PyJonesSyntaxError;
+
+pvt PyObject *PyCoppertopSyntaxError;
+
+pvt PyObject *PyBTypeError;
 
 pvt PyTypeObject PyBTypeCls;
 pvt PyTypeObject PyKernelCls;

@@ -27,7 +27,7 @@
 #define TRAP_PY(src) {                                                                                                  \
         char *retval = (src);                                                                                           \
         if (retval != 0) {                                                                                              \
-            PyObject *answer = PyErr_Format(PyJonesError, (char *) retval);                                       \
+            PyObject *answer = PyErr_Format(PyJonesError, (char *) retval);                                             \
             free(retval);                                                                                               \
             return answer;                                                                                              \
         }                                                                                                               \
@@ -39,12 +39,12 @@ pvt PyObject * jErrWrongNumberOfArgs(char * fName, int numExpected, Py_ssize_t n
     // https://docs.python.org/3/library/stdtypes.html#old-string-formatting
     // https://docs.python.org/3/c-api/exceptions.html#c.PyErr_Format
     if (numExpected == 1)
-        return PyErr_Format( PyExc_TypeError, "%s takes 1 positional argument but %i were given", fName, numGiven );
+        return PyErr_Format(PyExc_TypeError, "%s takes 1 positional argument but %i were given", fName, numGiven);
     else {
         if (numGiven == 1)
-            return PyErr_Format( PyExc_TypeError, "%s takes %i positional arguments but 1 was given", fName, numExpected );
+            return PyErr_Format(PyExc_TypeError, "%s takes %i positional arguments but 1 was given", fName, numExpected);
         else
-            return PyErr_Format( PyExc_TypeError, "%s takes %i positional arguments but %i were given", fName, numExpected, numGiven );
+            return PyErr_Format(PyExc_TypeError, "%s takes %i positional arguments but %i were given", fName, numExpected, numGiven);
     }
 }
 

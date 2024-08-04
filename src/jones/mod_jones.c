@@ -68,6 +68,7 @@ pvt PyModuleDef jones_module = {
 //    {"bmodule", Py_T_OBJECT_EX, offsetof(struct Fn, bmodule), Py_READONLY, "bones module name"},
 
 pub PyMODINIT_FUNC PyInit_jones(void) {
+    // https://docs.python.org/3/c-api/module.html#c.PyModule_AddObject
     PyObject *m;
 
     m = PyModule_Create(&jones_module);
@@ -75,18 +76,27 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
 
     // PyJonesError
     PyJonesError = PyErr_NewException("jones.JonesError", 0, 0);
-    if (PyModule_AddObject(m, "error", PyJonesError) < 0) {
+    if (PyModule_AddObject(m, "JonesError", PyJonesError) < 0) {
         Py_XDECREF(PyJonesError);
         Py_CLEAR(PyJonesError);
         Py_DECREF(m);
         return 0;
     }
 
-    // PyJonesSyntaxError
-    PyJonesSyntaxError = PyErr_NewException("jones.JonesSyntaxError", 0, 0);
-    if (PyModule_AddObject(m, "error", PyJonesSyntaxError) < 0) {
-        Py_XDECREF(PyJonesSyntaxError);
-        Py_CLEAR(PyJonesSyntaxError);
+    // PyCoppertopSyntaxError
+    PyCoppertopSyntaxError = PyErr_NewException("jones.CoppertopSyntaxError", PyExc_SyntaxError, 0);
+    if (PyModule_AddObject(m, "CoppertopSyntaxError", PyCoppertopSyntaxError) < 0) {
+        Py_XDECREF(PyCoppertopSyntaxError);
+        Py_CLEAR(PyCoppertopSyntaxError);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    // PyBTypeError
+    PyBTypeError = PyErr_NewException("jones.BTypeError", PyExc_TypeError, 0);
+    if (PyModule_AddObject(m, "BTypeError", PyBTypeError) < 0) {
+        Py_XDECREF(PyBTypeError);
+        Py_CLEAR(PyBTypeError);
         Py_DECREF(m);
         return 0;
     }

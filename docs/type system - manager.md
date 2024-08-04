@@ -1,3 +1,6 @@
+This doc describes the implementation of the bones types system
+
+
 ## tm - type manager
 product_size_type - u16 - handles products up to 64k in length
 

@@ -188,7 +188,9 @@ typedef enum {
 } btexclusioncat_t;
 
 
-// OPEN: with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
+// OPEN: can we make the btsummary struct more compact (e.g. for cache efficiency)
+// the exlusion_family_id is only needed on intersection construction so
+// with 256k types (18 bits) and 4 bits for the metatype this could be compacted into a u32
 // btypeid - 18 bits (256k)
 // bmetatypeid - 4 bits (16 types)
 // exclid - 4 bits (16 types)

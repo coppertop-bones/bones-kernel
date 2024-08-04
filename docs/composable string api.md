@@ -19,7 +19,7 @@ We will provide an arena for the lib to allocate with, copy the results out and 
     BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl;
     checkpointBuckets((buckets = self->tm->buckets), &cp);
     TP_init(&tp, 0, buckets);
-    PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
+    PyErr_Format(PyBTypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
     resetToCheckpoint(buckets, &cp);
     return 0;
 ```
@@ -35,7 +35,7 @@ PyObject * PyTM_intersection(struct PyTM *self, btypeid_t *tl) {
     TP_init(&tp);
     
     char *typelistStr = tm_pp_typelist(self->tm, &tp, tl).cs;
-    PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", typelistStr);
+    PyErr_Format(PyBTypeError, "There are exclusion conflicts within (%s)", typelistStr);
     free(typelistStr);
     
     return 0;
@@ -47,7 +47,7 @@ focus on creating good error messages. If we compose the function calls:
 
 ```c
 
-    PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
+    PyErr_Format(PyBTypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
 
 ```
 
@@ -60,7 +60,7 @@ PyObject * PyTM_intersection(struct PyTM *self, btypeid_t *tl) {
     TP_init(&tp, 0, buckets);
     checkpointBuckets((buckets = self->tm->buckets), &cp);
     
-    PyErr_Format(PyExc_TypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
+    PyErr_Format(PyBTypeError, "There are exclusion conflicts within (%s)", tm_pp_typelist(self->tm, &tp, tl).cs);
     
     resetToCheckpoint(buckets, &cp);
     return 0;
