@@ -44,12 +44,6 @@
 
 
 
-#define MM_SLOT_SIZE 16
-#define MM_LINE_SIZE 256
-#define MM_SMALL_OBJ_SIZE MM_LINE_SIZE
-#define MM_LARGE_OBJ_SIZE _8K
-#define MM_BLOCK_SIZE _32K
-
 
 // Page Allocator - reserves VM, allocate integer number of pages, keeps track of dropped ones, protecting, reusing or
 // returning then to os when desired, and reserves extra VM as necessary. can't move but could coalesce adjacent pages
@@ -101,17 +95,17 @@ typedef struct Buckets Buckets;
 typedef struct BucketsCheckpoint BucketsCheckpoint;
 typedef struct BucketHeader BucketHeader;
 
-tdd void * initBuckets(Buckets *a, size chunkSize);
-tdd void * allocInBuckets(Buckets *a, size n, size align);
-tdd void * reallocInBuckets(Buckets *a, void * p, size n, size align);
-tdd void checkpointBuckets(Buckets *a, BucketsCheckpoint *s);
-tdd void resetToCheckpoint(Buckets *a, BucketsCheckpoint *s);
+tdd void * Buckets_init(Buckets *, size chunkSize);
+tdd void * allocInBuckets(Buckets *, size n, size align);
+tdd void * reallocInBuckets(Buckets *, void * p, size n, size align);
+tdd void checkpointBuckets(Buckets *, BucketsCheckpoint *s);
+tdd void resetToCheckpoint(Buckets *, BucketsCheckpoint *s);
 tdd void cleanBuckets(void *first_bucket);
-tdd void freeBuckets(void *first_bucket);
+tdd void Buckets_finalise(Buckets *);
 tdd unsigned long numBuckets(BucketHeader *first_bucket);
-tdd int inBuckets(Buckets *a, void *p);
-tdd int isAlive(Buckets *a, void *p);
-tdd int isDead(Buckets *a, void *p);
+tdd int inBuckets(Buckets *, void *p);
+tdd int isAlive(Buckets *, void *p);
+tdd int isDead(Buckets *, void *p);
 
 
 pub BK_MM * MM_create();

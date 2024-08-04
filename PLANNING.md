@@ -1,4 +1,8 @@
 SEQUENCE
+get tm working again but with family membership rather than exclusive types
+alloc, dup, drop, Python proxy to object (creating adds a pin, dropping removes a pin)
+structs so can have an update - PyOM_setfield(object, field, value) , PyOM_getfield(object, field)
+
 types - unions, structs, tuples etc - then coppertop can have c types
 untracked memory - requires block allocator, large object allocator
 fitswithin

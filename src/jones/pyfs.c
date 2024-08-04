@@ -6,15 +6,13 @@
 #define SRC_JONES_PYFS_C "jones/pyfs.c"
 
 
-#include "jones.h"
-#include "../../include/bk/bk.h"
+#include "../../include/jones/jones.h"
 #include "../bk/fs.c"
-#include "lib/pyutils.h"
+#include "../../include/jones/lib/pyutils.h"
 #include "pybtype.c"
 
 
 static PyObject * Partial_o_tbc(struct Partial *, void *);
-
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -369,7 +367,7 @@ pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
     for (uint_fast8_t o = 0; o < num_args; o++) {
         // get the id from each tArg
         PyBType *tArg = (PyBType *) PyTuple_GetItem(tArgs, o);
-        if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(PyJonesError, "Arg is not a BType");
+        if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(PyBTypeError, "Arg is not a BType");
         lower = tArg->btypeid & LOWER_TYPE_MASK;
         upper = (tArg->btypeid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
         upperFlag = upper ? HAS_UPPER_TYPE_FLAG : 0;

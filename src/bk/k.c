@@ -6,11 +6,10 @@
 #define __BK_K_C "bk/k.c"
 
 #include "../../include/bk/k.h"
-#include "mm.c"
+#include "tp.c"
 #include "sm.c"
 #include "em.c"
 #include "tm.c"
-#include "tp.c"
 
 pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
     BK_K *k = mm->malloc(sizeof(BK_K));
@@ -18,16 +17,17 @@ pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
     k->buckets = buckets;
     k->sm = SM_create(mm);
     k->em = EM_create(mm, k->sm);
-    k->tm = TM_create(mm, k->buckets, k->sm, k->tp);
+    TP_init(&(k->tp), 0, buckets);
+    k->tm = TM_create(mm, k->buckets, k->sm, &(k->tp));
 
     int n = 0;
     BK_TM *tm = k->tm;
-    n += tm_nominal(tm, "m8", B_M8) == 0;
-    n += tm_nominal(tm, "m16", B_M16) == 0;
-    n += tm_nominal(tm, "m32", B_M32) == 0;
-    n += tm_nominal(tm, "m64", B_M64) == 0;
-    n += tm_nominal(tm, "litint", B_LITINT) == 0;
-    n += tm_nominal(tm, "i32", B_I32) == 0;
+    n += tm_nominal(tm, B_M8, 0, "m8") == 0;
+    n += tm_nominal(tm, B_M16, 0, "m16") == 0;
+    n += tm_nominal(tm, B_M32, 0, "m32") == 0;
+    n += tm_nominal(tm, B_M64, 0, "m64") == 0;
+    n += tm_nominal(tm, B_LITINT, 0, "litint") == 0;
+    n += tm_nominal(tm, B_I32, 0, "i32") == 0;
 
     if (n) {
         mm->free(tm);

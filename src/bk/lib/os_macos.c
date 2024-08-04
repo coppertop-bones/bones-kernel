@@ -120,7 +120,7 @@ pub int os_mwipe(void *addr, size_t sz) {
     return ret;
 }
 
-pub int os_mreturn(void *addr, size_t sz) {
+pub int os_mrelease(void *addr, size_t sz) {
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/mprotect.2.html
     // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/madvise.2.html
     // https://man7.org/linux/man-pages/man2/madvise.2.html - MADV_FREE

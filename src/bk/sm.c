@@ -23,7 +23,7 @@
 #ifndef __BK_SM_C
 #define __BK_SM_C "bk/sm.c"
 
-#include "../../include/bk/mm.h"
+#include "mm.c"
 #include "../../include/bk/sm.h"
 #include "../../include/bk/tp.h"
 #include "../../include/bk/lib/os.h"
@@ -39,12 +39,12 @@ pvt inline char * nameFromEntry(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entr
     return h->sm->symname_buf + h->sm->rp_by_symid[entry];
 }
 
-pvt bool inline nameFound(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, char *key) {
+pvt bool inline nameFound(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, char const *key) {
     return strcmp(h->sm->symname_buf + h->sm->rp_by_symid[entry], key) == 0;
 }
 
 // HI_IMPL(name, token_t, hashable_t, __hash_fn, __found_fn, __hashable_from_token_fn)
-HI_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char *, hi_chars_X31_hash, nameFound, nameFromEntry)
+HI_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char const *, hi_chars_X31_hash, nameFound, nameFromEntry)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -86,15 +86,15 @@ HI_IMPL(SM_SLID_BY_SLHASH, SM_SLID_T, btypeid_t *, sl_hash, slHashableFound, slF
 // s8 - print s8 - answers an s8
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt void sm_pb_symlist(BK_SM *sm, BK_TP *tp, symid_t *symlist) {
+pvt void sm_buf_symlist(BK_SM *sm, BK_TP *tp, symid_t *symlist) {
     for (u32 i = 1; i < symlist[0] + 1; i++) {
-        tp_pb_printf(tp, "`");
-        tp_pb_printf(tp, sm_name(sm, symlist[i]));
+        tp_buf_printf(tp, "`");
+        tp_buf_printf(tp, sm_name(sm, symlist[i]));
     }
 }
 
-pvt inline TPN sm_pp_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_pb_symlist(sm, tp, sl); return tp_snap(tp);}
-pvt inline S8 sm_s8_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_pb_symlist(sm, tp, sl); return tp_s8(tp, tp_snap_with_null(tp));}
+pvt inline TPN sm_pp_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_buf_symlist(sm, tp, sl); return tp_flush(tp);}
+pvt inline S8 sm_s8_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_buf_symlist(sm, tp, sl); return tp_s8(tp, tp_flush(tp));}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ pub bool sm_id_le(BK_SM *sm, symid_t a, symid_t b) {
 // type accessing / creation fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub symid_t sm_id(BK_SM *sm, char *name) {
+pub symid_t sm_id(BK_SM *sm, char const *name) {
     i32 res, pageSize = 0;
     u32 idx = hi_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
 

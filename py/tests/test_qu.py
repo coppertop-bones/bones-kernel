@@ -1,7 +1,5 @@
-import math
-import time
+import math, time, itertools, numpy as np
 
-import numpy as np
 from bones import qu
 
 from coppertop.pipe import *
@@ -11,7 +9,6 @@ from bones import jones
 from bones.core.errors import NotYetImplemented
 from dm.pp import PP
 
-import itertools
 
 @coppertop(style=binary)
 def apply_(fn, arg):
@@ -28,7 +25,7 @@ def apply_(fn, arg:pylist+pytuple):
 #   - out test checks does the code run, the visual output allows the quant to validate the results
 #   - add useful checks for assert the results are in error
 #   - over time we want to compare two or more ways of getting the same result, e.g. b76 closed form and mc
-#   - make it super easy to run subsets of tests
+#   - make it super easy to run subsets of tdd_bones
 
 
 # QU GOALS
