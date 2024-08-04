@@ -66,6 +66,9 @@
 #define _16K 0x4000         /* 16384 */
 #define _32K 0x8000
 #define _64K 0x10000       /* 65536 */
+#define _128K 0x20000
+#define _256K 0x40000
+#define _512K 0x80000
 #define _1M 0x100000       /* 1048576 */
 #define _2M 0x200000
 #define _4M 0x400000
@@ -88,8 +91,14 @@
 #define _512GB 0x8000000000
 #define _1TB 0x10000000000    /* 1099511627776 */
 
+#define MACOS_M1_PAGE_SIZE _16K
+#define MACOS_M1_CACHE_LINE_SIZE 128
 
+#define MACOS_X64_PAGE_SIZE _4K
+#define MACOS_X64_CACHE_LINE_SIZE 64
 
+#define WIN_X64_PAGE_SIZE _4K
+#define WIN_X64_CACHE_LINE_SIZE 128
 
 
 #ifndef bk_inline
@@ -147,12 +156,12 @@ typedef unsigned int    usize32;
 
 typedef struct {
     size sz;
-    char *cs;
+    char *cs;               // pointer to null terminated utf8
 } S8;
 
 typedef struct {
-    unsigned long vtsz;     // 62 bits of length and 2 bits of meta
-    void *p;
+    unsigned long vtsz;     // 2 bits of meta (S8, slice, or sequence) followed by 62 bits of text length
+    void *p;                // either pointer to utf8 (optionally null terminated) or a length prefixed list of TPN *
 } TPN;
 
 #define s8_sz(s) (size)(s.sz)

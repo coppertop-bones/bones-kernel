@@ -6,11 +6,10 @@
 #define __BK_K_C "bk/k.c"
 
 #include "../../include/bk/k.h"
-#include "mm.c"
+#include "tp.c"
 #include "sm.c"
 #include "em.c"
 #include "tm.c"
-#include "tp.c"
 
 pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
     BK_K *k = mm->malloc(sizeof(BK_K));
@@ -18,20 +17,38 @@ pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
     k->buckets = buckets;
     k->sm = SM_create(mm);
     k->em = EM_create(mm, k->sm);
-    k->tm = TM_create(mm, k->buckets, k->sm, k->tp);
+    TP_init(&(k->tp), 0, buckets);
+    k->tm = TM_create(mm, k->buckets, k->sm, &(k->tp));
 
     int n = 0;
     BK_TM *tm = k->tm;
-    n += tm_nominal(tm, "m8", B_M8) == 0;
-    n += tm_nominal(tm, "m16", B_M16) == 0;
-    n += tm_nominal(tm, "m32", B_M32) == 0;
-    n += tm_nominal(tm, "m64", B_M64) == 0;
-    n += tm_nominal(tm, "litint", B_LITINT) == 0;
-    n += tm_nominal(tm, "i32", B_I32) == 0;
+    tm_reserve_btypeids(tm, B_FIRST_UNRESERVED_TYPEID);
+    n += tm_atom(tm, B_M8, "m8") == 0;
+    n += tm_atom(tm, B_M16, "m16") == 0;
+    n += tm_atom(tm, B_M32, "m32") == 0;
+    n += tm_atom(tm, B_M64, "m64") == 0;
+    n += tm_atom(tm, B_LITINT, "litint") == 0;
+    n += tm_atom(tm, B_I32, "i32") == 0;
+
+    n += tm_schemavar(tm, B_T, "T") == 0;
+    n += tm_schemavar(tm, B_T1, "T1") == 0;
+    n += tm_schemavar(tm, B_T2, "T2") == 0;
+    n += tm_schemavar(tm, B_T3, "T3") == 0;
+
+    n += tm_schemavar(tm, B_N, "N") == 0;
+    n += tm_schemavar(tm, B_N1, "N1") == 0;
+    n += tm_schemavar(tm, B_N2, "N2") == 0;
+    n += tm_schemavar(tm, B_N3, "N3") == 0;
+    n += tm_schemavar(tm, B_N4, "N4") == 0;
+    n += tm_schemavar(tm, B_N5, "N5") == 0;
+    n += tm_schemavar(tm, B_N6, "N6") == 0;
+    n += tm_schemavar(tm, B_N7, "N7") == 0;
+    n += tm_schemavar(tm, B_N8, "N8") == 0;
+    n += tm_schemavar(tm, B_N9, "N9") == 0;
 
     if (n) {
         mm->free(tm);
-        die("%i conflicts in tm_nominal\n", n);
+        die("%i conflicts in tm_atom\n", n);
     }
     return k;
 }

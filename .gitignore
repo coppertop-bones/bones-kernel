@@ -16,8 +16,9 @@ __pycache__/
 
 # binaries
 /py/build/
+/py/bones/
 src/play/setjmp_play
-src/tests/tdd_tm
+src/tdd_bones/tdd_tm
 src/mc99/play/handcrafted
 src/mc99/play/hello
 src/mc99/play/_minc99
@@ -38,3 +39,21 @@ src/mc99/play/qbe/knight2
 src/mc99/play/qbe/knight_O3
 src/mc99/play/qbe/mandel
 src/mc99/play/qbe/queen
+
+# wip links
+include/bk/om.h
+include/jones/mod_jones_wip.h
+
+src/bk/om.c
+src/jones/mod_jones_wip.c
+src/jones/pyom.c
+src/jones/pyplay.c
+src/tdd_bones/tdd_om.c
+
+py/tests/test_om.py
+
+src/play
+
+py/setup-wip.py
+
+docs-wip

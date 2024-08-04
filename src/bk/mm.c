@@ -37,7 +37,7 @@ tdd void *_nextBucket(Buckets *a, size n, size align);
 tdd void *_allocBucket(size size);
 
 
-pub void * initBuckets(Buckets *a, size chunkSize) {
+pub void * Buckets_init(Buckets *a, size chunkSize) {
     if (PAGE_SIZE == 0) {PAGE_SIZE = os_page_size();}
     a->first_bucket = 0;
     a->current_bucket = 0;
@@ -124,9 +124,9 @@ pub void cleanBuckets(void *first_bucket) {
     nyi("cleanBuckets");
 }
 
-pub void freeBuckets(void *first_bucket) {
+pub void Buckets_finalise(Buckets *buckets) {
     void *current, *next;
-    current = first_bucket;
+    current = buckets->first_bucket;
     while (current) {
         next = *(void**)current;
         free(current);

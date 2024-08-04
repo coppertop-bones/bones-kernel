@@ -6,15 +6,13 @@
 #define SRC_JONES_PYFS_C "jones/pyfs.c"
 
 
-#include "jones.h"
-#include "../../include/bk/bk.h"
+#include "../../include/jones/jones.h"
 #include "../bk/fs.c"
-#include "lib/pyutils.h"
+#include "../../include/jones/lib/pyutils.h"
 #include "pybtype.c"
 
 
 static PyObject * Partial_o_tbc(struct Partial *, void *);
-
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -128,7 +126,7 @@ pvt PyObject * _fs_fill_query_slot_with_btypes_of(PyObject *mod, PyObject **pyar
             if (upper) {query[o_slot - 1] |= HAS_UPPER_TYPE_FLAG; query[o_slot] = upper >> UPPER_TYPE_SHIFT;  o_slot++;}
         }
 
-        // otherwise, is it a jones Fn? if so get the type of the whole family
+        // otherwise, is it a jones Fn? if so get the type of the whole space
         else if (argCls == &PyNullaryCls || argCls == &PyUnaryCls || argCls == &PyBinaryCls || argCls == &PyTernaryCls) {
             // call the fn.d.get_t(arg)
             struct Fn *f = (struct Fn *) arg;
@@ -369,7 +367,7 @@ pvt PyObject * _fs_test_fill_query_slot_and_get_result(PyObject *mod, PyObject *
     for (uint_fast8_t o = 0; o < num_args; o++) {
         // get the id from each tArg
         PyBType *tArg = (PyBType *) PyTuple_GetItem(tArgs, o);
-        if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(PyJonesError, "Arg is not a BType");
+        if (!PyObject_IsInstance((PyObject *) tArg, (PyObject *) &PyBTypeCls)) PyErr_Format(PyBTypeError, "Arg is not a BType");
         lower = tArg->btypeid & LOWER_TYPE_MASK;
         upper = (tArg->btypeid & UPPER_TYPE_MASK) >> UPPER_TYPE_SHIFT;
         upperFlag = upper ? HAS_UPPER_TYPE_FLAG : 0;

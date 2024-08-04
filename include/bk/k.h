@@ -9,16 +9,20 @@
 #include "sm.h"
 #include "em.h"
 #include "tm.h"
+#include "tp.h"
 
 #define BUCKETS_CHUNK_SIZE 4096*4
 
+// page manager would allocate number of pages and return to os and reuse them
+
 typedef struct {
     BK_MM *mm;
-    Buckets *buckets;
+    Buckets *buckets;   // buckets can be used by TP and for RST
     BK_SM *sm;
     BK_EM *em;
     BK_TM *tm;
-    struct TPM *tp;
+    void *om;           // kernel may or may not have an object manager
+    BK_TP tp;           // used by the TM to print type lists etc
 } BK_K;
 
 pub BK_K * K_create(BK_MM *mm, Buckets *buckets);

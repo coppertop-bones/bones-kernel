@@ -1,5 +1,4 @@
-import sys
-from bones import jones
+import sys, itertools
 
 #
 # sys._k = jones.Kernel()
@@ -24,7 +23,6 @@ from bones import jones
 
 
 
-
 from coppertop.pipe import *
 from dm.core.types import pylist, pytuple
 from dm.testing import check, raises, equals, gt, different
@@ -32,15 +30,14 @@ from bones import jones
 from bones.core.errors import NotYetImplemented
 from dm.pp import PP
 
-import sys, itertools
 
 @coppertop(style=binary)
 def apply_(fn, arg):
     return lambda : fn(arg)
 
 @coppertop(style=binary)
-def apply_(fn, arg:pylist+pytuple):
-    return lambda : fn(*arg)
+def apply_(fn, args:pylist+pytuple):
+    return lambda : fn(*args)
 
 def isType(a, b) -> bool:
     return a == b
@@ -48,60 +45,6 @@ def isType(a, b) -> bool:
 def isNotType(a, b) -> bool:
     return a != b
 
-
-
-def test_sm():
-    sys._k = jones.Kernel()
-    sm = sys._k.sm
-
-    id1 = sm.symid("joe")
-    id2 = sm.symid("fred")
-    id3 = sm.symid("fred")
-    id2 >> check >> equals >> id3
-    sm.name(id2) >> check >> equals >> "fred"
-    sm.symid("a") >> check >> gt >> id3
-    sm.symid("b") >> check >> gt >> id3
-
-    sm.name >> apply_ >> 0 >> check >> raises >> ValueError
-    sm.name >> apply_ >> 100000 >> check >> raises >> ValueError
-
-    del sys.__dict__['_k']
-    return "test_sm passed"
-
-
-def test_sm_sort_order():
-    sys._k = jones.Kernel()
-    sm = sys._k.sm
-
-    id1 = sm.symid("joe")
-    id2 = sm.symid("fred")
-    sm.le(id2, id1) >> check >> equals >> True
-    sm.le(id2, id2) >> check >> equals >> False
-    sm.le(id1, id2) >> check >> equals >> False
-
-    return "test_sm_sort_order passed"
-
-
-def test_em():
-    sys._k = jones.Kernel()
-    em = sys._k.em
-
-    e = em.enum('excl', 'mem')
-    e.id >> check >> equals >> 1
-    em.enum('excl', 'mem').id  >> check >> equals >> 1
-
-    e = em.setEnumTo('excl', 'ccy', 2)
-    e.id >> check >> equals >> 2
-    em.enum('excl', 'ccy').id  >> check >> equals >> 2
-
-    e = em.enum('fred', 'mem')
-    e.id >> check >> equals >> 1
-    em.enum('fred', 'mem').id >> check >> equals >> 1
-
-    em.setEnumTo(['fred', 'mem', 1]).id >> check >> equals >> 1
-    em.setEnumTo >> apply_ >> ('fred', 'mem', 2) >> check >> raises >> ValueError
-
-    return "test_em passed"
 
 
 def test_nominal():
@@ -124,7 +67,7 @@ def test_nominal():
     tm = sys._k.tm
 
     tm.exists('u32') >> check >> equals >> False
-    tm.fromName >> apply_ >> ['u32'] >> check >> raises >> TypeError
+    tm.fromName >> apply_ >> 'u32' >> check >> raises >> jones.BTypeError
     t = tm.nominal(f'u32')
     tm.exists('u32') >> check >> equals >> True
     tm.fromName('u32') >> check >> isType >> t
@@ -132,6 +75,67 @@ def test_nominal():
     tm.name(t) >> check >> equals >> 'u32'
 
     return "test_nominal passed"
+
+
+def test_spaces():
+    # OPEN: tm.exclusiveNominal -> tm.nominalIn, add intersectionIn, isRecursive, parents, roots, BTError
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    ccyfx = tm.nominal('ccyfx')
+
+    ccy = tm.nominalIn('ccy', ccyfx)
+    fx = tm.nominalIn('fx', ccyfx)
+
+    tm.intersection >> apply_ >> (ccy, fx) >> check >> raises >> jones.BTError
+
+    mem = tm.nominal('mem')         # mem is a builtin type
+    py = tm.nominal('py')           # a nominal used to indicate Python types
+    null = tm.nominal('null')
+
+    sz = tm.nominal('sz')
+    m64 = tm.nominalIn('m64', sz)
+
+    # for intersections we first set the "space", then populate the type, then validate it - in the case of errors we end up
+    # with a little inaccessible type garbage
+    # recursive must be first arg and can only be used once, for intersections the in is set before doing the intersection check
+    f64 = tm.recursive('f64')
+    f64 = tm.intersectionIn(f64, m64, self=f64, space=mem)
+    f64 = tm.intersectionImpIn(f64, m64, self=f64, space=mem)
+
+    GBP = tm.recursive('GBP')
+    GBP = tm.intersectionIn(GBP, f64, ccy, self=GBP, space=ccy)         # intersection of GBP, f64 and ccy in the ccy space
+
+    USD = tm.recursive('USD')
+    USD = tm.intersectionIn(USD, f64, ccy, self=USD, space=ccy)
+
+    assert tm.isRecursive(GBP)
+    assert tm.parents(GBP) == (ccy, mem)
+    assert tm.roots(GBP) == (ccyfx, mem)
+
+    # recursive types do not need to be named
+    rec = tm.recursive()
+    tLhs = tm.union(rec, f64, null)
+    tRhs = tm.union(rec, f64, null)
+    f64Tree = tm.struct(('lhs', 'rhs'), (tLhs, tRhs), self=rec)
+
+    assert tm.isRecursive(f64Tree) and not tm.isRecursive(tLhs) and not tm.isRecursive(tRhs)
+    assert tm.parents(f64Tree) == ()
+    assert tm.roots(f64Tree) == ()
+
+    tm.intersection >> apply_ >> (GBP, USD) >> check >> raises >> jones.BTError
+
+    pylist = tm.intersectionIn(tm.recursive('pylist'), py)
+    pytup = tm.intersectionIn(tm.recursive('pytup'), py)
+
+    pyToBones[list] = pylist
+    pyToBones[tuple] = pytup
+
+    lit = tm.nominal('lit')
+    littxt = tm.intersectionIn('littxt', lit)
+
+
+    return "test_orthogonal passed"
 
 
 def test_intersection():
@@ -427,10 +431,9 @@ def test_offsets():
 #   create the null tuple for functions that take no arguments
 
 def main():
-    test_sm() >> PP
-    # test_sm_sort_order()            # not needed for dispatch
     # test_em()                       # not needed for dispatch
     test_nominal() >> PP
+    test_orthogonal() >> PP
     test_intersection() >> PP
     test_name_as() >> PP
     test_union() >> PP

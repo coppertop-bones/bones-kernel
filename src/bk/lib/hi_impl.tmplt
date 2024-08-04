@@ -1,3 +1,10 @@
+// ---------------------------------------------------------------------------------------------------------------------
+// HI - HASH INDEX
+// based on https://github.com/attractivechaos/klib/blob/master/khash.h
+// https://attractivechaos.wordpress.com/2019/12/28/deletion-from-hash-tables-without-tombstones/
+// ---------------------------------------------------------------------------------------------------------------------
+
+
 #ifndef SRC_BK_LIB_HI_IMPL_TMPLT
 #define SRC_BK_LIB_HI_IMPL_TMPLT
 
