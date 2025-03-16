@@ -38,7 +38,7 @@ typedef enum : u32 {
 typedef enum {
 #endif
     bmterr = 0x00000000,
-    btmatm = 0x10000000, // atomic type with a given name
+    bmtatm = 0x10000000, // atomic type with a given name
 
     // relations
     bmtint = 0x20000000, // intersection - sorted list of other types
@@ -103,8 +103,8 @@ typedef struct {
 
 typedef struct {
     SM_SLID_T slid;
-    btypeid_t tupid;
-} TM_SLID_TUPID;
+    TM_TLID_T tlid;
+} TM_SLID_TLID;
 
 
 
@@ -175,9 +175,9 @@ typedef struct PVT_TM {
     // struct details
     TM_DETAILID_T max_strid;
     TM_DETAILID_T next_strid;
-    btypeid_t *tupid_by_strid;           // split into two arrays assuming we mainly just interact with the type list
+    btypeid_t *tlid_by_strid;           // split into two arrays assuming we mainly just interact with the type list
     SM_SLID_T *slid_by_strid;
-    hi_struct(TM_DETAILID_BY_SLIDTUPIDHASH) *strid_by_slidtupidhash;
+    hi_struct(TM_DETAILID_BY_SLIDTUPIDHASH) *strid_by_slidtlidhash;
     btypeid_t *btypid_by_strid;
 
     // sequence details - detailsid is the contained type
@@ -202,49 +202,93 @@ typedef struct PVT_TM {
 } BK_TM;
 
 
-pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, BK_TP *);
-pub int TM_trash(BK_TM *);
-pub void tm_reserve_btypeids(BK_TM *, btypeid_t);
-
 // construction
+// we want types to be immutable singleton sentinels, so we can only create them lazily when they do not have extra
+// attributes, i.e. othogonal space id, is explicit flag, implicitly in id
+// when constructing a compound type, e.g. maps, functions, structs, it is tempting to use a typelistid as an argument,
+// so that we don't have to create the tuple fully first. This leads to problems later on.
+
+// we allow intersections to recurse themselves so we don't need to crate dummy property types e.g. ccy or fx etc
+
+// if recursion is needed, e.g. for intersections, tuples, structs, maps, sequences, fns
+// reserve a typeid with the flags
+// create the type in the process initialising the reserved typeid
+// on error we are left
+
+
+
+// atoms
 pub btypeid_t tm_atom(BK_TM *, btypeid_t self, char const *);
+
+// functions
 pub btypeid_t tm_fn(BK_TM *, btypeid_t self, btypeid_t argsid, btypeid_t retid);
+pub TM_T1T2 tm_fn_targs_tret(BK_TM *, btypeid_t);
+
+// intersections
 pub btypeid_t tm_inter(BK_TM *, btypeid_t self, btypeid_t *);
+pub TM_TLID_T tm_inter_tlid(BK_TM *, btypeid_t *);                  // intersection tlid (sorted and all intersections expanded)
+pub btypeid_t tm_inter_for_tlid(BK_TM *, TM_TLID_T);
+pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *, btypeid_t self, TM_TLID_T);
 pub btypeid_t tm_inter_in(BK_TM *, btypeid_t self, btypeid_t orthspcid, btypeid_t *);
 pub btypeid_t tm_interv(BK_TM *, btypeid_t self, u32 numTypes, ...);
 pub btypeid_t tm_interv_in(BK_TM *, btypeid_t self, btypeid_t orthspcid, u32 numTypes, ...);
-pub btypeid_t tm_layout_as(BK_TM *, btypeid_t, size);
-pub btypeid_t tm_map(BK_TM *, btypeid_t self, btypeid_t keyid, btypeid_t valueid);
-pub btypeid_t tm_minus(BK_TM *, btypeid_t self, btypeid_t A, btypeid_t B);
-pub btypeid_t tm_name_as(BK_TM *, btypeid_t, char const *);
-pub btypeid_t tm_options(BK_TM *, btypeid_t self, btypeid_t orthspcid, bool isexplicit, btypeid_t implicitid);
-pub btypeid_t tm_schemavar(BK_TM *, btypeid_t self, char const *);
-pub btypeid_t tm_seq(BK_TM *, btypeid_t self, btypeid_t containedid);
-pub btypeid_t tm_struct(BK_TM *, btypeid_t self, SM_SLID_T, btypeid_t tupid);
-pub btypeid_t tm_structv_sts(BK_TM *, u32 numTypes, ...);
-pub btypeid_t tm_structv_ssts(BK_TM *, u32 numTypes, ...);
-pub btypeid_t tm_tuple(BK_TM *, btypeid_t self, btypeid_t *);
-pub btypeid_t tm_tuplev(BK_TM *, btypeid_t self, u32 numTypes, ...);
-pub btypeid_t tm_union(BK_TM *, btypeid_t self, btypeid_t *);
-pub btypeid_t tm_unionv(BK_TM *, btypeid_t, u32 numTypes, ...);
-
-// inspection
-pub bmetatypeid_t tm_bmetatypeid(BK_TM *, btypeid_t);
-pub btypeid_t tm_btypeid(BK_TM *, char const *name);
-pub TM_T1T2 tm_fn_targs_tret(BK_TM *, btypeid_t);
-pub bool tm_hasT(BK_TM *, btypeid_t);
-pub btypeid_t tm_layout(BK_TM *, btypeid_t);
 pub btypeid_t * tm_inter_tl(BK_TM *, btypeid_t);
+
+// maps
+pub btypeid_t tm_map(BK_TM *, btypeid_t self, btypeid_t keyid, btypeid_t valueid);
 pub TM_T1T2 tm_map_tk_tv(BK_TM *, btypeid_t);
-pub char const * tm_name(BK_TM *, btypeid_t);                 // OPEN: return symid instead
-pub btypeid_t tm_orthspcid(BK_TM *, btypeid_t);
-pub btypeid_t tm_root_orthspcid(BK_TM *, btypeid_t);
+
+// schema variables
+pub btypeid_t tm_schemavar(BK_TM *, btypeid_t self, char const *);
+
+// sequences
+pub btypeid_t tm_seq(BK_TM *, btypeid_t self, btypeid_t containedid);
 pub btypeid_t tm_seq_t(BK_TM *, btypeid_t);
-pub size tm_size(BK_TM *, btypeid_t);
+
+// structs
+pub btypeid_t tm_struct(BK_TM *, btypeid_t self, SM_SLID_T, TM_TLID_T);
 pub symid_t * tm_struct_sl(BK_TM *, btypeid_t);
 pub btypeid_t * tm_struct_tl(BK_TM *, btypeid_t);
+
+// tuples
+pub btypeid_t tm_tuple(BK_TM *, btypeid_t self, TM_TLID_T);
+pub btypeid_t tm_tuplev(BK_TM *, btypeid_t self, u32 numTypes, ...);
 pub btypeid_t * tm_tuple_tl(BK_TM *, btypeid_t);
+
+// unions
+pub btypeid_t tm_union(BK_TM *, btypeid_t self, btypeid_t *);
+pub TM_TLID_T tm_union_tlid(BK_TM *, btypeid_t *);                  // union tlid (sorted and all unions expanded)
+pub btypeid_t tm_union_for_tlid(BK_TM *, TM_TLID_T);
+pub btypeid_t tm_union_for_tlid_or_create(BK_TM *, btypeid_t self, TM_TLID_T);
+pub btypeid_t tm_unionv(BK_TM *, btypeid_t self, u32 numTypes, ...);
 pub btypeid_t * tm_union_tl(BK_TM *, btypeid_t);
+
+// variable get/set etc
+pub btypeid_t tm_get(BK_TM *, char const *name);
+pub btypeid_t tm_set(BK_TM *, btypeid_t, char const *);
+
+// id reservation
+pub btypeid_t tm_reserve(BK_TM *, btypeid_t self, btypeid_t orthspcid, bool isexplicit, btypeid_t implicitid);
+pub void tm_reserve_btypeids(BK_TM *, btypeid_t);
+
+// attribute accessing
+pub bmetatypeid_t tm_bmetatypeid(BK_TM *, btypeid_t);
+pub bool tm_hasT(BK_TM *, btypeid_t);
+pub btypeid_t tm_layout(BK_TM *, btypeid_t);
+pub btypeid_t tm_layout_as(BK_TM *, btypeid_t, size);
+pub char const * tm_name(BK_TM *, btypeid_t);               // OPEN: return symid instead
+pub btypeid_t tm_orthspcid(BK_TM *, btypeid_t);
+pub btypeid_t tm_root_orthspcid(BK_TM *, btypeid_t);
+pub size tm_size(BK_TM *, btypeid_t);
+
+// utils
+pub btypeid_t tm_minus(BK_TM *, btypeid_t self, btypeid_t A, btypeid_t B);
+pub TM_TLID_T tm_tlid(BK_TM *tm, btypeid_t *);
+
+// type manager lifecycle fns
+pub BK_TM * TM_create(BK_MM *, Buckets *, BK_SM *, BK_TP *);
+pub int TM_trash(BK_TM *);
+
 
 
 #endif // BK_TM_H

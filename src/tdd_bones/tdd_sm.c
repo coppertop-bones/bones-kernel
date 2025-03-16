@@ -32,10 +32,10 @@ int main() {
     id = sm_id(k->sm, "joe");
     check(id == 2 + off, "id == %i (should be %i)", id, 2 + off);
 
-    id = tm_btypeid(k->tm, "joe");
+    id = tm_get(k->tm, "joe");
     check(id == 0, "id == %i (should be %i)", id, 0);
 
-    id = tm_btypeid(k->tm, "sally");
+    id = tm_get(k->tm, "sally");
     check(id == 0, "id == %i (should be %i)", id, 0);
 
 
