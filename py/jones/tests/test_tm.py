@@ -1,12 +1,12 @@
 import sys, traceback
 from bones import jones
 from bones.jones import BTypeError
+from bones.lang.type_lang_interpreter import TypeLangInterpreter
 
 
 # TODO
 #   once all types can be created rework bones.lang.metatypes
 #   create the null tuple for functions that take no arguments
-
 
 # OPEN:
 #   - intersections of unions
@@ -36,16 +36,19 @@ def test_atom():
 
     sys._k = jones.Kernel()
     tm = sys._k.tm
+    tli = TypeLangInterpreter(tm)
 
     assert not tm.exists('sally')
     with assertRaises(jones.BTypeError):
         tm.fromName('sally')
-    t = tm.atom('sally')
+
+    t = tli.parse('sally: atom')
+
     assert tm.exists('sally')
     assert tm.fromName('sally') == t
     assert tm.name(t) == 'sally'
 
-    assert t == tm.atom(f'sally')
+    assert t == tli.parse('sally')
     assert t is tm.atom(f'sally')
 
     return "test_atom passed"
@@ -54,121 +57,38 @@ def test_atom():
 def test_intersection():
     sys._k = jones.Kernel()
     tm = sys._k.tm
+    tli = TypeLangInterpreter(tm)
 
-    mem = tm.atom('mem')
-    ccy = tm.atom('ccy')
+    mem = tli.parse('mem: atom')
+    ccy = tli.parse('ccy: atom')
 
-    _GBP = tm.intersection(ccy, tm.atom('_GBP'))
-    assert _GBP == tm.intersection(tm.atom(f'_GBP'), ccy)
+    t = tli.parse('ccy & (_GBP: atom)')
+    assert t == tm.intersection(tm.fromName('_GBP'), ccy)
 
-    assert tm.intersection(mem, _GBP) == tm.intersection(mem, tm.atom(f'_GBP'), mem, ccy, _GBP)
+    assert tm.intersection(mem, t) == tm.intersection(mem, tm.atom('_GBP'), mem, ccy, t)
 
-    for t in tm.intersectionTl(tm.intersection(_GBP, mem)):
-        assert t in [ccy, mem, tm.atom(f'_GBP')]
-
-    GBP = tm.options(name='GBP')
+    for t in tm.intersectionTl(tm.intersection(t, mem)):
+        assert t in [ccy, mem, tm.atom('_GBP')]
 
     return "test_intersection passed"
-
-
-def test_orthogonal_spaces():
-    sys._k = jones.Kernel()
-    tm = sys._k.tm
-
-    ccyfx = tm.atom('ccyfx')
-
-    opts = tm.options()
-    assert opts is not None
-
-    opts = tm.options(orthspc=ccyfx)
-    assert tm.orthspc(opts) == ccyfx
-
-    ccy = tm.atom('ccy', self=tm.options(orthspc=ccyfx))
-    fx = tm.atom('fx', self=tm.options(orthspc=ccyfx))
-
-    assert tm.orthspc(ccy) == ccyfx
-    assert tm.rootOrthspc(fx) == ccyfx
-
-    with assertRaises(BTypeError):
-        t = tm.intersection(ccy, fx)
-
-    mem = tm.atom('mem')         # mem is a builtin type
-    py = tm.atom('py')           # to indicate Python types
-    null = tm.atom('null')
-
-    sz = tm.atom('sz')
-    m64 = tm.atom('m64', self=tm.options(orthspc=sz))
-
-    mut = tm.options()
-    consty = tm.atom('consty', self=tm.options(implicitly=mut))
-    mut = tm.atom('mut', self=mut, orthspc=consty)
-
-    f64 = tm.options(name='f64')
-    f64 = tm.intersection(f64, m64, self=f64, orthspc=mem)
-
-    GBP = tm.options(name='GBP')
-    GBP = tm.intersection(GBP, f64, ccy, self=GBP, orthspc=ccy)         # intersection of GBP, f64 and ccy in the ccy space
-
-    USD = tm.options(name='USD')
-    USD = tm.intersection(USD, f64, ccy, self=USD, orthspc=ccy)
-
-    assert tm.isRecursive(GBP)
-    with assertRaises(BTypeError):
-        tm.intersection(GBP, USD)
-
-
-    # recursive types do not need to be named
-    f64Tree = tm.options()
-    tLhs = tm.union(f64Tree, f64, null)
-    tRhs = tm.union(f64Tree, f64, null)
-    f64Tree = tm.struct(('lhs', 'rhs'), (tLhs, tRhs), self=f64Tree)
-
-    assert tm.isRecursive(f64Tree) and not tm.isRecursive(tLhs) and not tm.isRecursive(tRhs)
-
-
-    pylist = tm.intersection(tm.options(name='pylist'), orthspc=py)
-    pytup = tm.intersection(tm.options(name='pytup'), orthspc=py)
-
-    # pyToBones[list] = pylist
-    # pyToBones[tuple] = pytup
-
-    lit = tm.atom('lit')
-    littxt = tm.intersection(tm.options(name='littxt'), orthspc=lit)
-
-
-    return "test_orthogonal passed"
-
-
-def test_name_as():
-    sys._k = jones.Kernel()
-    tm = sys._k.tm
-
-    mem = tm.atom('mem')
-
-    tCcy = tm.atom('f8', self=tm.options(orthspc=mem))
-    GBP = tm.intersection(tCcy, tm.atom(f'_GBP'))
-
-    # test nameAs
-    assert tm.name(GBP) != 'GBP'
-    t = tm.nameAs(GBP, 'GBP')
-    assert GBP == t
-    assert tm.name(GBP) == 'GBP'
-
-    return "test_name_as passed"
 
 
 def test_union():
     sys._k = jones.Kernel()
     tm = sys._k.tm
+    tli = TypeLangInterpreter(tm)
 
-    t1 = tm.atom(f'u32')
-    t2 = tm.atom(f'err')
+    tli.parse('u32: err: txt: atom')
+    t1, t2, t3 = tm.fromName('u32'), tm.fromName('err'), tm.fromName('txt')
 
-    assert tm.union(t1, t2) == tm.union(t2, t1)
-    assert tm.union(t1, t2, t1) == tm.union(t2, t1, t2)
-    assert tm.union(tm.union(t1, t2), t1) == tm.union(t2, tm.union(t2, t1))
+    assert tli.parse('u32 + err') == tli.parse('err + u32'), f"{tli.parse('u32 + err')} != {tli.parse('err + u32')}"
+    assert tli.parse('u32 + err + u32') == tli.parse('err + u32 + err')
+    assert tli.parse('(u32 + err) + u32') == tli.parse('err + (err + u32)')
 
-    assert tm.unionTl(tm.union(tm.union(t1, t2), t1)) == (t1, t2)
+    assert tm.unionTl(tli.parse('(u32 + err) + u32')) == (t1, t2)
+
+    mut = tm.reserve(implicitly=t1, explicit=True, orthspc=t2)
+    mut = tm.union(t1, t2, t3, self=mut)
 
     return "test_union passed"
 
@@ -252,6 +172,102 @@ def test_schemavar():
     return "test_schemavar passed"
 
 
+def test_assign():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    mem = tm.atom('mem')
+
+    tCcy = tm.atom('f8', self=tm.reserve(orthspc=mem))
+    GBP = tm.intersection(tCcy, tm.atom(f'_GBP'))
+
+    # test nameAs
+    assert tm.name(GBP) != 'GBP'
+    t = tm.nameAs(GBP, 'GBP')
+    assert GBP == t
+    assert tm.name(GBP) == 'GBP'
+
+    return "test_assign passed"
+
+
+def test_orthogonal_spaces():
+    sys._k = jones.Kernel()
+    tm = sys._k.tm
+
+    ccyfx = tm.atom('ccyfx')
+
+    opts = tm.reserve()
+    assert opts is not None
+
+    opts = tm.reserve(orthspc=ccyfx)
+    assert tm.orthspc(opts) == ccyfx
+
+    ccy = tm.atom('ccy', self=tm.reserve(orthspc=ccyfx))
+    assert ccy == tm.atom('ccy')
+
+    # let's try to reconstruct ccy however if we decide that ccy2 is ccy then we have the throw away opts as they are
+    # preallocated
+    opts = tm.reserve(orthspc=ccyfx)
+    assert opts != ccy
+    with assertRaises(BTypeError):
+        ccy2 = tm.atom('ccy', self=opts)
+
+    if not tm.exists('fx'):
+        fx = tm.atom('fx', self=tm.reserve(orthspc=ccyfx))
+
+    assert tm.orthspc(ccy) == ccyfx
+    assert tm.rootOrthspc(fx) == ccyfx
+
+    with assertRaises(BTypeError):
+        t = tm.intersection(ccy, fx)
+
+    mem = tm.atom('mem')         # mem is a builtin type
+    py = tm.atom('py')           # to indicate Python types
+    null = tm.atom('null')
+
+    sz = tm.atom('sz')
+    m64 = tm.atom('m64', self=tm.reserve(orthspc=sz))
+
+    mut = tm.reserve()
+    consty = tm.atom('consty', self=tm.reserve(implicitly=mut))
+    mut = tm.atom('mut', self=mut, orthspc=consty)
+
+    f64 = tm.reserve(name='f64')
+    f64 = tm.intersection(f64, m64, self=f64, orthspc=mem)
+
+    GBP = tm.reserve(name='GBP')
+    GBP = tm.intersection(GBP, f64, ccy, self=GBP, orthspc=ccy)         # intersection of GBP, f64 and ccy in the ccy space
+
+    USD = tm.reserve(name='USD')
+    USD = tm.intersection(USD, f64, ccy, self=USD, orthspc=ccy)
+
+    assert tm.isRecursive(GBP)
+    with assertRaises(BTypeError):
+        tm.intersection(GBP, USD)
+
+
+    # recursive types do not need to be named
+    f64Tree = tm.reserve()
+    tLhs = tm.union(f64Tree, f64, null)
+    tRhs = tm.union(f64Tree, f64, null)
+    f64Tree = tm.struct(('lhs', 'rhs'), (tLhs, tRhs), self=f64Tree)
+
+    assert tm.isRecursive(f64Tree) and not tm.isRecursive(tLhs) and not tm.isRecursive(tRhs)
+
+
+    pylist = tm.intersection(tm.reserve(name='pylist'), orthspc=py)
+    pytup = tm.intersection(tm.reserve(name='pytup'), orthspc=py)
+
+    # pyToBones[list] = pylist
+    # pyToBones[tuple] = pytup
+
+    lit = tm.atom('lit')
+    littxt = tm.intersection(tm.reserve(name='littxt'), orthspc=lit)
+
+
+    return "test_orthogonal passed"
+
+
 def test_minus():
     sys._k = jones.Kernel()
     tm = sys._k.tm
@@ -315,7 +331,7 @@ def test_recursion():
     f64 = tm.atom('f64')
 
     # struct - linked list of u8
-    tr1 = tm.options()
+    tr1 = tm.reserve()
     tnode1 = tm.struct(('i', 'next'), (u8, tm.union(tr1, null)), self=tr1)
     assert tr1 == tnode1
 
@@ -324,27 +340,27 @@ def test_recursion():
         tm.tuple(u8, tm.union(tr1, null), self=tr1)
 
     # tuple - linked list of u8
-    tr2 = tm.options()
+    tr2 = tm.reserve()
     tnode2 = tm.tuple(u8, tm.union(tr2, null), self=tr2)
     assert tr2 == tnode2
 
     # seq - linked list of u8
-    tr3 = tm.options()
+    tr3 = tm.reserve()
     tnode3 = tm.seq(tm.union(u8, tr3, null), self=tr3)
     assert tr3 == tnode3
 
     # map - linked list of u8 - txt {"this", "next"} -> u8 + tr4 + null
-    tr4 = tm.options()
+    tr4 = tm.reserve()
     tnode4 = tm.map(txt, tm.union(u8, tr4, null), self=tr4)
     assert tr4 == tnode4
 
     # union
-    tr5 = tm.options()
+    tr5 = tm.reserve()
     tnode5 = tm.union(null, tm.tuple(u8, tr5), self=tr5)
     assert tr5 == tnode5
 
     # intersection
-    tr6 = tm.options()
+    tr6 = tm.reserve()
     GBP = tm.intersection(tr6, f64, self=tr6)
     tm.nameAs(GBP, 'GBP')
 
@@ -382,7 +398,6 @@ def main():
     # test_em()                       # not needed for dispatch
     print(test_atom())
     print(test_intersection())
-    print(test_name_as())
     print(test_union())
     print(test_tuple())
     print(test_struct())
@@ -391,6 +406,7 @@ def main():
     print(test_function())
     print(test_schemavar())
 
+    print(test_assign())
     print(test_orthogonal_spaces())
 
     print(test_minus())
