@@ -1,4 +1,18 @@
 // ---------------------------------------------------------------------------------------------------------------------
+//
+//                             Copyright (c) 2019-2025 David Briant. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+// the specific language governing permissions and limitations under the License.
+//
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
 // UTILS
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
@@ -10,28 +24,18 @@
 #include "core.c"
 
 
-// variable get/set etc
+// name binding / lookup
 
-pub btypeid_t tm_get(BK_TM *tm, char const *name) {
-    // answer the btypeid corresponding to name or B_NAT if not found
-    int outcome;  u32 idx;
-    idx = hi_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &outcome);
-    if (outcome == HI_LIVE)
-        return tm->btypeid_by_symidhash->tokens[idx];
-    else
-        return B_NAT;
-}
-
-pub btypeid_t tm_set(BK_TM *tm, btypeid_t self, char const *name) {
+pub btypeid_t tm_bind(BK_TM *tm, char const *name, btypeid_t self) {
+    // binds name to btypedid, checking that name is not already used and that btypedid has not already been bound to
     int outcome;  symid_t symid;  u32 idx;
 
-    // assigns name to the unnamed btypedid, checking that name is not already used
     if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return B_NAT;
     if ((symid = tm->symid_by_btypeid[self]) != 0)
-        // already named - check the given name is the same as the existing name
+        // already bound to - check that name is the same as the existing name
         return strcmp(sm_name(tm->sm, symid), name) == 0 ? self : B_NAT;
     else {
-        // not named so check name is not already in use
+        // not bounnd, so check name is not already in use and bind
         symid = sm_id(tm->sm, name);
         idx = hi_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &outcome);
         if (outcome == HI_LIVE)
@@ -44,10 +48,27 @@ pub btypeid_t tm_set(BK_TM *tm, btypeid_t self, char const *name) {
     }
 }
 
+pub btypeid_t tm_lookup(BK_TM *tm, char const *name) {
+    // answer the btypeid that name is bound to else B_NAT if name is not bound
+    int outcome;  u32 idx;
+    idx = hi_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, sm_id(tm->sm, name), &outcome);
+    if (outcome == HI_LIVE)
+        return tm->btypeid_by_symidhash->tokens[idx];
+    else
+        return B_NAT;
+}
+
+pub char const * tm_name_of(BK_TM *tm, btypeid_t self) {
+    // answers the name bound to btypeid or a null pointer there has no binding
+    if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return 0;
+    symid_t symid = tm->symid_by_btypeid[self];
+    return symid ? sm_name(tm->sm, symid) : 0;
+}
+
 
 // id reservation
 
-pub btypeid_t tm_reserve(BK_TM *tm, btypeid_t self, btypeid_t orthspcid, bool isexp, btypeid_t implicitid) {
+pub btypeid_t tm_reserve(BK_TM *tm, btypeid_t self, btypeid_t spaceid) {
     // answers self, allocating if required, initialised (partially) with the given properties
     if (self == B_NEW) {
         self = tm->next_btypeId;
@@ -58,10 +79,8 @@ pub btypeid_t tm_reserve(BK_TM *tm, btypeid_t self, btypeid_t orthspcid, bool is
     }
     tm->btsummary_by_btypeid[self] |=
             TM_IS_RECURSIVE_MASK |                  // assume recursive, might be unset later
-            (isexp ? TM_IS_EXPLICIT_MASK : 0) |
-            (orthspcid ? TM_IN_ORTHSPC_MASK : 0);
-    if (orthspcid) tm->orthspcid_by_btypeid[self] = orthspcid;
-    if (implicitid) tm->implicitid_by_orthspcid[self] = implicitid;
+            (spaceid ? TM_IN_ORTHSPC_MASK : 0);
+    if (spaceid) tm->spaceid_by_btypeid[self] = spaceid;
     return self;
 }
 
@@ -69,8 +88,8 @@ pub void tm_reserve_btypeids(BK_TM *tm, btypeid_t next_btypeId) {
     while (next_btypeId >= tm->max_btypeId) {
         tm->max_btypeId += TM_MAX_BTYPEID_INC_SIZE;
         _growTo((void **)&tm->btsummary_by_btypeid, tm->max_btypeId * sizeof(btsummary), tm->mm, FN_NAME);
-        _growTo((void **)&tm->orthspcid_by_btypeid, tm->max_btypeId * sizeof(btypeid_t), tm->mm, FN_NAME);
-        _growTo((void **)&tm->implicitid_by_orthspcid, tm->max_btypeId * sizeof(btypeid_t), tm->mm, FN_NAME);
+        _growTo((void **)&tm->spaceid_by_btypeid, tm->max_btypeId * sizeof(btypeid_t), tm->mm, FN_NAME);
+        _growTo((void **)&tm->implicitid_by_spaceid, tm->max_btypeId * sizeof(btypeid_t), tm->mm, FN_NAME);
         _growTo((void **)&tm->symid_by_btypeid, tm->max_btypeId * sizeof(symid_t), tm->mm, FN_NAME);
     }
     if (next_btypeId >= tm->next_btypeId) tm->next_btypeId = next_btypeId;
@@ -100,25 +119,18 @@ pub btypeid_t tm_layout_as(BK_TM *tm, btypeid_t self, size sz) {
     return B_NAT;
 }
 
-pub char const * tm_name(BK_TM *tm, btypeid_t self) {
-    // answers the name of the given type or a null pointer it has no name
-    if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return 0;
-    symid_t symid = tm->symid_by_btypeid[self];
-    return symid ? sm_name(tm->sm, symid) : 0;
-}
-
-pub btypeid_t tm_orthspcid(BK_TM *tm, btypeid_t self) {
+pub btypeid_t tm_spaceid(BK_TM *tm, btypeid_t self) {
     // answers the orthogonal space id for the given btype
-    return tm->orthspcid_by_btypeid[self];
+    return tm->spaceid_by_btypeid[self];
 }
 
-pub btypeid_t tm_root_orthspcid(BK_TM *tm, btypeid_t self) {
+pub btypeid_t tm_root_spaceid(BK_TM *tm, btypeid_t self) {
     // answers the root orthogonal space id for the given btype
-    btypeid_t orthspcid = 0;
-    while ((self = tm->orthspcid_by_btypeid[self])) {
-        orthspcid = self;
+    btypeid_t spaceid = 0;
+    while ((self = tm->spaceid_by_btypeid[self])) {
+        spaceid = self;
     }
-    return orthspcid;
+    return spaceid;
 }
 
 pub size tm_size(BK_TM *tm, btypeid_t self) {

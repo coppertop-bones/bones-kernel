@@ -1,4 +1,18 @@
 // ---------------------------------------------------------------------------------------------------------------------
+//
+//                             Copyright (c) 2019-2025 David Briant. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+// the specific language governing permissions and limitations under the License.
+//
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
 // TM - TYPE MANAGER LIFE CYCLE
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
@@ -49,10 +63,10 @@ pub BK_TM * TM_create(BK_MM *mm, Buckets *buckets, BK_SM *sm, BK_TP *tp) {
     memset(tm->btsummary_by_btypeid, 0, tm->max_btypeId * sizeof(btsummary));
 
     // spaces
-    tm->orthspcid_by_btypeid = (btypeid_t *) mm->malloc(tm->max_btypeId * sizeof(btypeid_t));
-    memset(tm->orthspcid_by_btypeid, 0, tm->max_btypeId * sizeof(btypeid_t));
-    tm->implicitid_by_orthspcid = (btypeid_t *) mm->malloc(tm->max_btypeId * sizeof(btypeid_t));
-    memset(tm->implicitid_by_orthspcid, 0, tm->max_btypeId * sizeof(btypeid_t));
+    tm->spaceid_by_btypeid = (btypeid_t *) mm->malloc(tm->max_btypeId * sizeof(btypeid_t));
+    memset(tm->spaceid_by_btypeid, 0, tm->max_btypeId * sizeof(btypeid_t));
+    tm->implicitid_by_spaceid = (btypeid_t *) mm->malloc(tm->max_btypeId * sizeof(btypeid_t));
+    memset(tm->implicitid_by_spaceid, 0, tm->max_btypeId * sizeof(btypeid_t));
 
     // intersections
     tm->max_intid = TM_MAX_ID_INC_SIZE;
@@ -139,8 +153,8 @@ pub int TM_trash(BK_TM *tm) {
     tm->mm->free(tm->btsummary_by_btypeid);
 
     // spaces
-    tm->mm->free(tm->orthspcid_by_btypeid);
-    tm->mm->free(tm->implicitid_by_orthspcid);
+    tm->mm->free(tm->spaceid_by_btypeid);
+    tm->mm->free(tm->implicitid_by_spaceid);
 
     // intersections
     tm->mm->free(tm->tlid_by_intid);

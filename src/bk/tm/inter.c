@@ -1,4 +1,18 @@
 // ---------------------------------------------------------------------------------------------------------------------
+//
+//                             Copyright (c) 2019-2025 David Briant. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+// the specific language governing permissions and limitations under the License.
+//
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
 // INTERSECTION IMPLEMENTATION
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
@@ -9,7 +23,11 @@
 
 #include "core.c"
 
-
+pub btypeid_t tm_check_inter(BK_TM *tm, btypeid_t self, btypeid_t spaceid) {
+    // An existing intersection is being defined a second time check that the attributes don't conflict
+    //      a) if current.space is already set then space may be the same or missing
+    return self;
+}
 
 pub btypeid_t tm_inter(BK_TM *tm, btypeid_t self, btypeid_t *typelist) {
     TM_TLID_T tlid;
@@ -20,19 +38,23 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t self, btypeid_t *typelist) {
     if (!typelist[0]) return _err_emptyTypelist(B_NAT, __FILE__, FN_NAME, __LINE__);
     if (self >= tm->next_btypeId) return _err_selfOutOfRange(B_NAT, __FILE__, FN_NAME, __LINE__, self);
 
+//    PP(info, "tm_inter - #1");
     tlid = tm_inter_tlid(tm, typelist);
+//    PP(info, "tm_inter - #2");
     return tlid ? tm_inter_for_tlid_or_create(tm, self, tlid) : B_NAT;
 }
 
 pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
     // answers the validated intersection typelist id corresponding to typelist, creating if necessary
     // very similar to tm_union_tlid but a little different
-    i32 i, j, numTypes, outcome;  btsummary *sum;  TM_TLID_T tlid;  btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist;
+    i32 i, j, typelistCount, numTypes, outcome;  btsummary *sum;  TM_TLID_T tlid;  btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist;
     u32 idx;  bool hasUnions;
 
     // check btypeids in typelist are in range, and figure total possible length (including possible duplicates from child intersections)
-    numTypes = 0;
-    for (i = 1; i <= typelist[0]; i++) {
+
+//    PP(info, "tm_inter_tlid - #1");
+    numTypes = 0;  typelistCount = typelist[0];
+    for (i = 1; i <= typelistCount; i++) {
         if (!(TM_FIRST_VALID_BTYPEID <= typelist[i] && typelist[i] < tm->next_btypeId)) return _err_itemInTLOutOfRange(B_NAT, __FILE__, FN_NAME, __LINE__, typelist[i], i);
         sum = tm->btsummary_by_btypeid + typelist[i];
         if (TM_BMT_ID(*sum) == bmtint) {
@@ -49,9 +71,11 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
 
     // copy typelist into typelist_buf unpacking any intersections
+//    PP(info, "tm_inter_tlid - #2, numTypes=%i, typelistCount=%i", numTypes, typelistCount);
     p1 = nextTypelist;
     *p1++ = numTypes;
-    for (i = 1; i <= numTypes; i++) {
+    for (i = 1; i <= typelistCount; i++) {
+//        PP(info, "tm_inter_tlid - #2a typelist[%i]=%i", i, typelist[i]);
         sum = tm->btsummary_by_btypeid + typelist[i];
         if (TM_BMT_ID(*sum) == bmtint) {
             // we have an intersection type - expand it
@@ -63,6 +87,7 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
     }
 
     // sort types into btypeid order
+//    PP(info, "tm_inter_tlid - #3");
     ks_radix_sort(btypeid_t, nextTypelist + 1, numTypes);
 
     // eliminate duplicates + check for unions
@@ -83,6 +108,7 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
     if (hasUnions) return setErrAndDesc(B_NAT, "Has unions", __FILE__, __LINE__);
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
+//    PP(info, "tm_inter_tlid - #4");
     idx = hi_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &outcome);
     switch (outcome) {
         default:
@@ -109,7 +135,7 @@ pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *tm, btypeid_t self, TM_TLID_T t
     hasT = false;
     for (i = 1; i <= numTypes; i++) {
         sum = tm->btsummary_by_btypeid + thisTypeList[i];
-        rootspcid = conflicts_buf[k = i - 1] = tm_root_orthspcid(tm, thisTypeList[i]);
+        rootspcid = conflicts_buf[k = i - 1] = tm_root_spaceid(tm, thisTypeList[i]);
         for (j = 0; j < k; j++) {
             if (rootspcid && rootspcid == conflicts_buf[j]) {
                 pp_this = tm_s8(tm, tm->tp, thisTypeList[i]).cs;
@@ -167,7 +193,7 @@ pub btypeid_t tm_inter_get_or_create_for_tlid(BK_TM *tm, TM_TLID_T tlid) {
     hasT = false;
     for (i = 1; i <= numTypes; i++) {
         sum = tm->btsummary_by_btypeid + thisTypeList[i];
-        rootspcid = conflicts_buf[k = i - 1] = tm_root_orthspcid(tm, thisTypeList[i]);
+        rootspcid = conflicts_buf[k = i - 1] = tm_root_spaceid(tm, thisTypeList[i]);
         for (j = 0; j < k; j++) {
             if (rootspcid && rootspcid == conflicts_buf[j]) {
                 pp_this = tm_s8(tm, tm->tp, thisTypeList[i]).cs;
@@ -204,7 +230,7 @@ pub btypeid_t tm_interv(BK_TM *tm, btypeid_t self, u32 numTypes, ...) {
     return btypeid;
 }
 
-pub btypeid_t tm_interv_in(BK_TM *tm, btypeid_t self, btypeid_t orthspcid, u32 numTypes, ...) {
+pub btypeid_t tm_interv_in(BK_TM *tm, btypeid_t self, btypeid_t spaceid, u32 numTypes, ...) {
     va_list args;  btypeid_t *typelist, btypeid;  int i;
     va_start(args, numTypes);
     typelist = malloc((1 + numTypes) * sizeof(btypeid_t));
@@ -213,7 +239,7 @@ pub btypeid_t tm_interv_in(BK_TM *tm, btypeid_t self, btypeid_t orthspcid, u32 n
     btypeid = tm_inter(tm, self, typelist);
     free(typelist);
     va_end(args);
-    tm->orthspcid_by_btypeid[btypeid] = orthspcid;
+    tm->spaceid_by_btypeid[btypeid] = spaceid;
     return btypeid;
 }
 
