@@ -24,7 +24,7 @@
 #include "core.c"
 
 
-pub btypeid_t tm_alloc_atom(BK_TM *tm, btypeid_t self, btypeid_t implicitid, bool explicit) {
+pub btypeid_t tm_init_atom(BK_TM *tm, btypeid_t self, btypeid_t implicitid, bool explicit) {
     // answers a validated atom type creating if necessary
     if (!self || self >= tm->next_btypeId) return B_NAT;
     if (self == B_NEW) {

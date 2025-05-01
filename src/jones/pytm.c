@@ -63,9 +63,9 @@ pvt PyObject * newPyBTypeRef(btypeid_t btypeid) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------------------------------------------------
-// allocAtom: (**, self:PyBType, explicit:bool, implicitly:PyBType, space:PyBType) -> PyBType+PyException
+// initAtom: (**, btype:PyBType, explicit:bool, implicitly:PyBType, space:PyBType) -> PyBType+PyException
 
-pvt PyObject * PyTM_allocAtom(PyTM *pyTm, PyObject *const *args, Py_ssize_t nargs, PyObject *argnames) {
+pvt PyObject * PyTM_initAtom(PyTM *pyTm, PyObject *const *args, Py_ssize_t nargs, PyObject *argnames) {
     // Answers a BType ref, handling three cases:
     // 1) a brand new atom is being allocated with the provided attributes
     // 2) a TBC is being defined with the provided attributes (the TBC must not have any conflicting attributes already set)
@@ -73,40 +73,43 @@ pvt PyObject * PyTM_allocAtom(PyTM *pyTm, PyObject *const *args, Py_ssize_t narg
     //      a) if current.space is already set then space may be the same or missing
     //      b) if current.implicitly is already set then implicitly may be the same or missing
     //      c) if current.explicit is true then explicit may be True or missing
-    PyObject *pySelf = 0, *pySpace = 0, *pyExplicit = 0, *pyImplicitly = 0;
-    btypeid_t btypeid, self = B_NEW, implicitid = 0, spaceid = 0;  bool explicit = false;
+    PyObject *pyBType = 0, *pySpace = 0, *pyExplicit = 0, *pyImplicitly = 0;
+    btypeid_t btypeid = B_NEW, implicitid = 0, spaceid = 0, nextid;  bool explicit = false;
 
-    __CHECK(nargs == 0, PyExc_TypeError, "allocAtom: (**, self, explicit, implicitly, space) takes no args but %i %s given", nargs, nargs == 1 ? "was": "were");
+    __CHECK(nargs == 0, PyExc_TypeError, "initAtom: (**, btype, explicit, implicitly, space) takes no args but %i %s given", nargs, nargs == 1 ? "was": "were");
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __OR_GET_KWARG("explicit", PyTuple_GET_ITEM(argnames, i), pyExplicit = args[i + nargs])
             __OR_GET_KWARG("implicitly", PyTuple_GET_ITEM(argnames, i), pyImplicitly = args[i + nargs])
             __OR_GET_KWARG("space", PyTuple_GET_ITEM(argnames, i), pySpace = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf && !Py_IsNone(pySelf)) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType && !Py_IsNone(pyBType)) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "`btypeid` must be a BType");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
         if (pyExplicit && !Py_IsNone(pyExplicit)) {
-            __CHECK(PyBool_Check(pyExplicit), PyExc_TypeError, "explicit must be a bool");
+            __CHECK(PyBool_Check(pyExplicit), PyExc_TypeError, "`explicit` must be a bool");
             explicit = (pyExplicit == Py_True);
         }
         if (pyImplicitly && !Py_IsNone(pyImplicitly)) {
-            __CHECK(PyObject_IsInstance(pyImplicitly, (PyObject *) &PyBTypeCls), PyExc_TypeError, "implicitly must be a BType");
+            __CHECK(PyObject_IsInstance(pyImplicitly, (PyObject *) &PyBTypeCls), PyExc_TypeError, "`implicitly` must be a BType");
             implicitid = ((PyBType *) pyImplicitly)->btypeid;
         }
         if (pySpace && !Py_IsNone(pySpace)) {
-            __CHECK(PyObject_IsInstance(pySpace, (PyObject *) &PyBTypeCls), PyExc_TypeError, "space must be a BType");
+            __CHECK(PyObject_IsInstance(pySpace, (PyObject *) &PyBTypeCls), PyExc_TypeError, "`space` must be a BType");
             spaceid = ((PyBType *) pySpace)->btypeid;
-            __CHECK(pySelf, PyExc_TypeError, "self must be provided as well if space is provided");
         }
     }
-    if (self == B_NEW) self = tm_reserve(pyTm->tm, B_NEW, spaceid);
-    btypeid = tm_alloc_atom(pyTm->tm, self, implicitid, explicit);
-    __CHECK(btypeid, PyBTypeError, "error calling tm_alloc_atom(...)");
-    if (spaceid) pyTm->tm->spaceid_by_btypeid[btypeid] = spaceid;       // OPEN: should this be in tm_alloc_atom?
+//    if (spaceid) __CHECK(pyBType, PyExc_TypeError, "`btypeid` must be provided as well if `space` is provided");
+    if (spaceid && (nextid=tm_space_would_recurse(pyTm->tm, btypeid, spaceid))) {
+        return PyErr_Format(PyBTypeError, "btypeid = %i and spaceid = %i would recurse", nextid, spaceid);
+    }
+    if (btypeid == B_NEW) btypeid = tm_reserve(pyTm->tm, B_NEW, spaceid);
+    btypeid = tm_init_atom(pyTm->tm, btypeid, implicitid, explicit);
+    __CHECK(btypeid, PyBTypeError, "error calling tm_init_atom(...)");
+    if (spaceid) pyTm->tm->spaceid_by_btypeid[btypeid] = spaceid;       // OPEN: should this be in tm_init_atom?
     return newPyBTypeRef(btypeid);
 }
 
@@ -115,29 +118,33 @@ pvt PyObject * PyTM_allocAtom(PyTM *pyTm, PyObject *const *args, Py_ssize_t narg
 
 pvt PyObject * PyTM_bind(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
     // binds 'name' to btype and answers a BType ref, throwing BTypeError if the name has already been bound
-    char const *newname, *oldname;  btypeid_t btypeid;
+    char const *name, *oldname;  btypeid_t btypeid;
 
     __CHECK(nargs == 2, PyExc_TypeError, "bind: (name) takes 2 args but %i %s given", nargs, nargs == 1 ? "was": "were");
     __CHECK(PyUnicode_Check(args[0]) && (PyUnicode_KIND(args[0]) == PyUnicode_1BYTE_KIND), PyExc_TypeError, "name must be a utf8 string");
     __CHECK(PyObject_IsInstance(args[1], (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType");
 
-    newname = (char *) PyUnicode_AsUTF8(args[0]);       // OPEN: why move from PyUnicode_1BYTE_DATA?
+    name = (char *) PyUnicode_AsUTF8(args[0]);       // OPEN: why move from PyUnicode_1BYTE_DATA?
     btypeid = ((PyBType *) args[1])->btypeid;
-//    PP(info, "PyTM_bind - #1 bind \"%s\" to %i", newname, btypeid);
-    if ((btypeid = tm_bind(pyTm->tm, newname, btypeid))) {
-//        PP(info, "PyTM_bind - #2a bind \"%s\" to %i", newname, btypeid);
+//    PP(info, "PyTM_bind - #1 bind \"%s\" to %i", name, btypeid);
+    if ((btypeid = tm_bind(pyTm->tm, name, btypeid))) {
+        // bound okay
+//        PP(info, "PyTM_bind - #2a bind \"%s\" to %i", name, btypeid);
         return newPyBTypeRef(btypeid);
     } else if ((oldname = tm_name_of(pyTm->tm, btypeid))) {
-        if (strcmp(newname, oldname) == 0) {
-//            PP(info, "PyTM_bind - #2b bind \"%s\" to %i", newname, btypeid);
+        if (strcmp(name, oldname) == 0) {
+            // rebinding name to btype - effectively a no-op
+//            PP(info, "PyTM_bind - #2b bind \"%s\" to %i", name, btypeid);
             return newPyBTypeRef(btypeid);
         } else {
-//            PP(info, "PyTM_bind - #2c bind \"%s\" to %i", newname, btypeid);
+            // another name refers to btype
+//            PP(info, "PyTM_bind - #2c bind \"%s\" to %i", name, btypeid);
             return PyErr_Format(PyBTypeError, "\"%s\" is already bound to t%i", oldname, btypeid);
         }
     } else {
-//        PP(info, "PyTM_bind - #2d bind \"%s\" to %i", newname, btypeid);
-        return PyErr_Format(PyBTypeError, "\"%s\" is already bound to another btype", newname);
+        // only other possibility is that name is already bound to another btype
+//        PP(info, "PyTM_bind - #2d bind \"%s\" to %i", name, btypeid);
+        return PyErr_Format(PyBTypeError, "\"%s\" is already bound to another btype", name);
     }
 }
 
@@ -219,7 +226,7 @@ pvt PyObject * PyTM_checkIntersection(PyTM *pyTm, PyObject *const *args, Py_ssiz
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
         if (pySpace && !Py_IsNone(pySpace)) {
-            __CHECK(PyObject_IsInstance(pySpace, (PyObject *) &PyBTypeCls), PyExc_TypeError, "space must be a BType");
+            __CHECK(PyObject_IsInstance(pySpace, (PyObject *) &PyBTypeCls), PyExc_TypeError, "space must be a BType or None");
             spaceid = ((PyBType *) pySpace)->btypeid;
         }
     }
@@ -234,18 +241,18 @@ pvt PyObject * PyTM_checkIntersection(PyTM *pyTm, PyObject *const *args, Py_ssiz
 pvt PyObject * PyTM_fn(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer the fn type corresponding to tArgs and tRet
     BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl, tArgs, tRet, self = B_NEW;  int n;
-    PyObject *tup, *e, *pySelf = 0;  TM_TLID_T tlid;
+    PyObject *tup, *e, *pyBType = 0;  TM_TLID_T tlid;
 
     if (nargs != 2) return PyErr_Format(PyExc_TypeError, "Must provide tArgs and tRet");
 
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
+            self = ((PyBType *) pyBType)->btypeid;
         }
     }
 
@@ -355,27 +362,27 @@ pvt PyObject * PyTM_hasT(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// intersection: (btype1, btype2, ... ** self, space) -> PyBType + PyException
+// intersection: (btype1, btype2, ... ** btype, space) -> PyBType + PyException
 
 pvt PyObject * PyTM_intersection(PyTM *pyTm, PyObject *const *args, Py_ssize_t nargs, PyObject *argnames) {
-    // answer a new intersection of the given btypes
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  PyObject *pySelf = 0, *pySpace = 0;
-    btypeid_t *tl, btypeid, self = B_NEW, spaceid = 0;
+    // answer a new intersection of btype1, btype2, ...
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  PyObject *pyBType = 0, *pySpace = 0;
+    btypeid_t *tl, btypeid = B_NEW, spaceid = 0, nextid;
 
-    __CHECK(nargs > 0, PyExc_TypeError, "checkIntersection(*btype, **, space) takes at least 1 btype but %i %s given", nargs, __WAS_WERE(nargs));
+    __CHECK(nargs > 0, PyExc_TypeError, "checkIntersection(*btype, **, btype, space) takes at least 1 btype but %i %s given", nargs, __WAS_WERE(nargs));
     if (nargs == 1) {
         if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "btype1 is not a BType");
         return Py_NewRef(args[0]);
     }
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __OR_GET_KWARG("space", PyTuple_GET_ITEM(argnames, i), pySpace = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf && !Py_IsNone(pySelf)) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType or None");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType && !Py_IsNone(pyBType)) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
         if (pySpace && !Py_IsNone(pySpace)) {
             __CHECK(PyObject_IsInstance(pySpace, (PyObject *) &PyBTypeCls), PyExc_TypeError, "space must be a BType or None");
@@ -383,32 +390,35 @@ pvt PyObject * PyTM_intersection(PyTM *pyTm, PyObject *const *args, Py_ssize_t n
         }
     }
 
-//    PP(info, "PyTM_intersection - #1 self=%i, spaceid=%i", self, spaceid);
+    if (spaceid && (nextid = tm_space_would_recurse(pyTm->tm, btypeid, spaceid))) {
+        return PyErr_Format(PyBTypeError, "btypeid = %i and spaceid = %i would recurse", nextid, spaceid);
+    }
+
+    PP(info, "PyTM_intersection - #1 btypeid=%i, spaceid=%i", btypeid, spaceid);
     checkpointBuckets((buckets = pyTm->tm->buckets), &cp);
-//    PP(info, "PyTM_intersection - #2");
+    PP(info, "PyTM_intersection - #2");
 
     // create a type list of the correct length
     tl = (btypeid_t *) allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
-//    PP(info, "PyTM_intersection - #3");
+    PP(info, "PyTM_intersection - #3");
     tl[0] = (btypeid_t) nargs;
     for (int i=1; i <= nargs; i++) {
         if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {
             resetToCheckpoint(buckets, &cp);
             return PyErr_Format(PyExc_TypeError, "arg%i is not a BType", i);
         }
-//        PP(info, "PyTM_intersection - #4 - tl[%i] = args[%i]", i, i-1);
+        PP(info, "PyTM_intersection - #4 - tl[%i] = args[%i]", i, i-1);
         tl[i] = ((PyBType *) args[i-1])->btypeid;
     }
 
-//    PP(info, "PyTM_intersection - #5");
-    btypeid = tm_inter(pyTm->tm, self, tl);
-
-//    PP(info, "PyTM_intersection - #6");
-    if (spaceid) pyTm->tm->spaceid_by_btypeid[btypeid] = spaceid;
+    PP(info, "PyTM_intersection - #5 - btypeid: %i", btypeid);
+    btypeid = tm_inter(pyTm->tm, btypeid, tl);
 
     if (btypeid) {
+        PP(info, "PyTM_intersection - #6");
+        if (spaceid) pyTm->tm->spaceid_by_btypeid[btypeid] = spaceid;       // OPEN: move this to tm_inter
         resetToCheckpoint(buckets, &cp);
-//        PP(info, "PyTM_intersection - #7");
+        PP(info, "PyTM_intersection - #7");
         return newPyBTypeRef(btypeid);
     } else {
         TP_init(&tp, 0, buckets);
@@ -474,21 +484,21 @@ pvt PyObject * PyTM_lookup(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// map: (tK, tV) -> tMap + PyException
+// map: (tK, tV, **, btype) -> tMap + PyException
 
 pvt PyObject * PyTM_map(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer the tMap corresponding to tK and tV
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t tK, tV, tMap, self = B_NEW;  PyObject *pySelf = 0;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t tK, tV, tMap, btypeid = B_NEW;  PyObject *pyBType = 0;
 
     if (nargs != 2) return PyErr_Format(PyExc_TypeError, "Must provide tK and tV");
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btypeid must be a BType");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
 
@@ -508,7 +518,7 @@ pvt PyObject * PyTM_map(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject 
     }
     tV = ((PyBType *) args[1])->btypeid;
 
-    tMap = tm_map(pyTm->tm, self, tK, tV);
+    tMap = tm_map(pyTm->tm, btypeid, tK, tV);
 
     if (tMap) {
         resetToCheckpoint(buckets, &cp);
@@ -602,28 +612,28 @@ pvt PyObject * PyTM_rootSpace(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// options: ([self:btype], [space:btype], [name:str]) -> PyBType + PyException
+// reserve: ([btype], [space], [name]) -> PyBType + PyException
 
 pvt PyObject * PyTM_reserve(PyTM *pyTm, PyObject *const *args, Py_ssize_t nargs, PyObject *argnames) {
     // answers a new uninitialised btype with the given options
-    PyObject *pySelf = 0, *pySpace = 0, *pyName = 0;
-    btypeid_t btypeid, self = B_NEW, space = 0;  char const *name = 0;
+    PyObject *pyBType = 0, *pySpace = 0, *pyName = 0;
+    btypeid_t btypeid, btype = B_NEW, space = 0;  char const *name = 0;
 
     __CHECK(nargs == 0, PyExc_TypeError, "options(**kwargs) takes no args but %i were given", nargs);
 
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __OR_GET_KWARG("space", PyTuple_GET_ITEM(argnames, i), pySpace = args[i + nargs])
             __OR_GET_KWARG("name", PyTuple_GET_ITEM(argnames, i), pyName = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType");
+            btype = ((PyBType *) pyBType)->btypeid;
         }
-        if (pySpace) {
-            __CHECK(PyObject_IsInstance(pySpace, (PyObject *) &PyBTypeCls), PyExc_TypeError, "space must be a BType");
+        if (pySpace && !Py_IsNone(pySpace)) {
+            __CHECK(PyObject_IsInstance(pySpace, (PyObject *) &PyBTypeCls), PyExc_TypeError, "space must be a BType or None");
             space = ((PyBType *) pySpace)->btypeid;
         }
         if (pyName) {
@@ -633,7 +643,7 @@ pvt PyObject * PyTM_reserve(PyTM *pyTm, PyObject *const *args, Py_ssize_t nargs,
         }
     }
 
-    btypeid = tm_reserve(pyTm->tm, self, space);
+    btypeid = tm_reserve(pyTm->tm, btype, space);
     if (name) btypeid = tm_bind(pyTm->tm, name, btypeid);
     if (btypeid)
         return newPyBTypeRef(btypeid);
@@ -646,20 +656,20 @@ pvt PyObject * PyTM_reserve(PyTM *pyTm, PyObject *const *args, Py_ssize_t nargs,
 
 pvt PyObject * PyTM_schemavar(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer a new schema variable with the given name, or an exception if already taken
-    PyObject *pySelf;  btypeid_t self = B_NEW;
+    PyObject *pyBType;  btypeid_t btypeid = B_NEW;
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
-    btypeid_t btypeid = tm_schemavar(pyTm->tm, self);
+    btypeid = tm_schemavar(pyTm->tm, btypeid);
     if (btypeid)
         return newPyBTypeRef(btypeid);
     else
@@ -671,17 +681,17 @@ pvt PyObject * PyTM_schemavar(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyO
 
 pvt PyObject * PyTM_seq(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer a new sequence for the given contained btype
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t self = B_NEW;  PyObject *pySelf;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t btypeid = B_NEW;  PyObject *pyBType;
 
     if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
     checkpointBuckets((buckets = pyTm->tm->buckets), &cp);
@@ -691,7 +701,7 @@ pvt PyObject * PyTM_seq(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject 
         return PyErr_Format(PyExc_TypeError, "arg is not a BType");
     }
 
-    btypeid_t btypeid = tm_seq(pyTm->tm, self, ((PyBType *) args[0])->btypeid);
+    btypeid = tm_seq(pyTm->tm, btypeid, ((PyBType *) args[0])->btypeid);
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -722,18 +732,18 @@ pvt PyObject * PyTM_seqT(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
 
 pvt PyObject * PyTM_struct(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answers a new struct type given the names and btypes
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl;  symid_t *sl, self = B_NEW;  int n;
-    PyObject *s, *btype, *pySelf = 0;  char const *name;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl;  symid_t *sl, btypeid = B_NEW;  int n;
+    PyObject *s, *btype, *pyBType = 0;  char const *name;
 
     if (nargs != 2) return PyErr_Format(PyExc_TypeError, "Must provide names and types");
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
     if (!PyObject_IsInstance(args[0], (PyObject *) &PyTuple_Type)) return PyErr_Format(PyExc_TypeError, "names is not a tuple");
@@ -766,7 +776,7 @@ pvt PyObject * PyTM_struct(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObje
 
     SM_SLID_T slid = sm_slid(pyTm->tm->sm, sl);
     btypeid_t tupid = tm_tuple(pyTm->tm, B_NEW, tm_tlid(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
-    btypeid_t btypeid = tm_struct(pyTm->tm, self, slid, tupid);
+    btypeid = tm_struct(pyTm->tm, btypeid, slid, tupid);
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -813,16 +823,16 @@ pvt PyObject * PyTM_structTl(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
 
 pvt PyObject * PyTM_tuple(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answers a new tuple type of the given btypes
-    btypeid_t self = B_NEW;  PyObject *pySelf = 0;
+    btypeid_t btypeid = B_NEW;  PyObject *pyBType = 0;
     BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl;
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
     checkpointBuckets((buckets = pyTm->tm->buckets), &cp);
@@ -838,7 +848,7 @@ pvt PyObject * PyTM_tuple(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
         tl[i] = ((PyBType *) args[i-1])->btypeid;
     }
 
-    btypeid_t btypeid = tm_tuple(pyTm->tm, B_NEW, tm_tlid(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
+    btypeid = tm_tuple(pyTm->tm, B_NEW, tm_tlid(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -872,7 +882,7 @@ pvt PyObject * PyTM_tupleTl(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
 
 pvt PyObject * PyTM_union(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer a new union of the given btypes
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t self = B_NEW;  PyObject *pySelf = 0;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t btypeid = B_NEW;  PyObject *pyBType = 0;
     if (nargs == 0) return PyErr_Format(PyExc_TypeError, "Must provide at least one type");
     if (nargs == 1) {
         if (!PyObject_IsInstance(args[0], (PyObject *) &PyBTypeCls)) return PyErr_Format(PyExc_TypeError, "arg is not a BType");
@@ -880,12 +890,12 @@ pvt PyObject * PyTM_union(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
     }
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
     checkpointBuckets((buckets = pyTm->tm->buckets), &cp);
@@ -901,7 +911,7 @@ pvt PyObject * PyTM_union(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
         tl[i] = ((PyBType *) args[i-1])->btypeid;
     }
 
-    btypeid_t btypeid = tm_union(pyTm->tm, self, tl);
+    btypeid = tm_union(pyTm->tm, btypeid, tl);
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -919,24 +929,24 @@ pvt PyObject * PyTM_union(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
 
 pvt PyObject * PyTM_union_for(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer the current union for the given type list id if it exists else None
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t btypeid, self=B_NEW;  btypeid_t *tl;  TM_TLID_T tlid;
-    PyObject *pySelf = 0;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t btypeid = B_NEW;  btypeid_t *tl;  TM_TLID_T tlid;
+    PyObject *pyBType = 0;
 
     if (nargs != 1) return PyErr_Format(PyExc_TypeError, "Must provide at least one type");
     if (!PyLong_Check(args[0])) return PyErr_Format(PyExc_TypeError, "tlid must be int");
 
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), pySelf = args[i + nargs])
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pySelf) {
-            __CHECK(PyObject_IsInstance(pySelf, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pySelf)->btypeid;
+        if (pyBType) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
     tlid = PyLong_AsLong(args[0]);
-    btypeid = tm_union_for_tlid_or_create(pyTm->tm, self, tlid);
+    btypeid = tm_union_for_tlid_or_create(pyTm->tm, btypeid, tlid);
 
     if (btypeid) {
         return newPyBTypeRef(btypeid);
@@ -981,7 +991,7 @@ pvt PyObject * PyTM_union_tlid_for(PyTM *pyTm, PyObject **args, Py_ssize_t nargs
     }
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
-            __GET_KWARG("self", PyTuple_GET_ITEM(argnames, i), )
+            __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), )
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
     }
@@ -1034,27 +1044,22 @@ pvt PyObject * PyTM_unionTl(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyMethodDef PyTM_methods[] = {
-    {"allocAtom",    (PyCFunction) PyTM_allocAtom, METH_FASTCALL | METH_KEYWORDS,
-        "allocAtom(**, [self], [explicit], [implicitly], [space])\n\n"
-        "Initialises \"self\" or allocates a new atom with the provided properties. Raises an error if \"self\" is "
-        "already initialised."
-    },
     {"bind",                (PyCFunction) PyTM_bind, METH_FASTCALL,
-        "bind(name, t)\n\n"
-        "Answers t after binding name it or raises an error if 'name' is already bound to another btype."
+        "bind(name, btype)\n\n"
+        "Answers `btype` after binding `name` to it, raising an error if `name` is already bound to another btype."
     },
     {"bmetatypeid",         (PyCFunction) PyTM_bmetatypeid, METH_FASTCALL,
-        "bmetatypeid(t)\n\n"
-        "Answers the bmetatypeid of the type."
+        "bmetatypeid(btype)\n\n"
+        "Answers the bmetatypeid of `btype`."
     },
     {"checkAtom",           (PyCFunction) PyTM_checkAtom, METH_FASTCALL | METH_KEYWORDS,
-        "checkAtom(**, t, [explicit], [implicitly], [space])\n\n"
-        "Checks that \"t\" is compatible with explicit, implicitly and space, returning \"t\" if so else raising an "
+        "checkAtom(**, btype, [explicit], [implicitly], [space])\n\n"
+            "Checks that `btype` is compatible with explicit, implicitly and space, returning `btype` if so else raising an "
         "error if not."
     },
     {"checkIntersection",   (PyCFunction) PyTM_checkIntersection, METH_FASTCALL | METH_KEYWORDS,
-        "checkIntersection(**, t, [space])\n\n"
-        "Checks that intersection \"t\" is compatible with space, returning \"t\" if so else raising an error if not."
+        "checkIntersection(**, btype, [space])\n\n"
+        "Checks that intersection `btype` is compatible with space returning `btype` if so else raising an error if not."
     },
     {"fn",                  (PyCFunction) PyTM_fn, METH_FASTCALL | METH_KEYWORDS,
         "fn((t1, t2, ...), tRet)\n\n"
@@ -1070,15 +1075,19 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {"fromId",              (PyCFunction) PyTM_fromId, METH_FASTCALL,
         "fromId(btypeid)\n\n"
-        "Answers the type corresponding to btypeid if it exists else throws an error."
+        "Answers the type corresponding to btypeid if it exists, throwing an error if not."
     },
     {"hasT",                (PyCFunction) PyTM_hasT, METH_FASTCALL,
         "hasT(btypeid)\n\n"
         "Answers True if the type has a schema variable."
     },
+    {"initAtom",    (PyCFunction) PyTM_initAtom, METH_FASTCALL | METH_KEYWORDS,
+            "initAtom(**, [btype], [explicit], [implicitly], [space])\n\n"
+            "Creates a new atom or initialises `btype` with the provided properties, raising an error if `btype` is already initialised."
+    },
     {"intersection",        (PyCFunction) PyTM_intersection, METH_FASTCALL | METH_KEYWORDS,
-        "intersection(t1, t2, ...)\n\n"
-        "Answers the intersection t1 & t2 & ... type."
+        "intersection(btype1, btype2, ... ** btype, space)\n\n"
+        "Answers the intersection of t1 & t2 & ..."
     },
     {"intersectionTl",      (PyCFunction) PyTM_intersectionTl, METH_FASTCALL,
         "intersectionTl(t)\n\n"
@@ -1093,16 +1102,16 @@ pvt PyMethodDef PyTM_methods[] = {
         "Answers if the type requires an explicit match explicit."
     },
     {"isRecursive",         (PyCFunction) PyTM_isRecursive, METH_FASTCALL,
-        "isRecursive(t)\n\n"
-        "Answers if the type is recursive."
+        "isRecursive(btype)\n\n"
+        "Answers True if btype is recursive."
     },
     {"lookup",              (PyCFunction) PyTM_lookup, METH_FASTCALL,
         "lookup(name)\n\n"
-        "Answers the btype that 'name' is bound to else B_NAT if unbound."
+        "Answers the btype that `name` is bound to else B_NAT if unbound."
     },
     {"map",                 (PyCFunction) PyTM_map, METH_FASTCALL | METH_KEYWORDS,
         "map(tK, tV)\n\n"
-        "Answers the type of the map tK -> tV."
+        "Answers the map tK -> tV."
     },
     {"mapTK",               (PyCFunction) PyTM_mapTK, METH_FASTCALL,
         "mapTK(tMap)\n\n"
@@ -1117,49 +1126,49 @@ pvt PyMethodDef PyTM_methods[] = {
         "Answers the type of A minus B."
     },
     {"nameOf",                (PyCFunction) PyTM_nameOf, METH_FASTCALL,
-        "nameOf(t)\n\n"
-        "Answers the name of t if bound or None if not bound."
+        "nameOf(btype)\n\n"
+        "Answers the name of `btype` if bound or None if not bound."
     },
     {"space",             (PyCFunction) PyTM_space, METH_FASTCALL,
-        "space(t)\n\n"
-        "Answers the othogonal space the given type's is in or None if it is not in any."
+        "space(btype)\n\n"
+        "Answers the orthogonal space of `btype` or None."
     },
     {"reserve",             (PyCFunction) PyTM_reserve, METH_FASTCALL | METH_KEYWORDS,
         "reserve(** name, space)\n\n"
-        "Answers an uninitialised recursive type to be initialised later - optionally with name & space."
+        "Answers an uninitialised recursive type to be initialised later - optionally with `name` & `space`."
     },
     {"rootSpace",         (PyCFunction) PyTM_rootSpace, METH_FASTCALL,
-        "rootSpace(t)\n\n"
-        "Answers the root othogonal space the given type's is in or None if it is not in any."
+        "rootSpace(btype)\n\n"
+        "Answers the root othogonal space of `btype` or None."
     },
     {"schemavar",           (PyCFunction) PyTM_schemavar, METH_FASTCALL,
         "schemavar(name)\n\n"
-        "Answers the schema variable called <name>, creating it if it doesn't exist, or raising an error if "
-        "<name> is used by another type."
+        "Answers the schema variable called `name`, creating it if it doesn't exist, or raising an error if "
+        "`name` is used by another type."
     },
     {"seq",                 (PyCFunction) PyTM_seq, METH_FASTCALL | METH_KEYWORDS,
-        "seq(t)\n\n"
-        "Answers the sequence of t type."
+        "seq(btype)\n\n"
+        "Answers the sequence of `btype`."
     },
     {"seqT",                (PyCFunction) PyTM_seqT, METH_FASTCALL,
-        "seqT(t)\n\n"
-        "Answers the contained type."
+        "seqT(btype)\n\n"
+        "Answers the contained type of the sequence `btype`."
     },
     {"struct",              (PyCFunction) PyTM_struct, METH_FASTCALL | METH_KEYWORDS,
         "struct((f1, f2,...), (t1, t2, ...))\n\n"
-        "Answers the struct {f1:t1, f2:t2, ...} type."
+        "Answers the struct type {f1:t1, f2:t2, ...}."
     },
     {"structTl",             (PyCFunction) PyTM_structTl, METH_FASTCALL,
-        "structTl(t)\n\n"
-        "Answers a tuple of the names and types in the struct t."
+        "structTl(btype)\n\n"
+        "Answers a tuple of the names and types in the struct btype."
     },
     {"tuple",               (PyCFunction) PyTM_tuple, METH_FASTCALL | METH_KEYWORDS,
         "tuple(t1, t2, ...)\n\n"
         "Answers the tuple (t1, t2, ...) type."
     },
     {"tupleTl",             (PyCFunction) PyTM_tupleTl, METH_FASTCALL,
-        "tupleTl(t)\n\n"
-        "Answers a tuple of the types in the tuple t."
+        "tupleTl(btype)\n\n"
+        "Answers a tuple of the types in the tuple btype."
     },
     {"union",               (PyCFunction) PyTM_union, METH_FASTCALL | METH_KEYWORDS,
          "union(t1, t2, ...)\n\n"
@@ -1170,16 +1179,16 @@ pvt PyMethodDef PyTM_methods[] = {
         "Answers the union typelist id for t1 + t2 + ..."
     },
     {"union_for",           (PyCFunction) PyTM_union_for, METH_FASTCALL | METH_KEYWORDS,
-         "union_for(tlid, [self])\n\n"
-         "Answers the union type id for tlid"
+         "union_for(tlid, **, [btype])\n\n"
+         "Answers the union type id for `tlid`."
     },
     {"union_get_for",       (PyCFunction) PyTM_union_get_for, METH_FASTCALL,
         "union_get_for(tlid)\n\n"
-        "Answers the union type for tlid or None if it doesn't exist"
+        "Answers the union type for `tlid` or None."
     },
     {"unionTl",             (PyCFunction) PyTM_unionTl, METH_FASTCALL,
-        "unionTl(t)\n\n"
-        "Answers a tuple of the types in the union t."
+        "unionTl(btype)\n\n"
+        "Answers a tuple of the types in the union `btype`."
     },
     {0}
 };

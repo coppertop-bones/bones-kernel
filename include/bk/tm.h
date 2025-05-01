@@ -218,7 +218,7 @@ typedef struct PVT_TM {
 
 
 // atoms
-pub btypeid_t tm_alloc_atom(BK_TM *, btypeid_t self, btypeid_t implicitid, bool explicit);
+pub btypeid_t tm_init_atom(BK_TM *, btypeid_t self, btypeid_t implicitid, bool explicit);
 pub btypeid_t tm_check_atom(BK_TM *, btypeid_t self, btypeid_t implicitid, bool explicit, btypeid_t spaceid);
 
 // functions
@@ -283,6 +283,7 @@ pub btypeid_t tm_layout_as(BK_TM *, btypeid_t, size);
 pub btypeid_t tm_spaceid(BK_TM *, btypeid_t);
 pub btypeid_t tm_root_spaceid(BK_TM *, btypeid_t);
 pub size tm_size(BK_TM *, btypeid_t);
+pub btypeid_t tm_space_would_recurse(BK_TM *, btypeid_t btypeid, btypeid_t spaceid);
 
 // utils
 pub btypeid_t tm_minus(BK_TM *, btypeid_t self, btypeid_t A, btypeid_t B);

@@ -31,7 +31,7 @@ pub btypeid_t tm_fn(BK_TM *tm, btypeid_t self, btypeid_t tArgs, btypeid_t retid)
     // answers the validated function type corresponding to tArgs and retid, creating if necessary
 
     // check each typeid is valid
-    if (!self) return B_NAT;
+    if (!self) return _err_invalid_btype_B_NAT(B_NAT, __FILE__, FN_NAME, __LINE__);
     if (self >= tm->next_btypeId) return B_NAT;
     if (!(TM_FIRST_VALID_BTYPEID <= tArgs && tArgs < tm->next_btypeId)) return B_NAT;
     if (TM_BMT_ID(tm->btsummary_by_btypeid[tArgs]) != bmttup) return B_NAT;

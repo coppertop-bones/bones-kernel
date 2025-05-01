@@ -26,14 +26,16 @@
 
 // name binding / lookup
 
-pub btypeid_t tm_bind(BK_TM *tm, char const *name, btypeid_t self) {
-    // binds name to btypedid, checking that name is not already used and that btypedid has not already been bound to
+pub btypeid_t tm_bind(BK_TM *tm, char const *name, btypeid_t btype) {
+    // binds name to btype, checking that
+    //    1) name is not already used, and,
+    //    2) that btype has not already been bound to
     int outcome;  symid_t symid;  u32 idx;
 
-    if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return B_NAT;
-    if ((symid = tm->symid_by_btypeid[self]) != 0)
+    if (!(TM_FIRST_VALID_BTYPEID <= btype && btype < tm->next_btypeId)) return B_NAT;
+    if ((symid = tm->symid_by_btypeid[btype]) != 0)
         // already bound to - check that name is the same as the existing name
-        return strcmp(sm_name(tm->sm, symid), name) == 0 ? self : B_NAT;
+        return strcmp(sm_name(tm->sm, symid), name) == 0 ? btype : B_NAT;
     else {
         // not bounnd, so check name is not already in use and bind
         symid = sm_id(tm->sm, name);
@@ -41,9 +43,9 @@ pub btypeid_t tm_bind(BK_TM *tm, char const *name, btypeid_t self) {
         if (outcome == HI_LIVE)
             return B_NAT;
         else {
-            hi_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, self);
-            tm->symid_by_btypeid[self] = symid;
-            return self;
+            hi_replace_empty(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, idx, btype);
+            tm->symid_by_btypeid[btype] = symid;
+            return btype;
         }
     }
 }
@@ -58,30 +60,31 @@ pub btypeid_t tm_lookup(BK_TM *tm, char const *name) {
         return B_NAT;
 }
 
-pub char const * tm_name_of(BK_TM *tm, btypeid_t self) {
+pub char const * tm_name_of(BK_TM *tm, btypeid_t btype) {
     // answers the name bound to btypeid or a null pointer there has no binding
-    if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return 0;
-    symid_t symid = tm->symid_by_btypeid[self];
+    if (!(TM_FIRST_VALID_BTYPEID <= btype && btype < tm->next_btypeId)) return 0;
+    symid_t symid = tm->symid_by_btypeid[btype];
     return symid ? sm_name(tm->sm, symid) : 0;
 }
 
 
 // id reservation
 
-pub btypeid_t tm_reserve(BK_TM *tm, btypeid_t self, btypeid_t spaceid) {
-    // answers self, allocating if required, initialised (partially) with the given properties
-    if (self == B_NEW) {
-        self = tm->next_btypeId;
-        _update_type_summary(tm, self, 0, 0, 0);
+pub btypeid_t tm_reserve(BK_TM *tm, btypeid_t btype, btypeid_t spaceid) {
+    // answers btype, allocating if required, initialised (partially) with the given properties
+    if (spaceid && tm_space_would_recurse(tm, btype, spaceid)) return B_NAT;
+    if (btype == B_NEW) {
+        btype = tm->next_btypeId;
+        _update_type_summary(tm, btype, 0, 0, 0);
     } else {
-        if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return B_NAT;
-        if (TM_BMT_ID(tm->btsummary_by_btypeid[self]) != bmterr) return B_NAT;
+        if (!(TM_FIRST_VALID_BTYPEID <= btype && btype < tm->next_btypeId)) return B_NAT;
+        if (TM_BMT_ID(tm->btsummary_by_btypeid[btype]) != bmterr) return B_NAT;
     }
-    tm->btsummary_by_btypeid[self] |=
+    tm->btsummary_by_btypeid[btype] |=
             TM_IS_RECURSIVE_MASK |                  // assume recursive, might be unset later
             (spaceid ? TM_IN_ORTHSPC_MASK : 0);
-    if (spaceid) tm->spaceid_by_btypeid[self] = spaceid;
-    return self;
+    if (spaceid) tm->spaceid_by_btypeid[btype] = spaceid;
+    return btype;
 }
 
 pub void tm_reserve_btypeids(BK_TM *tm, btypeid_t next_btypeId) {
@@ -98,42 +101,61 @@ pub void tm_reserve_btypeids(BK_TM *tm, btypeid_t next_btypeId) {
 
 // attribute accessing
 
-pub bmetatypeid_t tm_bmetatypeid(BK_TM *tm, btypeid_t self) {
-    // answer the bmetatypeid_t corresponding to self or bmterr if not found
-    if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return bmterr;
-    return TM_BMT_ID(tm->btsummary_by_btypeid[self]);
+pub bmetatypeid_t tm_bmetatypeid(BK_TM *tm, btypeid_t btype) {
+    // answer the bmetatypeid_t corresponding to btype or bmterr if not found
+    if (!(TM_FIRST_VALID_BTYPEID <= btype && btype < tm->next_btypeId)) return bmterr;
+    return TM_BMT_ID(tm->btsummary_by_btypeid[btype]);
 }
 
-pub bool tm_hasT(BK_TM *tm, btypeid_t self) {
-    if (!(TM_FIRST_VALID_BTYPEID <= self && self < tm->next_btypeId)) return false;
-    return TM_HAS_T(tm->btsummary_by_btypeid[self]);
+pub bool tm_hasT(BK_TM *tm, btypeid_t btype) {
+    if (!(TM_FIRST_VALID_BTYPEID <= btype && btype < tm->next_btypeId)) return false;
+    return TM_HAS_T(tm->btsummary_by_btypeid[btype]);
 }
 
-pub btypeid_t tm_layout(BK_TM *tm, btypeid_t self) {
+pub btypeid_t tm_layout(BK_TM *tm, btypeid_t btype) {
     // OPEN: implement
     return B_NAT;
 }
 
-pub btypeid_t tm_layout_as(BK_TM *tm, btypeid_t self, size sz) {
+pub btypeid_t tm_layout_as(BK_TM *tm, btypeid_t btype, size sz) {
     // OPEN: implement
     return B_NAT;
 }
 
-pub btypeid_t tm_spaceid(BK_TM *tm, btypeid_t self) {
+pub btypeid_t tm_spaceid(BK_TM *tm, btypeid_t btype) {
     // answers the orthogonal space id for the given btype
-    return tm->spaceid_by_btypeid[self];
+    return tm->spaceid_by_btypeid[btype];
 }
 
-pub btypeid_t tm_root_spaceid(BK_TM *tm, btypeid_t self) {
+pub btypeid_t tm_root_spaceid(BK_TM *tm, btypeid_t btype) {
     // answers the root orthogonal space id for the given btype
+    // OPEN: handle recursion?
     btypeid_t spaceid = 0;
-    while ((self = tm->spaceid_by_btypeid[self])) {
-        spaceid = self;
+    while ((btype = tm->spaceid_by_btypeid[btype])) {
+        spaceid = btype;
     }
     return spaceid;
 }
 
-pub size tm_size(BK_TM *tm, btypeid_t self) {
+pub btypeid_t tm_space_would_recurse(BK_TM *tm, btypeid_t btypeid, btypeid_t spaceid) {
+    int i = 0; btypeid_t parentid;
+    if (btypeid == B_NEW) {btypeid = tm->next_btypeId;}
+    tm->spaceid_by_btypeid[btypeid] = spaceid;              // temporarily put btypeid in the space hierarchy
+    parentid = tm->spaceid_by_btypeid[btypeid];
+    while (i < 20 && parentid != B_NAT) {
+        parentid = tm->spaceid_by_btypeid[parentid];
+        i++;
+    }
+    if (parentid) {
+        tm->spaceid_by_btypeid[btypeid] = 0;                // return the space hierarchy to its prior state
+        return btypeid;
+    } else {
+        tm->spaceid_by_btypeid[btypeid] = 0;
+        return 0;
+    }
+}
+
+pub size tm_size(BK_TM *tm, btypeid_t btype) {
     // OPEN: implement (requires packing decisions which should be put in the client? except the mm needs to be able to navigate)
     //    in which case this should be field alignment, offsets and sizes, e.g. 0,8 for a f64
     return 0;
@@ -142,7 +164,7 @@ pub size tm_size(BK_TM *tm, btypeid_t self) {
 
 // utils
 
-pub btypeid_t tm_minus(BK_TM *tm, btypeid_t self, btypeid_t A, btypeid_t B) {
+pub btypeid_t tm_minus(BK_TM *tm, btypeid_t btype, btypeid_t A, btypeid_t B) {
     btsummary *sumA, *sumB; btypeid_t *tlA1, *tlB1, *tlA2, *tlB2, *tlDest1, *tlDest2, *p;  int nA, nB, nDest;
     TM_TLID_T tlid;  u32 idx;  i32 outcome;  i32 numTypes;  btypeid_t *nextTypelist;
 
@@ -206,7 +228,7 @@ pub btypeid_t tm_minus(BK_TM *tm, btypeid_t self, btypeid_t A, btypeid_t B) {
             if (!tlid) return _seriousErrorCommitingTypelistBufHandleProperly(B_NAT, __FILE__, __LINE__);
     }
 
-    return (TM_BMT_ID(*sumA) == bmtint) ? tm_inter_for_tlid_or_create(tm, self, tlid) : tm_union_for_tlid_or_create(tm, self, tlid);
+    return (TM_BMT_ID(*sumA) == bmtint) ? tm_inter_for_tlid_or_create(tm, btype, tlid) : tm_union_for_tlid_or_create(tm, btype, tlid);
 }
 
 pub TM_TLID_T tm_tlid(BK_TM *tm, btypeid_t *typelist) {

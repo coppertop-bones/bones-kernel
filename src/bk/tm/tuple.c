@@ -31,7 +31,7 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t self, TM_TLID_T tlid) {
     i32 i, outcome, numTypes;  btsummary *sum;  TM_DETAILID_T tupid;  u32 idx;  bool hasT;
     btypeid_t *typelist, other;
 
-    if (!self) return B_NAT;
+    if (!self) return _err_invalid_btype_B_NAT(B_NAT, __FILE__, FN_NAME, __LINE__);
     if (self >= tm->next_btypeId) return _err_selfOutOfRange(B_NAT, __FILE__, FN_NAME, __LINE__, self);
 
     // get the btypeid for the tlid

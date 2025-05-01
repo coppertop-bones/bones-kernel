@@ -37,12 +37,12 @@ pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
     int n = 0;
     BK_TM *tm = k->tm;
     tm_reserve_btypeids(tm, B_FIRST_UNRESERVED_TYPEID);
-//    n += tm_bind("m8", tm_alloc_atom(tm, B_M8, 0)) == 0;
-//    n += tm_alloc_atom(tm, B_M16, "m16") == 0;
-//    n += tm_alloc_atom(tm, B_M32, "m32") == 0;
-//    n += tm_alloc_atom(tm, B_M64, "m64") == 0;
-//    n += tm_alloc_atom(tm, B_LITINT, "litint") == 0;
-//    n += tm_alloc_atom(tm, B_I32, "i32") == 0;
+//    n += tm_bind("m8", tm_init_atom(tm, B_M8, 0)) == 0;
+//    n += tm_init_atom(tm, B_M16, "m16") == 0;
+//    n += tm_init_atom(tm, B_M32, "m32") == 0;
+//    n += tm_init_atom(tm, B_M64, "m64") == 0;
+//    n += tm_init_atom(tm, B_LITINT, "litint") == 0;
+//    n += tm_init_atom(tm, B_I32, "i32") == 0;
 //
 //    n += tm_bind("T", tm_schemavar(tm, B_T)) == 0;
 //    n += tm_bind("T1", tm_schemavar(tm, B_T1)) == 0;
@@ -62,7 +62,7 @@ pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
 
     if (n) {
         mm->free(tm);
-        die("%i conflicts in tm_alloc_atom\n", n);
+        die("%i conflicts in tm_init_atom\n", n);
     }
     return k;
 }

@@ -45,6 +45,16 @@ pvt PyMethodDef PyBType_methods[] = {
     {0}
 };
 
+//char *buf = malloc(1000);
+
+pvt PyObject * PyBType__str__(PyBType *self) {
+//    return PyString_FromFormat("btype%i", self->btypeid);
+
+    return PyUnicode_FromString("t");
+//    return PyUnicodeUCS2_FromString("t");
+}
+
+
 pvt PyTypeObject PyBTypeCls = {
     PyVarObject_HEAD_INIT(0, 0)
     .tp_name = "jones.BType",
@@ -56,6 +66,7 @@ pvt PyTypeObject PyBTypeCls = {
     .tp_dealloc = (destructor) PyBType_trash,
     .tp_members = PyBType_members,
     .tp_methods = PyBType_methods,
+    .tp_str = (reprfunc) PyBType__str__,
 };
 
 

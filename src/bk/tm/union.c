@@ -29,7 +29,7 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t self, btypeid_t *typelist) {
     // answers the validated union type corresponding to typelist, creating if necessary
     TM_TLID_T tlid;
 
-    if (!self) return B_NAT;
+    if (!self) return _err_invalid_btype_B_NAT(B_NAT, __FILE__, FN_NAME, __LINE__);
     if (!typelist[0]) return _err_emptyTypelist(B_NAT, __FILE__, FN_NAME, __LINE__);;
     if (self >= tm->next_btypeId) return _err_selfOutOfRange(B_NAT, __FILE__, FN_NAME, __LINE__, self);;
 

@@ -114,10 +114,10 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     t = tm_lookup(tm, "sally");
     check(t == 0, "%s @ %i: id != B_NAT (should be %i)", __FILE__, __LINE__, t);
     
-    t = tm_bind(tm, "fred", tm_alloc_atom(tm, tFred, 0));
+    t = tm_bind(tm, "fred", tm_init_atom(tm, tFred, 0));
     check(t == tFred, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFred);
 
-    t = tm_bind(tm, "joe", tm_alloc_atom(tm, tJoe, 0));
+    t = tm_bind(tm, "joe", tm_init_atom(tm, tJoe, 0));
     check(t == tJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
 
     t = tm_bind(tm, "joe", tm_lookup(tm, "joe"));
@@ -197,7 +197,7 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     // fn
 
     // (fred, joe) -> sally
-    t = tm_fn(tm, tFn2, tTupFredJoe, tm_bind(tm, "sally", tm_alloc_atom(tm, B_NEW, 0)));
+    t = tm_fn(tm, tFn2, tTupFredJoe, tm_bind(tm, "sally", tm_init_atom(tm, B_NEW, 0)));
     check(t == tFn2, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFn2);
 
     t = tm_fn(tm, B_NEW, tupid, tm_lookup(tm, "sally"));
@@ -227,9 +227,9 @@ pvt TPN test_orthogonal_spaces(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     tl = malloc(11 * sizeof(btypeid_t));
 
     // test simple orthogonality
-    ccyfx = tm_bind(tm, "ccyfx", tm_alloc_atom(tm, B_NEW, 0);        // mem is a built-in type? don't think so
-    ccy = tm_bind(tm, "ccy", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
-    fx = tm_bind(tm, "fx", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
+    ccyfx = tm_bind(tm, "ccyfx", tm_init_atom(tm, B_NEW, 0);        // mem is a built-in type? don't think so
+    ccy = tm_bind(tm, "ccy", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
+    fx = tm_bind(tm, "fx", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
 
     tm_reserve(tm, B_NEW, 0, 0);
 
@@ -243,7 +243,7 @@ pvt TPN test_orthogonal_spaces(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     check(t == B_NAT, "%s @ %i: ccy & fx != B_NAT", __FILE__, __LINE__);
 
 
-    CCY = tm_bind(tm, "CCY", tm_alloc_atom(tm, B_NEW, 0);        // mem is a built-in type? don't think so
+    CCY = tm_bind(tm, "CCY", tm_init_atom(tm, B_NEW, 0);        // mem is a built-in type? don't think so
 
     GBP = tm_reserve(tm, B_NEW, CCY, 0);
     GBP = tm_interv(tm, GBP, 2, GBP, ccy);
@@ -254,7 +254,7 @@ pvt TPN test_orthogonal_spaces(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     t = tm_interv(tm, B_NEW, 2, GBP, USD);
     check(t == B_NAT, "%s @ %i: GBP & USD != B_NAT", __FILE__, __LINE__);
 
-    t = tm_interv(tm, B_NEW, 2, GBP, tm_bind(tm, "fred", tm_alloc_atom(tm, B_NEW, 0)));
+    t = tm_interv(tm, B_NEW, 2, GBP, tm_bind(tm, "fred", tm_init_atom(tm, B_NEW, 0)));
     check(t != B_NAT, "%s @ %i: GBP & USD != B_NAT", __FILE__, __LINE__);
 
     free(tl);  free(sl);  K_trash(k);
@@ -270,10 +270,10 @@ pvt TPN test_minus(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     tl = malloc(11 * sizeof(btypeid_t));
 
     // test simple orthogonality
-    t3 = tm_bind(tm, "GBP", tm_alloc_atom(tm, B_NEW, 0));        // mem is a built-in type? don't think so
-    t2 = tm_bind(tm, "ccy", tm_alloc_atom(tm, B_NEW, 0));
-    t1 = tm_bind(tm, "f64", tm_alloc_atom(tm, B_NEW, 0));
-    t4 = tm_bind(tm, "u32", tm_alloc_atom(tm, B_NEW, 0));
+    t3 = tm_bind(tm, "GBP", tm_init_atom(tm, B_NEW, 0));        // mem is a built-in type? don't think so
+    t2 = tm_bind(tm, "ccy", tm_init_atom(tm, B_NEW, 0));
+    t1 = tm_bind(tm, "f64", tm_init_atom(tm, B_NEW, 0));
+    t4 = tm_bind(tm, "u32", tm_init_atom(tm, B_NEW, 0));
 
     t = tm_minus(tm, B_NEW, tm_interv(tm, B_NEW, 3, t1, t2, t3), t2);
 
@@ -301,26 +301,26 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     T1 = tm_bind(tm, "T1", tm_schemavar(tm, B_NEW));
     T2 = tm_bind(tm, "T2", tm_schemavar(tm, B_NEW));
 
-    mem = tm_bind(tm, "mem", tm_alloc_atom(tm, B_NEW, 0));        // mem is a built-in type? don't think so
+    mem = tm_bind(tm, "mem", tm_init_atom(tm, B_NEW, 0));        // mem is a built-in type? don't think so
 
-    null = tm_bind(tm, "null", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, mem, 0), 0));
-    null2 = tm_bind(tm, "null", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, mem, 0), 0));
+    null = tm_bind(tm, "null", tm_init_atom(tm, tm_reserve(tm, B_NEW, mem, 0), 0));
+    null2 = tm_bind(tm, "null", tm_init_atom(tm, tm_reserve(tm, B_NEW, mem, 0), 0));
     check(null2 == B_NAT, "%s @ %i: null2 != B_NAT", __FILE__, __LINE__);
 
-    ptrSpc = tm_bind(tm, "ptrSpc", tm_alloc_atom(tm, B_NEW, 0));
-    ptr = check_btype(tm, tm_bind(tm, "ptr", tm_alloc_atom(tm, tm_reserve(tm, B_P, ptrSpc, 0), 0)), "ptr == B_NAT", __FILE__, __LINE__);
+    ptrSpc = tm_bind(tm, "ptrSpc", tm_init_atom(tm, B_NEW, 0));
+    ptr = check_btype(tm, tm_bind(tm, "ptr", tm_init_atom(tm, tm_reserve(tm, B_P, ptrSpc, 0), 0)), "ptr == B_NAT", __FILE__, __LINE__);
 
-    constSpc = tm_bind(tm, "constSpc", tm_alloc_atom(tm, B_NEW, 0));
-    mut = check_nnat(tm_bind(tm, "mut", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, constSpc, true), 0)), "%s @ %i: mut == B_NAT", __FILE__, __LINE__);          // mut is implicit in C but explicit in bones
-    const_ = check_nnat(tm_bind(tm, "const", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, constSpc, 0), 0)), "%s @ %i: const_ == B_NAT", __FILE__, __LINE__);  // const is implicit in bones
+    constSpc = tm_bind(tm, "constSpc", tm_init_atom(tm, B_NEW, 0));
+    mut = check_nnat(tm_bind(tm, "mut", tm_init_atom(tm, tm_reserve(tm, B_NEW, constSpc, true), 0)), "%s @ %i: mut == B_NAT", __FILE__, __LINE__);          // mut is implicit in C but explicit in bones
+    const_ = check_nnat(tm_bind(tm, "const", tm_init_atom(tm, tm_reserve(tm, B_NEW, constSpc, 0), 0)), "%s @ %i: const_ == B_NAT", __FILE__, __LINE__);  // const is implicit in bones
 
-    constPtrSpc = tm_bind(tm, "constPtrSpc", tm_alloc_atom(tm, B_NEW, 0));
-    mutPtr = tm_bind(tm, "mutPtr", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc, true), 0));
-    constPtr = tm_bind(tm, "constPtr", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc, 0), 0));
+    constPtrSpc = tm_bind(tm, "constPtrSpc", tm_init_atom(tm, B_NEW, 0));
+    mutPtr = tm_bind(tm, "mutPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc, true), 0));
+    constPtr = tm_bind(tm, "constPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc, 0), 0));
 
-    constPtrPtrSpc = tm_bind(tm, "constPtrSpc", tm_alloc_atom(tm, B_NEW, 0));
-    mutPtrPtr = tm_bind(tm, "mutPtrPtr", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc, true), 0));
-    constPtrPtr = tm_bind(tm, "constPtrPtr", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc, 0), 0));
+    constPtrPtrSpc = tm_bind(tm, "constPtrSpc", tm_init_atom(tm, B_NEW, 0));
+    mutPtrPtr = tm_bind(tm, "mutPtrPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc, true), 0));
+    constPtrPtr = tm_bind(tm, "constPtrPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc, 0), 0));
 
 
     // f64: f64 & mem in mem
@@ -341,13 +341,13 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     check(tm_bmetatypeid(tm, f64) == bmtint, "%s @ %i: tm_bmetatypeid(f64) != bmtint", __FILE__, __LINE__);
 
     // u32: atm in mem
-    u32 = tm_bind(tm, "u32", tm_alloc_atom(tm, tm_reserve(tm, B_U32, mem, 0), 0));
+    u32 = tm_bind(tm, "u32", tm_init_atom(tm, tm_reserve(tm, B_U32, mem, 0), 0));
 
     // u64: atm in mem
-    u64 = tm_bind(tm, "u64", tm_alloc_atom(tm, tm_reserve(tm, B_U64, mem, 0), 0));
+    u64 = tm_bind(tm, "u64", tm_init_atom(tm, tm_reserve(tm, B_U64, mem, 0), 0));
 
     // i64: atm in mem
-    i64 = check_btype(tm, tm_bind(tm, "i64", tm_alloc_atom(tm, tm_reserve(tm, B_I64, mem, 0), 0)), "%s @ %i: i64 is NaT", __FILE__, __LINE__);
+    i64 = check_btype(tm, tm_bind(tm, "i64", tm_init_atom(tm, tm_reserve(tm, B_I64, mem, 0), 0)), "%s @ %i: i64 is NaT", __FILE__, __LINE__);
 
 
     // i64frac: {num:i64, den:i64} in mem
@@ -360,9 +360,9 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
 
     // model ccy and fx such that storage can be f64 or frac
     btypeid_t ccyfx, CCY, ccy, ccyfrac, GBP, GBPFrac, USD;
-    ccyfx = tm_bind(tm, "ccyfx", tm_alloc_atom(tm, B_NEW, 0));
+    ccyfx = tm_bind(tm, "ccyfx", tm_init_atom(tm, B_NEW, 0));
 
-    CCY = tm_bind(tm, "CCY", tm_alloc_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
+    CCY = tm_bind(tm, "CCY", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
 
 
     // ccy and ccyfrac are part of the space of CCY

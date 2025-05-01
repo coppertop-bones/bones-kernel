@@ -288,9 +288,9 @@ pvt void _make_next_page_of_typelist_buf_writable_if_necessary(BK_TM *tm, int nu
 pvt btypeid_t setErrAndDesc(btypeid_t err, char const *msg, char const *filename, long lineno, ...) {
     va_list args;
     va_start(args, lineno);
-    fprintf(stdout, "%s:%li: ", filename, lineno);
-    vfprintf(stdout, msg, args);
-    fprintf(stdout, "\n");
+    fprintf(stderr, "  File \"%s\", line %li, \"", filename, lineno);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\"\n");
     va_end(args);
     return err;
 }
@@ -303,6 +303,10 @@ pvt btypeid_t _err_itemInTLOutOfRange(btypeid_t ret, char const *filename, char 
     return setErrAndDesc(ret, "%s type %i (t%i) is out of btypeId range", filename, lineno, fnname, offset, t);
 }
 
+pvt btypeid_t _err_invalid_btype_B_NAT(btypeid_t ret, char const *filename, char const * fnname, long lineno) {
+    return setErrAndDesc(ret, "btypeid is B_NAT", filename, lineno, fnname);
+}
+
 pvt btypeid_t _btypeInTypeListNotInitialised(btypeid_t ret, char const *filename, long lineno, btypeid_t t, int offset) {
     return setErrAndDesc(ret, "type %i (t%i) is out initialised", filename, lineno, offset, t);
 }
@@ -311,7 +315,7 @@ pvt btypeid_t _seriousErrorCommitingTypelistBufHandleProperly(btypeid_t ret, cha
     return setErrAndDesc(ret, "Serious error committing typelist buf - TODO pp list here", filename, lineno);
 }
 
-pvt btypeid_t _otherAlreadyRepresentsTL(btypeid_t ret, char const *filename, long lineno, btypeid_t self, btypeid_t other) {
+pvt btypeid_t _err_otherAlreadyRepresentsTL(btypeid_t ret, char const *filename, long lineno, btypeid_t self, btypeid_t other) {
     // OPEN: add pp of tl and name of other
     return setErrAndDesc(B_NAT, "Self (t%i) - typelist already represented by t%i", filename, lineno, self, other);
 }
