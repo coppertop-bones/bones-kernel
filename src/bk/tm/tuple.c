@@ -45,7 +45,7 @@ pub btypeid_t tm_tuple(BK_TM *tm, btypeid_t self, TM_TLID_T tlid) {
             else if (TM_BMT_ID(tm->btsummary_by_btypeid[self]) != bmttup)
                 return _err_btypeAlreadyInitialised(B_NAT, __FILE__, __LINE__, self);
             else if (self == (other = tm->btypid_by_tupid[tupid])) return self;
-            else return _otherAlreadyRepresentsTL(B_NAT, __FILE__, __LINE__, self, other);
+            else return _err_otherAlreadyRepresentsTL(B_NAT, __FILE__, __LINE__, self, other);
         case HI_EMPTY:
             // missing so commit the tuple type for tlid
             if (self == B_NEW)

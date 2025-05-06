@@ -279,7 +279,7 @@ pvt PyObject * PyTM_fn(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *
             }
             tl[i+1] = ((PyBType *) e)->btypeid;
         }
-        tlid = tm_tlid(pyTm->tm, tl);
+        tlid = tm_tlid_for(pyTm->tm, tl);
         tArgs = tm_tuple(pyTm->tm, B_NEW, tlid);
         if (!tArgs) {
             resetToCheckpoint(buckets, &cp);
@@ -394,31 +394,31 @@ pvt PyObject * PyTM_intersection(PyTM *pyTm, PyObject *const *args, Py_ssize_t n
         return PyErr_Format(PyBTypeError, "btypeid = %i and spaceid = %i would recurse", nextid, spaceid);
     }
 
-    PP(info, "PyTM_intersection - #1 btypeid=%i, spaceid=%i", btypeid, spaceid);
+//    PP(info, "PyTM_intersection - #1 btypeid=%i, spaceid=%i", btypeid, spaceid);
     checkpointBuckets((buckets = pyTm->tm->buckets), &cp);
-    PP(info, "PyTM_intersection - #2");
+//    PP(info, "PyTM_intersection - #2");
 
     // create a type list of the correct length
     tl = (btypeid_t *) allocInBuckets(buckets, ((1 + nargs) * sizeof(btypeid_t)), bk_alignof(btypeid_t));
-    PP(info, "PyTM_intersection - #3");
+//    PP(info, "PyTM_intersection - #3");
     tl[0] = (btypeid_t) nargs;
     for (int i=1; i <= nargs; i++) {
         if (!PyObject_IsInstance(args[i-1], (PyObject *) &PyBTypeCls)) {
             resetToCheckpoint(buckets, &cp);
             return PyErr_Format(PyExc_TypeError, "arg%i is not a BType", i);
         }
-        PP(info, "PyTM_intersection - #4 - tl[%i] = args[%i]", i, i-1);
+//        PP(info, "PyTM_intersection - #4 - tl[%i] = args[%i]", i, i-1);
         tl[i] = ((PyBType *) args[i-1])->btypeid;
     }
 
-    PP(info, "PyTM_intersection - #5 - btypeid: %i", btypeid);
+//    PP(info, "PyTM_intersection - #5 - btypeid: %i", btypeid);
     btypeid = tm_inter(pyTm->tm, btypeid, tl);
 
     if (btypeid) {
-        PP(info, "PyTM_intersection - #6");
+//        PP(info, "PyTM_intersection - #6");
         if (spaceid) pyTm->tm->spaceid_by_btypeid[btypeid] = spaceid;       // OPEN: move this to tm_inter
         resetToCheckpoint(buckets, &cp);
-        PP(info, "PyTM_intersection - #7");
+//        PP(info, "PyTM_intersection - #7");
         return newPyBTypeRef(btypeid);
     } else {
         TP_init(&tp, 0, buckets);
@@ -445,7 +445,7 @@ pvt PyObject * PyTM_intersectionTl(PyTM *pyTm, PyObject **args, Py_ssize_t nargs
 }
 
 // PyTM_intersection_tlid
-// tm_inter_tlid
+// tm_inter_tlid_for
 
 // ---------------------------------------------------------------------------------------------------------------------
 // isExplicit: (btype) -> PyBool + PyException
@@ -689,7 +689,7 @@ pvt PyObject * PyTM_seq(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject 
             __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pyBType) {
+        if (pyBType && !Py_IsNone(pyBType)) {
             __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
             btypeid = ((PyBType *) pyBType)->btypeid;
         }
@@ -775,7 +775,7 @@ pvt PyObject * PyTM_struct(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObje
     }
 
     SM_SLID_T slid = sm_slid(pyTm->tm->sm, sl);
-    btypeid_t tupid = tm_tuple(pyTm->tm, B_NEW, tm_tlid(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
+    btypeid_t tupid = tm_tuple(pyTm->tm, B_NEW, tm_tlid_for(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
     btypeid = tm_struct(pyTm->tm, btypeid, slid, tupid);
 
     if (btypeid) {
@@ -830,8 +830,8 @@ pvt PyObject * PyTM_tuple(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
             __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pyBType) {
-            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType");
+        if (pyBType && !Py_IsNone(pyBType)) {
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
             btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
@@ -848,7 +848,7 @@ pvt PyObject * PyTM_tuple(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
         tl[i] = ((PyBType *) args[i-1])->btypeid;
     }
 
-    btypeid = tm_tuple(pyTm->tm, B_NEW, tm_tlid(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
+    btypeid = tm_tuple(pyTm->tm, B_NEW, tm_tlid_for(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -893,7 +893,7 @@ pvt PyObject * PyTM_union(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
             __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pyBType) {
+        if (pyBType && !Py_IsNone(pyBType)) {
             __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
             btypeid = ((PyBType *) pyBType)->btypeid;
         }
@@ -940,7 +940,7 @@ pvt PyObject * PyTM_union_for(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyO
             __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
-        if (pyBType) {
+        if (pyBType && !Py_IsNone(pyBType)) {
             __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btype must be a BType or None");
             btypeid = ((PyBType *) pyBType)->btypeid;
         }
@@ -963,7 +963,7 @@ pvt PyObject * PyTM_union_for(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyO
 // ---------------------------------------------------------------------------------------------------------------------
 // union_get_for: (tlid) -> PyBType + PyNone
 
-pvt PyObject * PyTM_union_get_for(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
+pvt PyObject * PyTM_union_get_for_tlid(PyTM *pyTm, PyObject **args, Py_ssize_t nargs) {
     // answer the current union for the given type list id if it exists else None
     btypeid_t btypeid;
     if (nargs != 1) return PyErr_Format(PyExc_TypeError, "Must provide at least one type");
@@ -1008,7 +1008,7 @@ pvt PyObject * PyTM_union_tlid_for(PyTM *pyTm, PyObject **args, Py_ssize_t nargs
         tl[i] = ((PyBType *) args[i-1])->btypeid;
     }
 
-    TM_TLID_T tlid = tm_union_tlid(pyTm->tm, tl);
+    TM_TLID_T tlid = tm_union_tlid_for(pyTm->tm, tl);
 
     if (tlid) {
         resetToCheckpoint(buckets, &cp);
@@ -1054,56 +1054,57 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {"checkAtom",           (PyCFunction) PyTM_checkAtom, METH_FASTCALL | METH_KEYWORDS,
         "checkAtom(**, btype, [explicit], [implicitly], [space])\n\n"
-            "Checks that `btype` is compatible with explicit, implicitly and space, returning `btype` if so else raising an "
-        "error if not."
+        "Checks that the atom `btype` is compatible with explicit, implicitly and space, returning `btype` if so else "
+        "raising a BTypeError if not."
     },
     {"checkIntersection",   (PyCFunction) PyTM_checkIntersection, METH_FASTCALL | METH_KEYWORDS,
         "checkIntersection(**, btype, [space])\n\n"
-        "Checks that intersection `btype` is compatible with space returning `btype` if so else raising an error if not."
+        "Checks that intersection `btype` is compatible with `space` returning `btype` if so else raising a BTypeError if not."
     },
     {"fn",                  (PyCFunction) PyTM_fn, METH_FASTCALL | METH_KEYWORDS,
         "fn((t1, t2, ...), tRet)\n\n"
-        "Answers the fn(t1 & t2 & ...) -> tRet type."
+        "Answers the function btype for (`t1` * `t2` * ...) -> `tRet`."
     },
     {"fnTArgs",              (PyCFunction) PyTM_fnTArgs, METH_FASTCALL,
         "fnTArgs(tFn)\n\n"
-        "Answers a tuple of the argument types of a function."
+        "Answers a tuple of the argument btypes of function `tFn`."
     },
     {"fnTRet",              (PyCFunction) PyTM_fnTRet, METH_FASTCALL,
         "fnRetT(tFn)\n\n"
-        "Answers tRet of a function."
+        "Answers tRet for the function `tFn`."
     },
+    // OPEN: is this ever needed?
     {"fromId",              (PyCFunction) PyTM_fromId, METH_FASTCALL,
         "fromId(btypeid)\n\n"
-        "Answers the type corresponding to btypeid if it exists, throwing an error if not."
+        "Answers the btype corresponding to `btypeid` if it exists, throwing an error if not."
     },
     {"hasT",                (PyCFunction) PyTM_hasT, METH_FASTCALL,
-        "hasT(btypeid)\n\n"
-        "Answers True if the type has a schema variable."
+        "hasT(btype)\n\n"
+        "Answers True if `btype` has a schema variable."
     },
     {"initAtom",    (PyCFunction) PyTM_initAtom, METH_FASTCALL | METH_KEYWORDS,
-            "initAtom(**, [btype], [explicit], [implicitly], [space])\n\n"
-            "Creates a new atom or initialises `btype` with the provided properties, raising an error if `btype` is already initialised."
+        "initAtom(*, btype, explicit, implicitly, space)\n\n"
+        "Creates a new atom or initialises `btype` with the provided properties, raising a BTypeError if `btype` is already initialised."
     },
     {"intersection",        (PyCFunction) PyTM_intersection, METH_FASTCALL | METH_KEYWORDS,
-        "intersection(btype1, btype2, ... ** btype, space)\n\n"
-        "Answers the intersection of t1 & t2 & ..."
+        "intersection(t1, t2, ..., *, btype, space)\n\n"
+        "Answers the intersection of `t1` & `t2` & ..."
     },
     {"intersectionTl",      (PyCFunction) PyTM_intersectionTl, METH_FASTCALL,
-        "intersectionTl(t)\n\n"
-        "Answers a tuple of the types in the intersection t."
+        "intersectionTl(btype)\n\n"
+        "Answers a tuple of the btypes in the intersection `btype`."
     },
 //    {"intersection_tlid",    (PyCFunction) PyTM_intersection_tlid, METH_FASTCALL,
 //        "intersection_tlid(t1, t2, ...)\n\n"
 //        "Answers an intersection typelist id for the given tuple of types."
 //    },
     {"isExplicit",          (PyCFunction) PyTM_isExplicit, METH_FASTCALL,
-        "isExplicit(t)\n\n"
-        "Answers if the type requires an explicit match explicit."
+        "isExplicit(btype)\n\n"
+        "Answers if `btype` requires an explicit match explicit."
     },
     {"isRecursive",         (PyCFunction) PyTM_isRecursive, METH_FASTCALL,
         "isRecursive(btype)\n\n"
-        "Answers True if btype is recursive."
+        "Answers True if `btype` is recursive."
     },
     {"lookup",              (PyCFunction) PyTM_lookup, METH_FASTCALL,
         "lookup(name)\n\n"
@@ -1111,19 +1112,19 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {"map",                 (PyCFunction) PyTM_map, METH_FASTCALL | METH_KEYWORDS,
         "map(tK, tV)\n\n"
-        "Answers the map tK -> tV."
+        "Answers the btype of the map `tK` -> `tV` creating if necessary."
     },
     {"mapTK",               (PyCFunction) PyTM_mapTK, METH_FASTCALL,
         "mapTK(tMap)\n\n"
-        "Answers tK of tMap."
+        "Answers tK of `tMap`."
     },
     {"mapTV",               (PyCFunction) PyTM_mapTV, METH_FASTCALL,
         "mapTV(tMap)\n\n"
-        "Answers tV of tMap."
+        "Answers tV of `tMap`."
     },
     {"minus",               (PyCFunction) PyTM_minus, METH_FASTCALL,
-        "minus(A, B)\n\n"
-        "Answers the type of A minus B."
+        "minus(tA, tB)\n\n"
+        "Answers the type of `tA` minus `tB`."
     },
     {"nameOf",                (PyCFunction) PyTM_nameOf, METH_FASTCALL,
         "nameOf(btype)\n\n"
@@ -1131,7 +1132,7 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {"space",             (PyCFunction) PyTM_space, METH_FASTCALL,
         "space(btype)\n\n"
-        "Answers the orthogonal space of `btype` or None."
+        "Answers the space of `btype` or None."
     },
     {"reserve",             (PyCFunction) PyTM_reserve, METH_FASTCALL | METH_KEYWORDS,
         "reserve(** name, space)\n\n"
@@ -1139,7 +1140,7 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {"rootSpace",         (PyCFunction) PyTM_rootSpace, METH_FASTCALL,
         "rootSpace(btype)\n\n"
-        "Answers the root othogonal space of `btype` or None."
+        "Answers the root space of `btype` or None if it is not in a space."
     },
     {"schemavar",           (PyCFunction) PyTM_schemavar, METH_FASTCALL,
         "schemavar(name)\n\n"
@@ -1148,7 +1149,7 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {"seq",                 (PyCFunction) PyTM_seq, METH_FASTCALL | METH_KEYWORDS,
         "seq(btype)\n\n"
-        "Answers the sequence of `btype`."
+        "Answers the type of the sequence `btype`."
     },
     {"seqT",                (PyCFunction) PyTM_seqT, METH_FASTCALL,
         "seqT(btype)\n\n"
@@ -1156,33 +1157,33 @@ pvt PyMethodDef PyTM_methods[] = {
     },
     {"struct",              (PyCFunction) PyTM_struct, METH_FASTCALL | METH_KEYWORDS,
         "struct((f1, f2,...), (t1, t2, ...))\n\n"
-        "Answers the struct type {f1:t1, f2:t2, ...}."
+        "Answers the struct type {`f1`:`t1`, `f2`:`t2`, ...}."
     },
     {"structTl",             (PyCFunction) PyTM_structTl, METH_FASTCALL,
         "structTl(btype)\n\n"
-        "Answers a tuple of the names and types in the struct btype."
+        "Answers a tuple of the names and types for the given struct `btype`."
     },
     {"tuple",               (PyCFunction) PyTM_tuple, METH_FASTCALL | METH_KEYWORDS,
         "tuple(t1, t2, ...)\n\n"
-        "Answers the tuple (t1, t2, ...) type."
+        "Answers the tuple btype for (`t1`, `t2`, ...)."
     },
     {"tupleTl",             (PyCFunction) PyTM_tupleTl, METH_FASTCALL,
         "tupleTl(btype)\n\n"
-        "Answers a tuple of the types in the tuple btype."
+        "Answers a (Python) tuple of the btypes for the given tuple `btype`."
     },
     {"union",               (PyCFunction) PyTM_union, METH_FASTCALL | METH_KEYWORDS,
          "union(t1, t2, ...)\n\n"
-         "Answers the union type for t1 + t2 + ..."
+         "Answers the union btype for `t1` + `t2` + ..."
     },
     {"union_tlid_for",      (PyCFunction) PyTM_union_tlid_for, METH_FASTCALL | METH_KEYWORDS,
         "union_tlid_for(t1, t2, ...)\n\n"
-        "Answers the union typelist id for t1 + t2 + ..."
+        "Answers the union typelistid for `t1` + `t2` + ..."
     },
     {"union_for",           (PyCFunction) PyTM_union_for, METH_FASTCALL | METH_KEYWORDS,
          "union_for(tlid, **, [btype])\n\n"
-         "Answers the union type id for `tlid`."
+         "Answers the union btype for the given typelistid `tlid`."
     },
-    {"union_get_for",       (PyCFunction) PyTM_union_get_for, METH_FASTCALL,
+    {"union_get_for",       (PyCFunction) PyTM_union_get_for_tlid, METH_FASTCALL,
         "union_get_for(tlid)\n\n"
         "Answers the union type for `tlid` or None."
     },

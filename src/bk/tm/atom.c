@@ -35,7 +35,7 @@ pub btypeid_t tm_init_atom(BK_TM *tm, btypeid_t self, btypeid_t implicitid, bool
 //            other = hi_token(tm->btypeid_by_symidhash, idx);
 //            return (TM_BMT_ID(tm->btsummary_by_btypeid[other]) == bmtatm) ? other : B_NAT;
 //        } else {
-            self = tm->next_btypeId;
+        self = tm->next_btypeId;
         _update_type_summary(tm, self, 0, 0, 0);
     } else {
         // check we are referring to an uninitialised atom

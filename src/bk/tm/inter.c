@@ -37,20 +37,20 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t btypeid, btypeid_t *typelist) {
     if (!typelist[0]) return _err_emptyTypelist(B_NAT, __FILE__, FN_NAME, __LINE__);
     if (btypeid >= tm->next_btypeId) return _err_selfOutOfRange(B_NAT, __FILE__, FN_NAME, __LINE__, btypeid);
 
-    PP(info, "tm_inter - #1");
-    tlid = tm_inter_tlid(tm, typelist);
-    PP(info, "tm_inter - #2");
-    return tlid ? tm_inter_for_tlid_or_create(tm, btypeid, tlid) : B_NAT;
+    tlid = tm_inter_tlid_for(tm, typelist);
+    btypeid = tlid ? tm_inter_for_tlid_or_create(tm, btypeid, tlid) : B_NAT;
+    PP(info, "tm_inter - btypeid: %i, tlid: %i, len: %i", btypeid, tlid, (tm->typelist_buf + tm->tlrp_by_tlid[tlid])[0]);
+    return btypeid;
 }
 
-pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
+pub TM_TLID_T tm_inter_tlid_for(BK_TM *tm, btypeid_t *typelist) {
     // answers the validated intersection typelist id corresponding to typelist, creating if necessary
-    // very similar to tm_union_tlid but a little different
+    // very similar to tm_union_tlid_for but a little different
     i32 i, j, typelistCount, numTypes, outcome, numRoots;  btsummary *sum;  TM_TLID_T tlid;  u32 idx;  bool hasUnions;
     btypeid_t *interTl, *p1, *p2, *p3, *nextTypelist, *rootBuffer, root;
 
     // check btypeids in typelist are in range, and figure total possible length (including possible duplicates from child intersections)
-    PP(info, "tm_inter_tlid - #1");
+//    PP(info, "tm_inter_tlid_for - #1");
     numTypes = 0;  typelistCount = typelist[0];
     for (i = 1; i <= typelistCount; i++) {
         if (!(TM_FIRST_VALID_BTYPEID <= typelist[i] && typelist[i] < tm->next_btypeId)) return _err_itemInTLOutOfRange(B_NAT, __FILE__, FN_NAME, __LINE__, typelist[i], i);
@@ -68,12 +68,12 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
 
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
 
-    // copy typelist into typelist_buf unpacking any intersections
-    PP(info, "tm_inter_tlid - #2, numTypes=%i, typelistCount=%i", numTypes, typelistCount);
+    // copy typelist into nextTypelist unpacking any intersections
+//    PP(info, "tm_inter_tlid_for - #2, numTypes=%i, typelistCount=%i", numTypes, typelistCount);
     p1 = nextTypelist;
-    *p1++ = numTypes;
+    p1++;
     for (i = 1; i <= typelistCount; i++) {
-//        PP(info, "tm_inter_tlid - #2a typelist[%i]=%i", i, typelist[i]);
+//        PP(info, "tm_inter_tlid_for - #2a typelist[%i]=%i", i, typelist[i]);
         sum = tm->btsummary_by_btypeid + typelist[i];
         if (TM_BMT_ID(*sum) == bmtint) {
             // we have an intersection type - expand it
@@ -83,9 +83,10 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
         } else
             *p1++ = typelist[i];
     }
+    numTypes = p1 - (nextTypelist + 1);
 
     // sort types into btypeid order
-    PP(info, "tm_inter_tlid - #3");
+//    PP(info, "tm_inter_tlid_for - #3");
     ks_radix_sort(btypeid_t, nextTypelist + 1, numTypes);
 
     // compact + check for unions
@@ -100,7 +101,7 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
             while (*p1 == *p2 && p2 < p3) p2++;
         hasUnions |= TM_BMT_ID(tm->btsummary_by_btypeid[*p1]) == bmtuni;
     }
-    numTypes = *nextTypelist = p1 - nextTypelist;
+    nextTypelist[0] = numTypes = p1 - nextTypelist;
 
     // handle intersections of unions?
     if (hasUnions) return setErrAndDesc(B_NAT, "Has unions", __FILE__, __LINE__);
@@ -127,11 +128,14 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
         }
     }
 
+    // if just one type return error
+    if (numTypes == 1) return 0;
+
     // OPEN: be a good citizen and zero out the scratch?
 
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
-    PP(info, "tm_inter_tlid - #4");
+//    PP(info, "tm_inter_tlid_for - #4");
     idx = hi_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &outcome);
     switch (outcome) {
         default:
@@ -141,10 +145,25 @@ pub TM_TLID_T tm_inter_tlid(BK_TM *tm, btypeid_t *typelist) {
             // OPEM: need to check space if given is compatible? here or later? probably later
             break;
         case HI_EMPTY:
-            tlid = _commit_typelist_buf_at(tm, numTypes, idx);
+            tlid = _commit_typelist_buf_at(tm, nextTypelist, idx);
             if (!tlid) return _seriousErrorCommitingTypelistBufHandleProperly(B_NAT, __FILE__, __LINE__);
     }
     return tlid;
+}
+
+pub btypeid_t tm_inter_for_tlid(BK_TM *tm, TM_TLID_T tlid) {
+    // use-case here is to check a intersection doesn't exist before reserving a type
+    u32 idx;  i32 outcome;
+
+    idx = hi_put_idx(TM_DETAILID_BY_TLIDHASH, tm->intid_by_tlidhash, tlid, &outcome);
+    switch (outcome) {
+        default:
+            die("%s: HI_TOMBSTONE2!", FN_NAME);
+        case HI_LIVE:
+            return tm->btypid_by_intid[tm->intid_by_tlidhash->tokens[idx]];
+        case HI_EMPTY:
+            return B_NAT;
+    }
 }
 
 pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_T tlid) {
@@ -156,7 +175,7 @@ pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_
     conflicts_buf = thisTypeList + 1 + numTypes;
 
     // check for space conflicts
-    PP(info, "tm_inter_for_tlid_or_create - #1");
+//    PP(info, "tm_inter_for_tlid_or_create - #1");
     hasT = false;
     for (i = 1; i <= numTypes; i++) {
         sum = tm->btsummary_by_btypeid + thisTypeList[i];
@@ -166,7 +185,7 @@ pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_
                 pp_this = tm_s8(tm, tm->tp, thisTypeList[i]).cs;
                 pp_prior = tm_s8(tm, tm->tp, thisTypeList[j + 1]).cs;     // i starts at 1, j starts at 0
                 pp_root = tm_s8(tm, tm->tp, conflicts_buf[j]).cs;
-                PP(info, "Space conflict - %s and %s have common root %s\n", pp_this, pp_prior, pp_root);
+//                PP(info, "Space conflict - %s and %s have common root %s\n", pp_this, pp_prior, pp_root);
                 return B_NAT;
             }
         }
@@ -174,21 +193,21 @@ pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_
     }
 
     // get the btypeid for the tlid
-    PP(info, "tm_inter_for_tlid_or_create - #2");
+//    PP(info, "tm_inter_for_tlid_or_create - #2");
     idx = hi_put_idx(TM_DETAILID_BY_TLIDHASH, tm->intid_by_tlidhash, tlid, &outcome);
     switch (outcome) {
         default:
             die("%s: HI_TOMBSTONE2!", FN_NAME);
         case HI_LIVE:
             // typelist already exists
-            PP(info, "tm_inter_for_tlid_or_create - #3");
+//            PP(info, "tm_inter_for_tlid_or_create - #3");
             intid = tm->intid_by_tlidhash->tokens[idx];
             if (btypeid == B_NEW) return tm->btypid_by_intid[intid];
             else if (btypeid == (other = tm->btypid_by_intid[intid])) return btypeid;
             else return _err_otherAlreadyRepresentsTL(B_NAT, __FILE__, __LINE__, btypeid, other);
         case HI_EMPTY:
             // missing so commit the intersection type for tlid
-            PP(info, "tm_inter_for_tlid_or_create - #4");
+//            PP(info, "tm_inter_for_tlid_or_create - #4");
             if (btypeid == B_NEW) {
                 btypeid = tm->next_btypeId;
             } else if (TM_BMT_ID(tm->btsummary_by_btypeid[btypeid]) != bmterr)

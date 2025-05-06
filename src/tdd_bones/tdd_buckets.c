@@ -20,9 +20,9 @@
 #include "../bk/k.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {
-    fprintf(stdout, "%s", preamble);
-    vfprintf(stdout, msg, args);
-    fprintf(stdout, "\n");
+    fprintf(stderr, "%s", preamble);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
     exit(1);
 }
 

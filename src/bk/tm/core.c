@@ -240,8 +240,8 @@ pvt void _growTo(void **p, size_t size, BK_MM *mm, char *fnName) {
     *p = t;
 }
 
-tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
-    TM_TLID_T tlid;
+tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T *nextTypelist, u32 idx) {
+    TM_TLID_T tlid, numTypes;
     if ((tlid = tm->next_tlid++) >= tm->max_tlid) {
         tm->max_tlid += TM_RP_BY_TLID_INC_SIZE;
         _growTo((void **)&tm->tlrp_by_tlid, tm->max_tlid * sizeof(RP), tm->mm, FN_NAME);
@@ -249,31 +249,34 @@ tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T numTypes, u32 idx) {
     }
     tm->tlrp_by_tlid[tlid] = tm->next_tlrp;
     hi_replace_empty(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, idx, tlid);
+    numTypes = nextTypelist[0];
     if (tm->next_tlrp + numTypes + 1 >= tm->max_tlrp) {
+        // make the prior last page read only if we've gone over a page boundary (to protect type list from accidental mutation)
         size_t pageSize = os_page_size();
-        os_mprotect(tm->typelist_buf + tm->max_tlrp - pageSize, pageSize, BK_PROT_WRITE);     // make the prior last page read only
+        os_mprotect(tm->typelist_buf + tm->max_tlrp - pageSize, pageSize, BK_PROT_READ);
         tm->max_tlrp += pageSize / sizeof(TM_TLID_T);
     }
     tm->next_tlrp += numTypes + 1;
     return tlid;
 }
 
-tdd void _update_type_summary(BK_TM *tm, btypeid_t self, u32 detailsid, u16 sz, bool hasT) {
+tdd void _update_type_summary(BK_TM *tm, btypeid_t btypeid, u32 detailsid, u16 sz, bool hasT) {
     // OPEN: do we restrict the range of directly assigned btypeids?
     // OPEN: store space and size by details_id in the relevant slots (growing if necessary)
-    if (self >= tm->max_btypeId) tm_reserve_btypeids(tm, self);
-    tm->btsummary_by_btypeid[self] |=
+    if (btypeid >= tm->max_btypeId) tm_reserve_btypeids(tm, btypeid);
+    tm->btsummary_by_btypeid[btypeid] |=
             detailsid |
             (hasT ? TM_HAS_T_MASK : 0) |
             (sz ? TM_IS_MEM_MASK : 0);
-    if (self >= tm->next_btypeId) tm->next_btypeId = self + 1;
+    if (btypeid >= tm->next_btypeId) tm->next_btypeId = btypeid + 1;
 }
 
 
-pvt void _make_next_page_of_typelist_buf_writable_if_necessary(BK_TM *tm, int numTypes) {
+pvt void _make_next_page_of_typelist_buf_writable_if_necessary(BK_TM *tm, int numSlots) {
     // make next page of tm->typelist_buf writable if necessary
-    if (tm->next_tlrp + numTypes >= tm->max_tlrp) {
-        if (tm->next_tlrp + numTypes >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
+    // OPEN: handle the unlikely requirement of needing more than os_page_size() of extra memory
+    if (tm->next_tlrp + numSlots >= tm->max_tlrp) {
+        if (tm->next_tlrp + numSlots >= TM_MAX_TL_STORAGE) die("%s: out of typelist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
         size_t pageSize = os_page_size();
         os_mprotect(tm->typelist_buf + tm->max_tlrp, pageSize, BK_PROT_READ | BK_PROT_WRITE);
         os_madvise(tm->typelist_buf + tm->max_tlrp, pageSize, BK_MADV_RANDOM);

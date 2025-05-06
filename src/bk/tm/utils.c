@@ -224,14 +224,14 @@ pub btypeid_t tm_minus(BK_TM *tm, btypeid_t btype, btypeid_t A, btypeid_t B) {
             tlid = tm->tlid_by_tlhash->tokens[idx];
             break;
         case HI_EMPTY:
-            tlid = _commit_typelist_buf_at(tm, numTypes, idx);
+            tlid = _commit_typelist_buf_at(tm, nextTypelist, idx);
             if (!tlid) return _seriousErrorCommitingTypelistBufHandleProperly(B_NAT, __FILE__, __LINE__);
     }
 
     return (TM_BMT_ID(*sumA) == bmtint) ? tm_inter_for_tlid_or_create(tm, btype, tlid) : tm_union_for_tlid_or_create(tm, btype, tlid);
 }
 
-pub TM_TLID_T tm_tlid(BK_TM *tm, btypeid_t *typelist) {
+pub TM_TLID_T tm_tlid_for(BK_TM *tm, btypeid_t *typelist) {
     i32 i, outcome, numTypes;  btsummary *sum;  btypeid_t *p1, *nextTypelist;  TM_TLID_T tlid;  u32 idx;
 
     numTypes = typelist[0];
@@ -266,7 +266,7 @@ pub TM_TLID_T tm_tlid(BK_TM *tm, btypeid_t *typelist) {
             tlid = tm->tlid_by_tlhash->tokens[idx];
             break;
         case HI_EMPTY:
-            tlid = _commit_typelist_buf_at(tm, numTypes, idx);
+            tlid = _commit_typelist_buf_at(tm, nextTypelist, idx);
             if (!tlid) return _seriousErrorCommitingTypelistBufHandleProperly(B_NAT, __FILE__, __LINE__);
     }
 

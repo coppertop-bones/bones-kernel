@@ -21,9 +21,9 @@
 #include "../bk/tp.c"
 
 pvt void die_(char *preamble, char *msg, va_list args) {
-    fprintf(stdout, "%s", preamble);
-    vfprintf(stdout, msg, args);
-    fprintf(stdout, "\n");
+    fprintf(stderr, "%s", preamble);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
     exit(1);
 }
 
@@ -45,7 +45,7 @@ void test_FILE() {
     fprintf(f, "hello %s", "world");
     fflush(f);
     res = tp_s8(&tp, tp_flush(&tp));
-    check(strcmp(res.cs, "hello world") == 0, "oh dear");
+    check(strcmp(res.cs, "hello world") == 0, "oh dear", __FILE__, __LINE__);
     fclose(f);
 
     f = tp_open(&tp, "a+");
@@ -55,14 +55,14 @@ void test_FILE() {
     fprintf(f, "!");
     fflush(f);
     res = tp_s8(&tp, tp_flush(&tp));
-    check(strcmp(res.cs, "hello world!") == 0, "oh dear got %s", res.cs);
+    check(strcmp(res.cs, "hello world!") == 0, "oh dear got %s", __FILE__, __LINE__, res.cs);
 
     f = tp_open(&tp, "a+");
     for (int i=0; i < 100; i++)
         fprintf(f, "1234567890");
     fclose(f);
     res = tp_s8(&tp, tp_flush(&tp));
-    check(s8_sz(res) == 100*10, "oh dear %i", s8_sz(res));
+    check(s8_sz(res) == 100*10, "oh dear %i", __FILE__, __LINE__, s8_sz(res));
     TP_finalise(&tp);
     Buckets_finalise(&buckets);
 }
@@ -86,7 +86,7 @@ void test_tp() {
     tpn = tp_flush(&tp);
     res = tp_s8(&tp, tpn);
 
-    check(strcmp(res.cs, "`fred`joe") == 0, "oh dear");
+    check(strcmp(res.cs, "`fred`joe") == 0, "oh dear", __FILE__, __LINE__);
 
     TP_finalise(&tp);
     Buckets_finalise(&buckets);

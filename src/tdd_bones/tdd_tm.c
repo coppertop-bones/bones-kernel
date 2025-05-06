@@ -23,9 +23,9 @@
 //#include "../bk/k.c"
 
 pvt void die_(char const *preamble, char const *msg, va_list args) {
-    fprintf(stdout, "%s", preamble);
-    vfprintf(stdout, msg, args);
-    fprintf(stdout, "\n");
+    fprintf(stderr, "%s", preamble);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
     exit(1);
 }
 
@@ -87,7 +87,7 @@ pvt btypeid_t check_btype(BK_TM *tm, btypeid_t t, char const *name, char const *
 
 pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     btypeid_t base, tFred, tJoe, tFredJoe, tFredOrJoe, tTup0, tTupFredJoe, tStruct, tSeq, tFn0, tFn2, t1, t2, t3, t;
-    btypeid_t tupid;  TM_TLID_T tlid;
+    TM_TLID_T tlid;
 
     BK_K *k = K_create(mm, buckets);  BK_TM* tm = k->tm;
 
@@ -109,22 +109,22 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
 
     // atom
     t = tm_lookup(tm, "joe");
-    check(t == 0, "%s @ %i: id != B_NAT (should be %i)", __FILE__, __LINE__, t);
+    check(t == 0, "id != B_NAT (should be %i)", __FILE__, __LINE__, t);
 
     t = tm_lookup(tm, "sally");
-    check(t == 0, "%s @ %i: id != B_NAT (should be %i)", __FILE__, __LINE__, t);
+    check(t == 0, "id != B_NAT (should be %i)", __FILE__, __LINE__, t);
     
-    t = tm_bind(tm, "fred", tm_init_atom(tm, tFred, 0));
-    check(t == tFred, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFred);
+    t = tm_bind(tm, "fred", tm_init_atom(tm, tFred, B_NAT, false));
+    check(t == tFred, "t == %i (should be %i)", __FILE__, __LINE__, t, tFred);
 
-    t = tm_bind(tm, "joe", tm_init_atom(tm, tJoe, 0));
-    check(t == tJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
+    t = tm_bind(tm, "joe", tm_init_atom(tm, tJoe, B_NAT, false));
+    check(t == tJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
 
     t = tm_bind(tm, "joe", tm_lookup(tm, "joe"));
-    check(t == tJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
+    check(t == tJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
     
     t = tm_lookup(tm, "joe");
-    check(t == tJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
+    check(t == tJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
 
     btypeid_t *typelist = malloc(3 * sizeof(btypeid_t));
     symid_t *symlist = malloc(3 * sizeof(symid_t));
@@ -138,57 +138,66 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
 
     // intersection
     t = tm_inter(tm, tFredJoe, typelist);
-    check(t == tFredJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFredJoe);
+    check(t == tFredJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tFredJoe);
 
     t = tm_inter(tm, B_NEW, typelist);
-    check(t == tFredJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFredJoe);
+    check(t == tFredJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tFredJoe);
 
 
     // union
-    t = tm_union(tm, tFredOrJoe, typelist);
-    check(t == tFredOrJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFredOrJoe);
+    typelist[1] = tm_lookup(tm, "fred");
+    typelist[2] = tm_lookup(tm, "fred");
+    t = tm_union(tm, B_NEW, typelist);
+    check(t == tFred, "t == %i (should be %i)", __FILE__, __LINE__, t, tFred);
 
+    typelist[1] = tm_lookup(tm, "joe");
+    typelist[2] = tm_lookup(tm, "fred");
+    t = tm_union(tm, tFredOrJoe, typelist);
+    check(t == tFredOrJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tFredOrJoe);
+
+    typelist[1] = tm_lookup(tm, "fred");
+    typelist[2] = tm_lookup(tm, "joe");
     t2 = tm_union(tm, B_NEW, typelist);
-    check(t2 == tFredOrJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t2, tFredOrJoe);
+    check(t2 == tFredOrJoe, "t == %i (should be %i)", __FILE__, __LINE__, t2, tFredOrJoe);
 
 
     // tuple
     typelist[0] = 0;
-    tlid = tm_tlid(tm, typelist);
+    tlid = tm_tlid_for(tm, typelist);
     t = tm_tuple(tm, tTup0, tlid);
-    check(t == tTup0, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tTup0);
+    check(t == tTup0, "t == %i (should be %i)", __FILE__, __LINE__, t, tTup0);
 
     t = tm_tuple(tm, B_NEW, tlid);
-    check(t == tTup0, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tTup0);
+    check(t == tTup0, "t == %i (should be %i)", __FILE__, __LINE__, t, tTup0);
 
     typelist[0] = 2;
-    tlid = tm_tlid(tm, typelist);
+    tlid = tm_tlid_for(tm, typelist);
     t = tm_tuple(tm, tTupFredJoe, tlid);
-    check(t == tTupFredJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tTupFredJoe);
+    check(t == tTupFredJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tTupFredJoe);
 
     t = tm_tuple(tm, B_NEW, tlid);
-    check(t == tTupFredJoe, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tTupFredJoe);
+    check(t == tTupFredJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tTupFredJoe);
 
 
     // struct
     SM_SLID_T slid = sm_slid(k->sm, symlist);
 
     t = tm_struct(tm, tStruct, slid, tlid);
-    check(t == tStruct, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tStruct);
+    check(t == tStruct, "t == %i (should be %i)", __FILE__, __LINE__, t, tStruct);
 
     t = tm_struct(tm, B_NEW, slid, tlid);
-    check(t == tStruct, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tStruct);
+    check(t == tStruct, "t == %i (should be %i)", __FILE__, __LINE__, t, tStruct);
 
 
      // sequence
     t = tm_seq(tm, tSeq, tFredOrJoe);
-    check(t == tSeq, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tSeq);
+    check(t == tSeq, "t == %i (should be %i)", __FILE__, __LINE__, t, tSeq);
 
     t = tm_seq(tm, B_NEW, tFredOrJoe);
-    check(t == tSeq, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tSeq);
+    check(t == tSeq, "t == %i (should be %i)", __FILE__, __LINE__, t, tSeq);
 
     t3 = tm_seq_t(tm, tSeq);
-    check(t3 == tFredOrJoe, "%s @ %i: t3 == %i (should be %i)", __FILE__, __LINE__, t3, tFredOrJoe);
+    check(t3 == tFredOrJoe, "t3 == %i (should be %i)", __FILE__, __LINE__, t3, tFredOrJoe);
 
 
     // map
@@ -197,16 +206,16 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     // fn
 
     // (fred, joe) -> sally
-    t = tm_fn(tm, tFn2, tTupFredJoe, tm_bind(tm, "sally", tm_init_atom(tm, B_NEW, 0)));
-    check(t == tFn2, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFn2);
+    t = tm_fn(tm, tFn2, tTupFredJoe, tm_bind(tm, "sally", tm_init_atom(tm, B_NEW, B_NAT, false)));
+    check(t == tFn2, "t == %i (should be %i)", __FILE__, __LINE__, t, tFn2);
 
-    t = tm_fn(tm, B_NEW, tupid, tm_lookup(tm, "sally"));
-    check(t == tFn2, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFn2);
+    t = tm_fn(tm, B_NEW, tTupFredJoe, tm_lookup(tm, "sally"));
+    check(t == tFn2, "t == %i (should be %i)", __FILE__, __LINE__, t, tFn2);
 
     // () -> sally
     typelist[0] = 0;
     t = tm_fn(tm, tFn0, tTup0, tm_lookup(tm, "sally"));
-    check(t == tFn0, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, t, tFn0);
+    check(t == tFn0, "t == %i (should be %i)", __FILE__, __LINE__, t, tFn0);
 
 
     // schemavar
@@ -227,35 +236,35 @@ pvt TPN test_orthogonal_spaces(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     tl = malloc(11 * sizeof(btypeid_t));
 
     // test simple orthogonality
-    ccyfx = tm_bind(tm, "ccyfx", tm_init_atom(tm, B_NEW, 0);        // mem is a built-in type? don't think so
-    ccy = tm_bind(tm, "ccy", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
-    fx = tm_bind(tm, "fx", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
+    ccyfx = tm_bind(tm, "ccyfx", tm_init_atom(tm, B_NEW, B_NAT, false));        // mem is a built-in type? don't think so
+    ccy = tm_bind(tm, "ccy", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx), B_NAT, false));
+    fx = tm_bind(tm, "fx", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx), B_NAT, false));
 
-    tm_reserve(tm, B_NEW, 0, 0);
+    tm_reserve(tm, B_NEW, B_NAT);
 
-    check(tm_spaceid(tm, ccy) == ccyfx, "%s @ %i: ccy.space != ccyfx", __FILE__, __LINE__);
-    check(tm_root_spaceid(tm, fx) == ccyfx, "%s @ %i: ccy.root != ccyfx", __FILE__, __LINE__);
+    check(tm_spaceid(tm, ccy) == ccyfx, "ccy.space != ccyfx", __FILE__, __LINE__);
+    check(tm_root_spaceid(tm, fx) == ccyfx, "ccy.root != ccyfx", __FILE__, __LINE__);
 
     tl[0] = 2;  tl[1] = ccy;  tl[2] = fx;
     t = tm_inter(tm, B_NEW, tl);
 
     t = tm_interv(tm, B_NEW, 2, ccy, fx);
-    check(t == B_NAT, "%s @ %i: ccy & fx != B_NAT", __FILE__, __LINE__);
+    check(t == B_NAT, "ccy & fx != B_NAT", __FILE__, __LINE__);
 
 
-    CCY = tm_bind(tm, "CCY", tm_init_atom(tm, B_NEW, 0);        // mem is a built-in type? don't think so
+    CCY = tm_bind(tm, "CCY", tm_init_atom(tm, B_NEW, B_NAT, false));        // mem is a built-in type? don't think so
 
-    GBP = tm_reserve(tm, B_NEW, CCY, 0);
+    GBP = tm_reserve(tm, B_NEW, CCY);
     GBP = tm_interv(tm, GBP, 2, GBP, ccy);
 
-    USD = tm_reserve(tm, B_NEW, CCY, 0;
+    USD = tm_reserve(tm, B_NEW, CCY);
     USD = tm_interv(tm, USD, 2, USD, ccy);
 
     t = tm_interv(tm, B_NEW, 2, GBP, USD);
-    check(t == B_NAT, "%s @ %i: GBP & USD != B_NAT", __FILE__, __LINE__);
+    check(t == B_NAT, "GBP & USD != B_NAT", __FILE__, __LINE__);
 
-    t = tm_interv(tm, B_NEW, 2, GBP, tm_bind(tm, "fred", tm_init_atom(tm, B_NEW, 0)));
-    check(t != B_NAT, "%s @ %i: GBP & USD != B_NAT", __FILE__, __LINE__);
+    t = tm_interv(tm, B_NEW, 2, GBP, tm_bind(tm, "fred", tm_init_atom(tm, B_NEW, B_NAT, false)));
+    check(t != B_NAT, "GBP & USD != B_NAT", __FILE__, __LINE__);
 
     free(tl);  free(sl);  K_trash(k);
     return tp_tpn_printf(tp, "test_orthogonal_spaces() passed");
@@ -270,14 +279,14 @@ pvt TPN test_minus(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     tl = malloc(11 * sizeof(btypeid_t));
 
     // test simple orthogonality
-    t3 = tm_bind(tm, "GBP", tm_init_atom(tm, B_NEW, 0));        // mem is a built-in type? don't think so
-    t2 = tm_bind(tm, "ccy", tm_init_atom(tm, B_NEW, 0));
-    t1 = tm_bind(tm, "f64", tm_init_atom(tm, B_NEW, 0));
-    t4 = tm_bind(tm, "u32", tm_init_atom(tm, B_NEW, 0));
+    t3 = tm_bind(tm, "GBP", tm_init_atom(tm, B_NEW, B_NAT, false));        // mem is a built-in type? don't think so
+    t2 = tm_bind(tm, "ccy", tm_init_atom(tm, B_NEW, B_NAT, false));
+    t1 = tm_bind(tm, "f64", tm_init_atom(tm, B_NEW, B_NAT, false));
+    t4 = tm_bind(tm, "u32", tm_init_atom(tm, B_NEW, B_NAT, false));
 
     t = tm_minus(tm, B_NEW, tm_interv(tm, B_NEW, 3, t1, t2, t3), t2);
 
-    check(t == tm_interv(tm, B_NEW, 2, t1, t3), "%s @ %i: t1  &t2 & t3 - t2 != t1 & t3", __FILE__, __LINE__);
+    check(t == tm_interv(tm, B_NEW, 2, t1, t3), "t1  &t2 & t3 - t2 != t1 & t3", __FILE__, __LINE__);
 
     free(tl);  free(sl);  K_trash(k);
     return tp_tpn_printf(tp, "test_minus() passed");
@@ -292,7 +301,7 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     btypeid_t f64, u32, u64, i64, i64fracStruct, i64frac, t, t7, t8, actual;
 
     k = K_create(mm, buckets);
-    PP(debug, "%s @ %i: kernel created", __FILE__, __LINE__);
+    PP(debug, "kernel created", __FILE__, __LINE__);
 
     tm = k->tm;
     sl = malloc(11 * sizeof(symid_t));     // 10 items + size field
@@ -301,114 +310,114 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     T1 = tm_bind(tm, "T1", tm_schemavar(tm, B_NEW));
     T2 = tm_bind(tm, "T2", tm_schemavar(tm, B_NEW));
 
-    mem = tm_bind(tm, "mem", tm_init_atom(tm, B_NEW, 0));        // mem is a built-in type? don't think so
+    mem = tm_bind(tm, "mem", tm_init_atom(tm, B_NEW, B_NAT, false));        // mem is a built-in type? don't think so
 
-    null = tm_bind(tm, "null", tm_init_atom(tm, tm_reserve(tm, B_NEW, mem, 0), 0));
-    null2 = tm_bind(tm, "null", tm_init_atom(tm, tm_reserve(tm, B_NEW, mem, 0), 0));
-    check(null2 == B_NAT, "%s @ %i: null2 != B_NAT", __FILE__, __LINE__);
+    null = tm_bind(tm, "null", tm_init_atom(tm, tm_reserve(tm, B_NEW, mem), B_NAT, false));
+    null2 = tm_bind(tm, "null", tm_init_atom(tm, tm_reserve(tm, B_NEW, mem), B_NAT, false));
+    check(null2 == B_NAT, "null2 != B_NAT", __FILE__, __LINE__);
 
-    ptrSpc = tm_bind(tm, "ptrSpc", tm_init_atom(tm, B_NEW, 0));
-    ptr = check_btype(tm, tm_bind(tm, "ptr", tm_init_atom(tm, tm_reserve(tm, B_P, ptrSpc, 0), 0)), "ptr == B_NAT", __FILE__, __LINE__);
+    ptrSpc = tm_bind(tm, "ptrSpc", tm_init_atom(tm, B_NEW, B_NAT, false));
+    ptr = check_btype(tm, tm_bind(tm, "ptr", tm_init_atom(tm, tm_reserve(tm, B_P, ptrSpc), B_NAT, false)), "ptr == B_NAT", __FILE__, __LINE__);
 
-    constSpc = tm_bind(tm, "constSpc", tm_init_atom(tm, B_NEW, 0));
-    mut = check_nnat(tm_bind(tm, "mut", tm_init_atom(tm, tm_reserve(tm, B_NEW, constSpc, true), 0)), "%s @ %i: mut == B_NAT", __FILE__, __LINE__);          // mut is implicit in C but explicit in bones
-    const_ = check_nnat(tm_bind(tm, "const", tm_init_atom(tm, tm_reserve(tm, B_NEW, constSpc, 0), 0)), "%s @ %i: const_ == B_NAT", __FILE__, __LINE__);  // const is implicit in bones
+    constSpc = tm_bind(tm, "constSpc", tm_init_atom(tm, B_NEW, B_NAT, false));
+    mut = check_nnat(tm_bind(tm, "mut", tm_init_atom(tm, tm_reserve(tm, B_NEW, constSpc), B_NAT, false)), "mut == B_NAT", __FILE__, __LINE__);          // mut is implicit in C but explicit in bones
+    const_ = check_nnat(tm_bind(tm, "const", tm_init_atom(tm, tm_reserve(tm, B_NEW, constSpc), B_NAT, false)), "const_ == B_NAT", __FILE__, __LINE__);  // const is implicit in bones
 
-    constPtrSpc = tm_bind(tm, "constPtrSpc", tm_init_atom(tm, B_NEW, 0));
-    mutPtr = tm_bind(tm, "mutPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc, true), 0));
-    constPtr = tm_bind(tm, "constPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc, 0), 0));
+    constPtrSpc = tm_bind(tm, "constPtrSpc", tm_init_atom(tm, B_NEW, B_NAT, false));
+    mutPtr = tm_bind(tm, "mutPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc), B_NAT, false));
+    constPtr = tm_bind(tm, "constPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrSpc), B_NAT, false));
 
-    constPtrPtrSpc = tm_bind(tm, "constPtrSpc", tm_init_atom(tm, B_NEW, 0));
-    mutPtrPtr = tm_bind(tm, "mutPtrPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc, true), 0));
-    constPtrPtr = tm_bind(tm, "constPtrPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc, 0), 0));
+    constPtrPtrSpc = tm_bind(tm, "constPtrSpc", tm_init_atom(tm, B_NEW, B_NAT, false));
+    mutPtrPtr = tm_bind(tm, "mutPtrPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc), B_NAT, false));
+    constPtrPtr = tm_bind(tm, "constPtrPtr", tm_init_atom(tm, tm_reserve(tm, B_NEW, constPtrPtrSpc), B_NAT, false));
 
 
     // f64: f64 & mem in mem
-    f64 = check_nnat(tm_reserve(tm, B_F64, mem, 0, 0), "f64 == B_NAT");
-    check(f64 != 0, "%s @ %i: f64 == B_NAT", __FILE__, __LINE__);
-    check(tm_lookup(tm, "f64") != f64, "%s @ %i: t == %i (should not be %i)", __FILE__, __LINE__, tm_lookup(tm, "f64"), f64);
-    check(tm_bmetatypeid(tm, f64) == bmterr, "%s @ %i: tm_bmetatypeid(f64) != bmterr", __FILE__, __LINE__);
+    f64 = check_nnat(tm_reserve(tm, B_F64, mem), "f64 == B_NAT");
+    check(f64 != 0, "f64 == B_NAT", __FILE__, __LINE__);
+    check(tm_lookup(tm, "f64") != f64, "t == %i (should not be %i)", __FILE__, __LINE__, tm_lookup(tm, "f64"), f64);
+    check(tm_bmetatypeid(tm, f64) == bmterr, "tm_bmetatypeid(f64) != bmterr", __FILE__, __LINE__);
 
     // name as
     f64 = tm_bind(tm, "f64", f64);
-    check(f64 != 0, "%s @ %i: f64 == B_NAT", __FILE__, __LINE__);
-    check(tm_lookup(tm, "f64") == f64, "%s @ %i: t == %i (should be %i)", __FILE__, __LINE__, tm_lookup(tm, "f64"), f64);
-    check(strcmp(tm_s8(tm, tp, f64).cs, "f64") == 0, "%s @ %i: pp(f64) != \"f64\" but got \"%s\"", __FILE__, __LINE__, tm_s8(tm, tp, f64).cs);
+    check(f64 != 0, "f64 == B_NAT", __FILE__, __LINE__);
+    check(tm_lookup(tm, "f64") == f64, "t == %i (should be %i)", __FILE__, __LINE__, tm_lookup(tm, "f64"), f64);
+    check(strcmp(tm_s8(tm, tp, f64).cs, "f64") == 0, "pp(f64) != \"f64\" but got \"%s\"", __FILE__, __LINE__, tm_s8(tm, tp, f64).cs);
 
     // define the recursive type as an intersection
     f64 = tm_interv(tm, f64, 2, f64, mem);       // tm, self, vspace, numTypes, t1, t2...
-    check(f64 != 0, "%s @ %i: f64 == B_NAT", __FILE__, __LINE__);
-    check(tm_bmetatypeid(tm, f64) == bmtint, "%s @ %i: tm_bmetatypeid(f64) != bmtint", __FILE__, __LINE__);
+    check(f64 != 0, "f64 == B_NAT", __FILE__, __LINE__);
+    check(tm_bmetatypeid(tm, f64) == bmtint, "tm_bmetatypeid(f64) != bmtint", __FILE__, __LINE__);
 
     // u32: atm in mem
-    u32 = tm_bind(tm, "u32", tm_init_atom(tm, tm_reserve(tm, B_U32, mem, 0), 0));
+    u32 = tm_bind(tm, "u32", tm_init_atom(tm, tm_reserve(tm, B_U32, mem), B_NAT, false));
 
     // u64: atm in mem
-    u64 = tm_bind(tm, "u64", tm_init_atom(tm, tm_reserve(tm, B_U64, mem, 0), 0));
+    u64 = tm_bind(tm, "u64", tm_init_atom(tm, tm_reserve(tm, B_U64, mem), B_NAT, false));
 
     // i64: atm in mem
-    i64 = check_btype(tm, tm_bind(tm, "i64", tm_init_atom(tm, tm_reserve(tm, B_I64, mem, 0), 0)), "%s @ %i: i64 is NaT", __FILE__, __LINE__);
+    i64 = check_btype(tm, tm_bind(tm, "i64", tm_init_atom(tm, tm_reserve(tm, B_I64, mem), B_NAT, false)), "i64 is NaT", __FILE__, __LINE__);
 
 
     // i64frac: {num:i64, den:i64} in mem
-    i64fracStruct = tm_struct(tm, tm_reserve(tm, B_NEW, mem, 0),
+    i64fracStruct = tm_struct(tm, tm_reserve(tm, B_NEW, mem),
         sm_slid(k->sm, init_sl(k, sl, 2, "num", "den")),
-        tm_tlid(tm, init_tl(tl, 2, i64, i64))
+        tm_tlid_for(tm, init_tl(tl, 2, i64, i64))
     );
-    i64frac = check_nnat(tm_bind(tm, "i64frac", i64fracStruct), "%s @ %i: i64fracStruct == B_NAT", __FILE__, __LINE__);
+    i64frac = check_nnat(tm_bind(tm, "i64frac", i64fracStruct), "i64fracStruct == B_NAT", __FILE__, __LINE__);
 
 
     // model ccy and fx such that storage can be f64 or frac
     btypeid_t ccyfx, CCY, ccy, ccyfrac, GBP, GBPFrac, USD;
-    ccyfx = tm_bind(tm, "ccyfx", tm_init_atom(tm, B_NEW, 0));
+    ccyfx = tm_bind(tm, "ccyfx", tm_init_atom(tm, B_NEW, B_NAT, false));
 
-    CCY = tm_bind(tm, "CCY", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx, 0), 0));
+    CCY = tm_bind(tm, "CCY", tm_init_atom(tm, tm_reserve(tm, B_NEW, ccyfx), B_NAT, false));
 
 
     // ccy and ccyfrac are part of the space of CCY
-    ccy = tm_bind(tm, "ccy", tm_reserve(tm, B_NEW, CCY, 0));
+    ccy = tm_bind(tm, "ccy", tm_reserve(tm, B_NEW, CCY));
     ccy = tm_interv(tm, ccy, 2, ccy, f64);
 
-    ccyfrac = tm_bind(tm, "ccyfrac", tm_reserve(tm, B_NEW, CCY, 0));
+    ccyfrac = tm_bind(tm, "ccyfrac", tm_reserve(tm, B_NEW, CCY));
     ccyfrac = tm_interv(tm, ccyfrac, 2, ccyfrac, i64frac);
-    check_nnat(ccyfrac, "%s @ %i: ccyfrac == B_NAT", __FILE__, __LINE__);
+    check_nnat(ccyfrac, "ccyfrac == B_NAT", __FILE__, __LINE__);
 
     // GBP: GBP & ccy in ccy
-    GBP = tm_bind(tm, "GBP", tm_reserve(tm, B_NEW, 0, 0));
+    GBP = tm_bind(tm, "GBP", tm_reserve(tm, B_NEW, B_NAT));
     GBP = tm_interv_in(tm, GBP, ccy, 2, ccy, GBP);
 
     // GBPFrac: GBPFrac & ccyfrac in ccyfrac
-    GBPFrac = tm_bind(tm, "GBPFrac", tm_reserve(tm, B_NEW, 0, 0));
+    GBPFrac = tm_bind(tm, "GBPFrac", tm_reserve(tm, B_NEW, B_NAT));
     GBPFrac = tm_interv_in(tm, GBPFrac, ccyfrac, 2, ccyfrac, GBPFrac);
 
     // USD: USD & ccy in ccy
-    USD = tm_bind(tm, "USD", tm_reserve(tm, B_NEW, 0, 0));
+    USD = tm_bind(tm, "USD", tm_reserve(tm, B_NEW, B_NAT));
     USD = tm_interv_in(tm, USD, ccy, 2, ccy, USD);
 
 
 
     // FX: FX & {dom:CCY[T1], for:CCY[T2]}
     btypeid_t FX, fxStruct, fx, fxfrac, GBPUSD, gbpusdStruct;
-    FX = tm_bind(tm, "FX", tm_reserve(tm, B_NEW, ccyfx, 0));
+    FX = tm_bind(tm, "FX", tm_reserve(tm, B_NEW, ccyfx));
     fxStruct = tm_struct(tm, B_NEW,
         sm_slid(k->sm, init_sl(k, sl, 2, "dom", "for")),
-        tm_tlid(tm, init_tl(tl, 2, tm_interv(tm, B_NEW, 2, CCY, T1), tm_interv(tm, B_NEW, 2, CCY, T2)))
+        tm_tlid_for(tm, init_tl(tl, 2, tm_interv(tm, B_NEW, 2, CCY, T1), tm_interv(tm, B_NEW, 2, CCY, T2)))
     );
     FX = tm_interv(tm, FX, 2, FX, fxStruct);
 
-    fx = tm_bind(tm, "fx", tm_reserve(tm, B_NEW, FX, 0));
+    fx = tm_bind(tm, "fx", tm_reserve(tm, B_NEW, FX));
     fx = tm_interv(tm, fx, 2, fx, f64);
 
-    fxfrac = tm_bind(tm, "fxfrac", tm_reserve(tm, B_NEW, FX, 0));
+    fxfrac = tm_bind(tm, "fxfrac", tm_reserve(tm, B_NEW, FX));
     fxfrac = tm_interv(tm, fxfrac, 2, fxfrac, i64frac);
 
 
     // GBPUSD: fx & {dom:GBP, for:USD}
 
-    GBPUSD = tm_bind(tm, "GBPUSD", tm_reserve(tm, B_NEW, 0, 0));
+    GBPUSD = tm_bind(tm, "GBPUSD", tm_reserve(tm, B_NEW, B_NAT));
     gbpusdStruct = tm_struct(tm, B_NEW,
         sm_slid(k->sm, init_sl(k, sl, 2, "dom", "for")),
-        tm_tlid(tm, init_tl(tl, 2, GBP, USD))
+        tm_tlid_for(tm, init_tl(tl, 2, GBP, USD))
     );
     // IMPORTANT: here {dom:CCY[T1], for:CCY[T2]} & {dom:GBP, for:USD} collapses to {dom:GBP, for:USD} as no residual
     // A & B answers the most concrete bit - so intersections must be done deeply - how about unions?
@@ -419,10 +428,10 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     // abstractF64Tree: {lhs: abstractF64Tree + f64 + null, rhs: abstractF64Tree + f64 + null}
     // recursive types do not need to be named
     btypeid_t abstractF64Tree;
-    abstractF64Tree = tm_reserve(tm, B_NEW, 0, 0, 0);
+    abstractF64Tree = tm_reserve(tm, B_NEW, B_NAT);
     abstractF64Tree = tm_struct(tm, abstractF64Tree,
         sm_slid(k->sm, init_sl(k, sl, 2, "lhs", "rhs")),
-        tm_tlid(tm, init_tl(tl, 2,
+        tm_tlid_for(tm, init_tl(tl, 2,
             tm_unionv(tm, B_NEW, 3, abstractF64Tree, f64, null),
             tm_unionv(tm, B_NEW, 3, abstractF64Tree, f64, null)
         ))
@@ -434,14 +443,14 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     // what about:
     // f64Tree: abstractF64Tree & {T1: ptr & f64Tree + f64 + null, T2: ptr & f64Tree + f64 + null}
     btypeid_t f64Tree;
-    f64Tree = tm_bind(tm, tm_reserve(tm, B_NEW, 0, 0, 0), "f64Tree");
+    f64Tree = tm_bind(tm, "f64Tree", tm_reserve(tm, B_NEW, B_NAT));
     f64Tree = tm_interv(tm, f64Tree, 4,
         mem,
         f64Tree,
         abstractF64Tree,
         tm_struct(tm, B_NEW,
             sm_slid(k->sm, init_sl(k, sl, 2, "lhs", "rhs")),
-            tm_tlid(tm, init_tl(tl, 2,
+            tm_tlid_for(tm, init_tl(tl, 2,
                 tm_unionv(tm, B_NEW, 3, tm_interv(tm, B_NEW, 2, ptr, f64Tree), f64, null),
                 tm_unionv(tm, B_NEW, 3, tm_interv(tm, B_NEW, 2, ptr, f64Tree), f64, null)
             )
@@ -453,10 +462,10 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     // do a tree[T1] such that f64Tree <: tree[T1]
     // tree: {lhs: tree[T1] + T1 + null, rhs: tree[T1] + T1 + null}
     btypeid_t tree;
-    tree = tm_bind(tm, tm_reserve(tm, B_NEW, 0, 0, 0), "tree");
+    tree = tm_bind(tm, "tree", tm_reserve(tm, B_NEW, B_NAT));
     tree = tm_struct(tm, tree,
         sm_slid(k->sm, init_sl(k, sl, 2, "lhs", "rhs")),
-        tm_tlid(tm, init_tl(tl, 2,
+        tm_tlid_for(tm, init_tl(tl, 2,
             tm_unionv(tm, B_NEW, 3, tm_interv(tm, B_NEW, 2, tree, T1), T1, null),
             tm_unionv(tm, B_NEW, 3, tm_interv(tm, B_NEW, 2, tree, T1), T1, null)
         ))
@@ -468,15 +477,15 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     // check construction returns identical objects
     t7 = check_btype(tm, tm_interv(tm, B_NEW, 2, CCY, u32), "t7", __FILE__, __LINE__);
     t8 = check_btype(tm, tm_interv(tm, B_NEW, 2, CCY, u32), "t8", __FILE__, __LINE__);
-    check(t7 == t8, "%s @ %i: t7 != t8 got %i and %i", __FILE__, __LINE__, t7, t8);
+    check(t7 == t8, "t7 != t8 got %i and %i", __FILE__, __LINE__, t7, t8);
 
     // check u32 doesn't mix with u64
     actual = tm_interv(tm, B_NEW, 2, u32, u64);
-    check(actual == 0, "%s @ %i: actual == %i (should be %i)", __FILE__, __LINE__, actual, 0);
+    check(actual == 0, "actual == %i (should be %i)", __FILE__, __LINE__, actual, 0);
 
     // check u32 doesn't mix with u64 - nested
     actual = tm_interv(tm, B_NEW, 2, GBP, USD);
-    check(actual == 0, "%s @ %i: actual == %i (should be %i)", __FILE__, __LINE__, actual, 0);
+    check(actual == 0, "actual == %i (should be %i)", __FILE__, __LINE__, actual, 0);
 
 
     // need to rethink tests here - modelling GBP etc correctly is getting in way of writing clear tests
@@ -485,18 +494,18 @@ pvt TPN test_construction_extended(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
 //    PP(info, "u64 & ccy: %i, (%s)", t8, tm_s8_typelist(tm, tp, tm_inter_tl(tm, t8)).cs);
 //    actual = tm_interv(tm, B_NEW, 2, t7, t8);
 //    if (actual != 0) s = tm_s8_typelist(tm, tp, tm_inter_tl(tm, actual)).cs;
-//    check(actual == 0, "%s @ %i: t == %i (should be %i) - %s", __FILE__, __LINE__, actual, s);
+//    check(actual == 0, "t == %i (should be %i) - %s", __FILE__, __LINE__, actual, s);
 //
 //    // check GBP mixes with USD
 //    actual = tm_interv(tm, B_NEW, 2, GBP, USD);
-//    check(actual != 0, "%s @ %i: t == %i (should not be %i)", __FILE__, __LINE__, actual, 0);
+//    check(actual != 0, "t == %i (should not be %i)", __FILE__, __LINE__, actual, 0);
 //    t = tm_interv(tm, B_NEW, 2, GBP, u32);
 //    actual = tm_interv(tm, B_NEW, 2, t, USD);
-//    check(actual != 0, "%s @ %i: t == %i (should not be %i)", __FILE__, __LINE__, actual, 0);
+//    check(actual != 0, "t == %i (should not be %i)", __FILE__, __LINE__, actual, 0);
 
 
     free(tl);  free(sl);  K_trash(k);
-    return tp_tpn_printf(tp, "test_orthogonal() passed");
+    return tp_tpn_printf(tp, "test_construction_extended() passed");
 }
 
 
@@ -519,7 +528,7 @@ int main() {
     PP(info, tp_s8(&tp, test_orthogonal_spaces(mm, &buckets, &tp)).cs);
     PP(info, tp_s8(&tp, test_construction_extended(mm, &buckets, &tp)).cs);
     PP(info, tp_s8(&tp, test_minus(mm, &buckets, &tp)).cs);
-    PP(debug, "passed");
+    PP(info, "passed");
     Buckets_finalise(&buckets);
     MM_trash(mm);
     return 0;

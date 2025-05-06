@@ -38,19 +38,19 @@ int main() {
     int off = 6;
 
     id = sm_id(k->sm, "fred");
-    check(id == 1 + off, "id == %i (should be %i)", id, 1 + off);
+    check(id == 1 + off, "id == %i (should be %i)", __FILE__, __LINE__, id, 1 + off);
 
     id = sm_id(k->sm, "fred");
-    check(id == 1 + off, "id == %i (should be %i)", id, 1 + off);
+    check(id == 1 + off, "id == %i (should be %i)", __FILE__, __LINE__, id, 1 + off);
 
     id = sm_id(k->sm, "joe");
-    check(id == 2 + off, "id == %i (should be %i)", id, 2 + off);
+    check(id == 2 + off, "id == %i (should be %i)", __FILE__, __LINE__, id, 2 + off);
 
     id = tm_lookup(k->tm, "joe");
-    check(id == 0, "id == %i (should be %i)", id, 0);
+    check(id == 0, "id == %i (should be %i)", __FILE__, __LINE__, id, 0);
 
     id = tm_lookup(k->tm, "sally");
-    check(id == 0, "id == %i (should be %i)", id, 0);
+    check(id == 0, "id == %i (should be %i)", __FILE__, __LINE__, id, 0);
 
 
     K_trash(k);

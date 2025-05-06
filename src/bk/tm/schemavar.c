@@ -25,38 +25,14 @@
 
 
 
-pub btypeid_t tm_schemavar(BK_TM *tm, btypeid_t self) {
-
-    // answers a validated schema variable creating if necessary
-    if (!self || self >= tm->next_btypeId) return B_NAT;
-    if (self == B_NEW) {
-//        symid = sm_id(tm->sm, name);
-//        idx = hi_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &outcome);
-//        if (outcome == HI_LIVE) {
-//            // name already in use so check it's a schema variable
-//            other = hi_token(tm->btypeid_by_symidhash, idx);
-//            return (TM_BMT_ID(tm->btsummary_by_btypeid[other]) == bmtsvr) ? other : B_NAT;
-//        } else {
-            self = tm->next_btypeId;
-            _update_type_summary(tm, self, 0, 0, true);
-            tm->btsummary_by_btypeid[self] |= bmtsvr;
-//        }
-    } else {
-//        if (TM_BMT_ID(sum = tm->btsummary_by_btypeid[self]) == bmterr) {
-//            symid = sm_id(tm->sm, name);
-//            idx = hi_put_idx(TM_BTYPEID_BY_SYMIDHASH, tm->btypeid_by_symidhash, symid, &outcome);
-//            if (outcome == HI_LIVE) {
-//                other = hi_token(tm->btypeid_by_symidhash, idx);
-//                if (other != self) return B_NAT; // name in use by another type
-//            }
-//        } else {
-//            // check we are referring to the same schema variable
-            if (TM_BMT_ID(tm->btsummary_by_btypeid[self]) != bmterr) return B_NAT;
-//            if (strcmp(name, tm_name_of(tm, self)) != 0) return B_NAT;
-//            return self;
-//        }
-    }
-    return self;
+pub btypeid_t tm_schemavar(BK_TM *tm, btypeid_t btype) {
+    // initialises btype as a schema variable (allocating if necessary) and returns btype or B_NAT if already initialized
+    if (!btype) return _err_invalid_btype_B_NAT(B_NAT, __FILE__, FN_NAME, __LINE__);
+    else if (btype >= tm->next_btypeId) return _err_selfOutOfRange(B_NAT, __FILE__, FN_NAME, __LINE__, btype);
+    else if (btype == B_NEW) btype = tm->next_btypeId;
+    else if (TM_BMT_ID(tm->btsummary_by_btypeid[btype]) != bmterr) return B_NAT;
+    _update_type_summary(tm, btype, bmtsvr, 0, true);
+    return btype;
 }
 
 #endif  // __BK_TM_SCHEMAVAR_C

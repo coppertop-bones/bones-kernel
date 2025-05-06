@@ -44,21 +44,45 @@ pub BK_K * K_create(BK_MM *mm, Buckets *buckets) {
 //    n += tm_init_atom(tm, B_LITINT, "litint") == 0;
 //    n += tm_init_atom(tm, B_I32, "i32") == 0;
 //
-//    n += tm_bind("T", tm_schemavar(tm, B_T)) == 0;
-//    n += tm_bind("T1", tm_schemavar(tm, B_T1)) == 0;
-//    n += tm_bind("T2", tm_schemavar(tm, B_T2)) == 0;
-//    n += tm_bind("T3", tm_schemavar(tm, B_T3)) == 0;
-//
-//    n += tm_bind("N, tm_schemavar(tm, B_N)) == 0;
-//    n += tm_bind("N1", tm_schemavar(tm, B_N1)) == 0;
-//    n += tm_bind("N2", tm_schemavar(tm, B_N2)) == 0;
-//    n += tm_bind("N3", tm_schemavar(tm, B_N3)) == 0;
-//    n += tm_bind("N4", tm_schemavar(tm, B_N4)) == 0;
-//    n += tm_bind("N5", tm_schemavar(tm, B_N5)) == 0;
-//    n += tm_bind("N6", tm_schemavar(tm, B_N6)) == 0;
-//    n += tm_bind("N7", tm_schemavar(tm, B_N7)) == 0;
-//    n += tm_bind("N8", tm_schemavar(tm, B_N8)) == 0;
-//    n += tm_bind("N9", m_schemavar(tm, B_N9)) == 0;
+
+    n += tm_bind(tm, "T", tm_schemavar(tm, B_T)) == 0;
+    // OPEN: do some other time
+//    char *label = "T#"
+//    for (int i=1; i <= 20; i++) {
+//        label[1] = ''
+//        n += tm_bind("T1", tm_schemavar(tm, B_T + i)) == 0;
+//    }
+    n += tm_bind(tm, "T1", tm_schemavar(tm, B_T1)) == 0;
+    n += tm_bind(tm, "T2", tm_schemavar(tm, B_T2)) == 0;
+    n += tm_bind(tm, "T3", tm_schemavar(tm, B_T3)) == 0;
+    n += tm_bind(tm, "T4", tm_schemavar(tm, B_T4)) == 0;
+    n += tm_bind(tm, "T5", tm_schemavar(tm, B_T5)) == 0;
+    n += tm_bind(tm, "T6", tm_schemavar(tm, B_T6)) == 0;
+    n += tm_bind(tm, "T7", tm_schemavar(tm, B_T7)) == 0;
+    n += tm_bind(tm, "T8", tm_schemavar(tm, B_T8)) == 0;
+    n += tm_bind(tm, "T9", tm_schemavar(tm, B_T9)) == 0;
+    n += tm_bind(tm, "T10", tm_schemavar(tm, B_T10)) == 0;
+    n += tm_bind(tm, "T11", tm_schemavar(tm, B_T11)) == 0;
+    n += tm_bind(tm, "T12", tm_schemavar(tm, B_T12)) == 0;
+    n += tm_bind(tm, "T13", tm_schemavar(tm, B_T13)) == 0;
+    n += tm_bind(tm, "T14", tm_schemavar(tm, B_T14)) == 0;
+    n += tm_bind(tm, "T15", tm_schemavar(tm, B_T15)) == 0;
+    n += tm_bind(tm, "T16", tm_schemavar(tm, B_T16)) == 0;
+    n += tm_bind(tm, "T17", tm_schemavar(tm, B_T17)) == 0;
+    n += tm_bind(tm, "T18", tm_schemavar(tm, B_T18)) == 0;
+    n += tm_bind(tm, "T19", tm_schemavar(tm, B_T19)) == 0;
+    n += tm_bind(tm, "T20", tm_schemavar(tm, B_T20)) == 0;
+
+//    n += tm_bind(tm, "N, tm_schemavar(tm, B_N)) == 0;
+//    n += tm_bind(tm, "N1", tm_schemavar(tm, B_N1)) == 0;
+//    n += tm_bind(tm, "N2", tm_schemavar(tm, B_N2)) == 0;
+//    n += tm_bind(tm, "N3", tm_schemavar(tm, B_N3)) == 0;
+//    n += tm_bind(tm, "N4", tm_schemavar(tm, B_N4)) == 0;
+//    n += tm_bind(tm, "N5", tm_schemavar(tm, B_N5)) == 0;
+//    n += tm_bind(tm, "N6", tm_schemavar(tm, B_N6)) == 0;
+//    n += tm_bind(tm, "N7", tm_schemavar(tm, B_N7)) == 0;
+//    n += tm_bind(tm, "N8", tm_schemavar(tm, B_N8)) == 0;
+//    n += tm_bind(tm, "N9", m_schemavar(tm, B_N9)) == 0;
 
     if (n) {
         mm->free(tm);

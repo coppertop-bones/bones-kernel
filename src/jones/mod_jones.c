@@ -213,9 +213,9 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
 }
 
 pvt void die_(char const *preamble, char const *msg, va_list args) {
-    fprintf(stdout, "%s", preamble);
-    vfprintf(stdout, msg, args);
-    fprintf(stdout, "\n");
+    fprintf(stderr, "%s", preamble);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
     exit(1);
 }
 

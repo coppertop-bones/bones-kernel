@@ -100,8 +100,10 @@ pvt void bug(char const *msg, ...) {
     va_end(args);
 }
 
-pvt void check(bool truth, char const *msg, ...) {
+
+pvt void check(bool truth, char const *msg, char const*ffn, int lineno, ...) {
     if (! truth) {
+        fprintf(stderr, "  File \"%s\", line %i, ", ffn, lineno);
         va_list args;
         va_start(args, msg);
         die_("", msg, args);

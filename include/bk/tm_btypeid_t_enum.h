@@ -83,6 +83,7 @@ typedef enum : BTYPEID_T_TYPE {
     B_T17,      // aka B_TQ
     B_T18,      // aka B_TR
     B_T19,      // aka B_TS
+    B_T20,      // aka B_TT
 
     // we don't need to distinguish N from M or any other index so can just alias N as M, I, J, K etc
 
@@ -122,5 +123,6 @@ typedef BTYPEID_T_TYPE btypeid_t;
 #define B_TQ B_T17
 #define B_TR B_T18
 #define B_TS B_T19
+#define B_TT B_T20
 
 #endif // INC_BK_TM_BTYPE_T_ENUM_H
