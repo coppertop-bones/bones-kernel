@@ -229,7 +229,7 @@ pub TM_T1T2 tm_fn_targs_tret(BK_TM *, btypeid_t);
 pub btypeid_t tm_check_inter(BK_TM *, btypeid_t btypeid, btypeid_t spaceid);
 pub btypeid_t tm_inter(BK_TM *, btypeid_t btypeid, btypeid_t *);
 pub TM_TLID_T tm_inter_tlid_for(BK_TM *, btypeid_t *);                  // intersection tlid (sorted and all intersections expanded)
-pub btypeid_t tm_inter_for_tlid(BK_TM *, TM_TLID_T);
+pub btypeid_t tm_inter_get_for_tlid(BK_TM *, TM_TLID_T);
 pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *, btypeid_t btypeid, TM_TLID_T);
 pub btypeid_t tm_inter_in(BK_TM *, btypeid_t btypeid, btypeid_t spaceid, btypeid_t *);
 pub btypeid_t tm_interv(BK_TM *, btypeid_t btypeid, u32 numTypes, ...);

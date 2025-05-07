@@ -240,7 +240,7 @@ pvt void _growTo(void **p, size_t size, BK_MM *mm, char *fnName) {
     *p = t;
 }
 
-tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T *nextTypelist, u32 idx) {
+tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T *typelist, u32 idx) {
     TM_TLID_T tlid, numTypes;
     if ((tlid = tm->next_tlid++) >= tm->max_tlid) {
         tm->max_tlid += TM_RP_BY_TLID_INC_SIZE;
@@ -249,7 +249,7 @@ tdd TM_TLID_T _commit_typelist_buf_at(BK_TM *tm, TM_TLID_T *nextTypelist, u32 id
     }
     tm->tlrp_by_tlid[tlid] = tm->next_tlrp;
     hi_replace_empty(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, idx, tlid);
-    numTypes = nextTypelist[0];
+    numTypes = typelist[0];
     if (tm->next_tlrp + numTypes + 1 >= tm->max_tlrp) {
         // make the prior last page read only if we've gone over a page boundary (to protect type list from accidental mutation)
         size_t pageSize = os_page_size();

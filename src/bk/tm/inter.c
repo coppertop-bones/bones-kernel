@@ -39,7 +39,7 @@ pub btypeid_t tm_inter(BK_TM *tm, btypeid_t btypeid, btypeid_t *typelist) {
 
     tlid = tm_inter_tlid_for(tm, typelist);
     btypeid = tlid ? tm_inter_for_tlid_or_create(tm, btypeid, tlid) : B_NAT;
-    PP(info, "tm_inter - btypeid: %i, tlid: %i, len: %i", btypeid, tlid, (tm->typelist_buf + tm->tlrp_by_tlid[tlid])[0]);
+//    PP(info, "tm_inter - btypeid: %i, tlid: %i, len: %i", btypeid, tlid, (tm->typelist_buf + tm->tlrp_by_tlid[tlid])[0]);
     return btypeid;
 }
 
@@ -151,7 +151,7 @@ pub TM_TLID_T tm_inter_tlid_for(BK_TM *tm, btypeid_t *typelist) {
     return tlid;
 }
 
-pub btypeid_t tm_inter_for_tlid(BK_TM *tm, TM_TLID_T tlid) {
+pub btypeid_t tm_inter_get_for_tlid(BK_TM *tm, TM_TLID_T tlid) {
     // use-case here is to check a intersection doesn't exist before reserving a type
     u32 idx;  i32 outcome;
 
@@ -170,12 +170,14 @@ pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_
     u32 idx;  i32 i, outcome, j, k, numTypes;  TM_DETAILID_T intid;  bool hasT;  btsummary *sum;
     btypeid_t *thisTypeList, *conflicts_buf, rootspcid, other;  char const *pp_this, *pp_prior, *pp_root;
 
+    // check for space conflicts - must be done here as it is valid to create an intersection typelist that later on
+    // has space conflicts
+//    PP(info, "tm_inter_for_tlid_or_create - #1");
     thisTypeList = tm->typelist_buf + tm->tlrp_by_tlid[tlid];
     numTypes = *thisTypeList;
-    conflicts_buf = thisTypeList + 1 + numTypes;
-
-    // check for space conflicts
-//    PP(info, "tm_inter_for_tlid_or_create - #1");
+    // OPEN: make the next to line atomic - tm_typelist_scratch - which will retrun a pointer to the memory above the next_tlrp + its size
+    _make_next_page_of_typelist_buf_writable_if_necessary(tm, numTypes);
+    conflicts_buf = tm->typelist_buf + tm->next_tlrp;
     hasT = false;
     for (i = 1; i <= numTypes; i++) {
         sum = tm->btsummary_by_btypeid + thisTypeList[i];
@@ -228,6 +230,7 @@ pub btypeid_t tm_inter_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_
     }
 }
 
+// OPEN: unused, delete?
 pub btypeid_t tm_inter_get_or_create_for_tlid(BK_TM *tm, TM_TLID_T tlid) {
     u32 idx;  i32 i, outcome, j, k, numTypes;  bool hasT;  btsummary *sum;
     btypeid_t *thisTypeList, *conflicts_buf, rootspcid;  char const *pp_this, *pp_prior, *pp_root;

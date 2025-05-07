@@ -86,7 +86,8 @@ pvt btypeid_t check_btype(BK_TM *tm, btypeid_t t, char const *name, char const *
 
 
 pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
-    btypeid_t base, tFred, tJoe, tFredJoe, tFredOrJoe, tTup0, tTupFredJoe, tStruct, tSeq, tFn0, tFn2, t1, t2, t3, t;
+    btypeid_t base, tFred, tJoe, tFredJoe, tFredOrJoe, tTup0, tTupFredJoe, tStruct, tSeq, tFn0, tFn2, t, t1, t2, t3, t4,
+        tIsin, tTxt, tErr, t5, t6;
     TM_TLID_T tlid;
 
     BK_K *k = K_create(mm, buckets);  BK_TM* tm = k->tm;
@@ -104,6 +105,9 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     tSeq = base++;
     tFn0 = base++;
     tFn2 = base++;
+    tIsin = base++;
+    tTxt = base++;
+    tErr = base++;
     tm_reserve_btypeids(tm, base + 100);
 
 
@@ -122,9 +126,13 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
 
     t = tm_bind(tm, "joe", tm_lookup(tm, "joe"));
     check(t == tJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
-    
+
     t = tm_lookup(tm, "joe");
     check(t == tJoe, "t == %i (should be %i)", __FILE__, __LINE__, t, tJoe);
+
+    t = tm_bind(tm, "isin", tm_init_atom(tm, tIsin, B_NAT, false));
+    t = tm_bind(tm, "txt", tm_init_atom(tm, tTxt, B_NAT, false));
+    t = tm_bind(tm, "err", tm_init_atom(tm, tErr, B_NAT, false));
 
     btypeid_t *typelist = malloc(3 * sizeof(btypeid_t));
     symid_t *symlist = malloc(3 * sizeof(symid_t));
@@ -159,6 +167,35 @@ pvt TPN test_construction(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     typelist[2] = tm_lookup(tm, "joe");
     t2 = tm_union(tm, B_NEW, typelist);
     check(t2 == tFredOrJoe, "t == %i (should be %i)", __FILE__, __LINE__, t2, tFredOrJoe);
+
+
+    // bug with inter and union
+    typelist[1] = tTxt;
+    typelist[2] = tIsin;
+    t3 = tm_inter(tm, B_NEW, typelist);
+
+    typelist[1] = t3;
+    typelist[2] = tErr;
+    t4 = tm_union(tm, B_NEW, typelist);
+
+    typelist[1] = tIsin;
+    typelist[2] = tTxt;
+
+    tm_union_tl(tm, t4);
+    t5 = tm_inter(tm, B_NEW, typelist);
+    tm_union_tl(tm, t4);
+
+    check(t3 == t5, "%i != %i", __FILE__, __LINE__, t3, t5);
+
+    typelist[1] = tErr;
+    typelist[2] = t5;
+    t6 = tm_union(tm, B_NEW, typelist);
+
+    check(t4 == t6, "%i != %i", __FILE__, __LINE__, t5, t6);
+
+
+    typelist[1] = tm_lookup(tm, "fred");
+    typelist[2] = tm_lookup(tm, "joe");
 
 
     // tuple

@@ -43,7 +43,7 @@ pub btypeid_t tm_union(BK_TM *tm, btypeid_t btypeid, btypeid_t *typelist) {
         }
     } else {
         btypeid = tm_union_for_tlid_or_create(tm, btypeid, tlid);
-        PP(info, "tm_union - btypeid: %i, tlid: %i, len: %i", btypeid, tlid, (tm->typelist_buf + tm->tlrp_by_tlid[tlid])[0]);
+//        PP(info, "tm_union - btypeid: %i, tlid: %i, len: %i", btypeid, tlid, (tm->typelist_buf + tm->tlrp_by_tlid[tlid])[0]);
         return btypeid;
     }
 }
@@ -73,7 +73,7 @@ pub TM_TLID_T tm_union_tlid_for(BK_TM *tm, btypeid_t *typelist) {
     nextTypelist = tm->typelist_buf + tm->next_tlrp;
 
     // copy typelist into nextTypelist unpacking any unions
-    PP(info, "tm_union_tlid_for - #2, numTypes=%i, typelistCount=%i", numTypes, typelistCount);
+//    PP(info, "tm_union_tlid_for - #2, numTypes=%i, typelistCount=%i", numTypes, typelistCount);
     p1 = nextTypelist;
     p1++;
     for (i = 1; i <= typelistCount; i++) {
@@ -85,7 +85,7 @@ pub TM_TLID_T tm_union_tlid_for(BK_TM *tm, btypeid_t *typelist) {
             for (j = 1; j <= (i32) uniTl[0]; j++) *p1++ = uniTl[j];
         } else
             *p1++ = typelist[i];
-        PP(info, "tm_union_tlid_for - #3 btype: %i", *(p1 - 1));
+//        PP(info, "tm_union_tlid_for - #3 btype: %i", *(p1 - 1));
     }
     numTypes = p1 - (nextTypelist + 1);
 
@@ -113,17 +113,17 @@ pub TM_TLID_T tm_union_tlid_for(BK_TM *tm, btypeid_t *typelist) {
 
     // get the tlid for the typelist - adding if missing, returning 0 if invalid
     idx = hi_put_idx(TM_TLID_BY_TLHASH, tm->tlid_by_tlhash, nextTypelist, &outcome);
-    PP(info, "tm_union_tlid_for - #5 tl hash: %i", tl_hash(nextTypelist));
+//    PP(info, "tm_union_tlid_for - #5 tl hash: %i, idx=%i", tl_hash(nextTypelist), idx);
     switch (outcome) {
         default:
             die("%s: HI_TOMBSTONE1!", FN_NAME);
         case HI_LIVE:
             tlid = tm->tlid_by_tlhash->tokens[idx];
-            PP(info, "tm_union_tlid_for - #6 return existing tlid=%i @idx=%i", tlid, idx);
+//            PP(info, "tm_union_tlid_for - #6 return existing tlid=%i @idx=%i", tlid, idx);
             break;
         case HI_EMPTY:
             tlid = _commit_typelist_buf_at(tm, nextTypelist, idx);
-            PP(info, "tm_union_tlid_for - #7 committed tlid=%i, len=%i, @ idx=%i", tlid, numTypes, idx);
+//            /PP(info, "tm_union_tlid_for - #7 committed tlid=%i, len=%i, @ idx=%i", tlid, numTypes, idx);
             if (!tlid) return _seriousErrorCommitingTypelistBufHandleProperly(B_NAT, __FILE__, __LINE__);
     }
     return tlid;
@@ -154,14 +154,14 @@ pub btypeid_t tm_union_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_
             die("%s: HI_TOMBSTONE2!", FN_NAME);
         case HI_LIVE:
             // typelist already exists
-            PP(info, "tm_union_for_tlid_or_create - #1");
+//            PP(info, "tm_union_for_tlid_or_create - #1");
             uniid = tm->uniid_by_tlidhash->tokens[idx];
             if (btypeid == B_NEW) return tm->btypid_by_uniid[uniid];
             else if (btypeid == (other = tm->btypid_by_uniid[uniid])) return btypeid;
             else return _err_otherAlreadyRepresentsTL(B_NAT, __FILE__, __LINE__, btypeid, other);
         case HI_EMPTY:
             // missing so commit the union type for tlid
-            PP(info, "tm_union_for_tlid_or_create - #2");
+//            PP(info, "tm_union_for_tlid_or_create - #2");
             if (btypeid == B_NEW) {
                 btypeid = tm->next_btypeId;
             } else if (TM_BMT_ID(tm->btsummary_by_btypeid[btypeid]) != bmterr)
@@ -185,7 +185,7 @@ pub btypeid_t tm_union_for_tlid_or_create(BK_TM *tm, btypeid_t btypeid, TM_TLID_
             tm->btypid_by_uniid[uniid] = btypeid;
             hi_replace_empty(TM_DETAILID_BY_TLIDHASH, tm->uniid_by_tlidhash, idx, uniid);
 
-            PP(info, "tm_union_for_tlid_or_create - #3 - tl: %li, tlid: %i, len: %i", typelist, tlid, numTypes);
+//            PP(info, "tm_union_for_tlid_or_create - #3 - tl: %li, tlid: %i, len: %i", typelist, tlid, numTypes);
             return btypeid;
     }
 }
@@ -224,8 +224,8 @@ pub btypeid_t * tm_union_tl(BK_TM *tm, btypeid_t btypeid) {
     sum = tm->btsummary_by_btypeid + btypeid;
     if (TM_BMT_ID(*sum) == bmtuni) {
         tlid = tm->tlid_by_uniid[TM_DETAILS_ID(*sum)];
-        tl = tm->typelist_buf + tm->tlrp_by_tlid[tlid];
-        PP(info, "tm_union_tl - btypeid: %i, tlid: %i, len: %i", btypeid, tlid, tl[0]);
+//        tl = tm->typelist_buf + tm->tlrp_by_tlid[tlid];
+//        PP(info, "tm_union_tl - btypeid: %i, tl:%li, tlid: %i, len: %i", btypeid, tl, tlid, tl[0]);
         return tm->typelist_buf + tm->tlrp_by_tlid[tlid];
     } else {
         return 0;
