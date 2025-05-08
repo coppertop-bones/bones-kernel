@@ -243,7 +243,7 @@ pvt PyObject * PyTM_checkIntersection(PyTM *pyTm, PyObject *const *args, Py_ssiz
 
 pvt PyObject * PyTM_fn(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer the fn type corresponding to tArgs and tRet
-    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl, tArgs, tRet, self = B_NEW;  int n;
+    BK_TP tp;  Buckets *buckets;  BucketsCheckpoint cp;  btypeid_t *tl, tArgs, tRet, btypeid = B_NEW;  int n;
     PyObject *tup, *e, *pyBType = 0;  TM_TLID_T tlid;
 
     if (nargs != 2) return PyErr_Format(PyExc_TypeError, "Must provide tArgs and tRet");
@@ -254,8 +254,8 @@ pvt PyObject * PyTM_fn(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *
             __ELSE_RAISE(PyExc_TypeError, "Unknown keyword argument \"%s\"", PyUnicode_AsUTF8(PyTuple_GET_ITEM(argnames, i)))
         }
         if (pyBType && !Py_IsNone(pyBType)) {
-            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "self must be a BType");
-            self = ((PyBType *) pyBType)->btypeid;
+            __CHECK(PyObject_IsInstance(pyBType, (PyObject *) &PyBTypeCls), PyExc_TypeError, "btypeid must be a BType");
+            btypeid = ((PyBType *) pyBType)->btypeid;
         }
     }
 
@@ -301,7 +301,7 @@ pvt PyObject * PyTM_fn(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *
     }
     tRet = ((PyBType *) args[1])->btypeid;
 
-    btypeid_t btypeid = tm_fn(pyTm->tm, self, tArgs, tRet);
+    btypeid = tm_fn(pyTm->tm, btypeid, tArgs, tRet);
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -655,13 +655,12 @@ pvt PyObject * PyTM_reserve(PyTM *pyTm, PyObject *const *args, Py_ssize_t nargs,
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// schemavar: (name:str) -> tSchemavar + PyException
+// schemavar: (*, btype=Missing) -> PyBType + PyException
 
 pvt PyObject * PyTM_schemavar(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObject *argnames) {
     // answer a new schema variable with the given name, or an exception if already taken
     PyObject *pyBType;  btypeid_t btypeid = B_NEW;
-    if (nargs != 1) return jErrWrongNumberOfArgs(FN_NAME, 1, nargs);
-    if (!PyUnicode_Check(args[0]) || (PyUnicode_KIND(args[0]) != PyUnicode_1BYTE_KIND)) return PyErr_Format(PyExc_TypeError, "name must be utf8");
+    if (nargs != 0) return jErrWrongNumberOfArgs(FN_NAME, 0, nargs);
     if (argnames) {
         for (int i = 0; i < PyTuple_Size(argnames); i++) {
             __GET_KWARG("btype", PyTuple_GET_ITEM(argnames, i), pyBType = args[i + nargs])
@@ -673,10 +672,8 @@ pvt PyObject * PyTM_schemavar(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyO
         }
     }
     btypeid = tm_schemavar(pyTm->tm, btypeid);
-    if (btypeid)
-        return newPyBTypeRef(btypeid);
-    else
-        return PyErr_Format(PyBTypeError, "name is taken by another type");  // OPEN: better error
+    __CHECK(btypeid, PyBTypeError, "error calling tm_schemavar(...)");
+    return newPyBTypeRef(btypeid);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -851,7 +848,7 @@ pvt PyObject * PyTM_tuple(PyTM *pyTm, PyObject **args, Py_ssize_t nargs, PyObjec
         tl[i] = ((PyBType *) args[i-1])->btypeid;
     }
 
-    btypeid = tm_tuple(pyTm->tm, B_NEW, tm_tlid_for(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
+    btypeid = tm_tuple(pyTm->tm, btypeid, tm_tlid_for(pyTm->tm, tl));    // OPEN: don't do this as it may create a tuple with the wrong attributes
 
     if (btypeid) {
         resetToCheckpoint(buckets, &cp);
@@ -1142,10 +1139,9 @@ pvt PyMethodDef PyTM_methods[] = {
         "rootSpace(btype)\n\n"
         "Answers the root space of `btype` or None if it is not in a space."
     },
-    {"schemavar",           (PyCFunction) PyTM_schemavar, METH_FASTCALL,
-        "schemavar(name, *, btype=Missing)\n\n"
-        "Answers the schema variable called `name`, creating it if it doesn't exist, or raising an error if "
-        "`name` is used by another type."
+    {"schemavar",           (PyCFunction) PyTM_schemavar, METH_FASTCALL | METH_KEYWORDS,
+        "schemavar(*, btype=Missing)\n\n"
+        "Creates a new schema variable or initialises `btype`, raising a BTypeError if `btype` is already initialised."
     },
     {"seq",                 (PyCFunction) PyTM_seq, METH_FASTCALL | METH_KEYWORDS,
         "seq(contained, *, btype=Missing)\n\n"

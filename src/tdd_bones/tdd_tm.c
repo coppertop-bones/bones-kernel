@@ -307,6 +307,40 @@ pvt TPN test_orthogonal_spaces(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     return tp_tpn_printf(tp, "test_orthogonal_spaces() passed");
 }
 
+pvt TPN debug2(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
+    // f64: null: atom
+    // f64list: f64 * f64list + null
+
+    char *s=0;  symid_t *sl;  btypeid_t *tl;  BK_K *k;  BK_TM *tm;  btypeid_t null, f64, f64list, tup1, u1, f64list2;
+    TM_TLID_T tlid;
+
+    k = K_create(mm, buckets);  tm = k->tm;
+    sl = malloc(11 * sizeof(symid_t));     // 10 items + size field
+    tl = malloc(11 * sizeof(btypeid_t));
+
+    null = tm_bind(tm, "null", tm_init_atom(tm, B_NEW, B_NAT, false));
+    f64 = tm_bind(tm, "f64", tm_init_atom(tm, B_NEW, B_NAT, false));
+    f64list = tm_reserve(tm, B_NEW, B_NAT);
+
+    tl[0] = 2;  tl[1] = f64list;  tl[2] = null;
+    u1 = tm_union(tm, B_NEW, tl);
+    check(u1 != B_NAT, "u1 == B_NAT", __FILE__, __LINE__);
+
+    tl[0] = 2;  tl[1] = f64;  tl[2] = u1;
+    tlid = tm_tlid_for(tm, tl);
+    check(tlid != 0, "tlid == 0", __FILE__, __LINE__);
+
+    tup1 = tm_tuple(tm, f64list, tlid);
+    check(tup1 != B_NAT, "tlid == B_NAT", __FILE__, __LINE__);
+
+    f64list2 = tm_bind(tm, "f64list", tup1);
+    check(f64list2 == f64list, "f64list2 != f64list", __FILE__, __LINE__);
+
+    free(tl);  free(sl);  K_trash(k);
+    return tp_tpn_printf(tp, "debug2() passed");
+}
+
+
 pvt TPN test_minus(BK_MM *mm, Buckets *buckets, BK_TP *tp) {
     // test construction with spaces
     char *s=0;  symid_t *sl;  btypeid_t *tl;  BK_K *k;  BK_TM *tm;  btypeid_t t, t1, t2, t3, t4;
@@ -561,6 +595,7 @@ int main() {
 
     PP(debug, "%i", os_cache_line_size());
     PP(debug, "%i", os_page_size());
+    PP(info, tp_s8(&tp, debug2(mm, &buckets, &tp)).cs);
     PP(info, tp_s8(&tp, test_construction(mm, &buckets, &tp)).cs);
     PP(info, tp_s8(&tp, test_orthogonal_spaces(mm, &buckets, &tp)).cs);
     PP(info, tp_s8(&tp, test_construction_extended(mm, &buckets, &tp)).cs);
