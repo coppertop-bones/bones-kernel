@@ -1,11 +1,25 @@
 // ---------------------------------------------------------------------------------------------------------------------
+//
+//                             Copyright (c) 2019-2025 David Briant. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+// the specific language governing permissions and limitations under the License.
+//
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
 // PYFNS - PYTHON NULLARY, UNARY, BINARY, TERNARY FUNCTION CLASSES
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef SRC_JONES_PYFNS_C
 #define SRC_JONES_PYFNS_C "jones/pyfns.c"
 
-#include "jones.h"
+#include "../../include/jones/jones.h"
 
 #include BK_PYTHON_H
 
@@ -87,11 +101,11 @@ pvt PyObject * _nullary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
     if (tLhs == &PyNullaryCls) {
         struct Fn *fn = (struct Fn*) lhs;
-        return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+        return PyErr_Format(PyCoppertopSyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else if (tRhs == &PyNullaryCls) {
         struct Fn *fn = (struct Fn*) rhs;
-        return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+        return PyErr_Format(PyCoppertopSyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else
         return PyErr_Format(ProgrammerError, "_nullary_nb_rshift - unhandled case");
@@ -102,11 +116,11 @@ pvt PyObject * _pnullary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     PyTypeObject *tLhs = Py_TYPE(lhs);  PyTypeObject *tRhs = Py_TYPE(rhs);
     if (tLhs == &PyPNullaryCls) {
         struct Fn *fn = (struct Fn*) lhs;
-        return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+        return PyErr_Format(PyCoppertopSyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else if (tRhs == &PyPNullaryCls) {
         struct Fn *fn = (struct Fn*) rhs;
-        return PyErr_Format(PyExc_SyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+        return PyErr_Format(PyCoppertopSyntaxError, "Arguments cannot by piped into nullary style fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else
         return PyErr_Format(ProgrammerError, "_pnullary_nb_rshift - unhandled case");
@@ -139,7 +153,7 @@ pvt PyObject * _unary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else {
             // 1. _unary >> argN - syntax error
             struct Fn *fn = (struct Fn*) lhs;
-            return PyErr_Format(PyExc_SyntaxError, "First arg to unary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+            return PyErr_Format(PyCoppertopSyntaxError, "First arg to unary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         }
     }
     if (tRhs == &PyUnaryCls) {
@@ -165,7 +179,7 @@ pvt PyObject * _punary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else {
             // 2. _punary >> argN - syntax error
             struct Partial *partial = (struct Partial *) lhs;
-            return PyErr_Format(PyExc_SyntaxError, "First arg to unary style partial fn %s.%s must be piped from the left", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            return PyErr_Format(PyCoppertopSyntaxError, "First arg to unary style partial fn %s.%s must be piped from the left", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         }
     }
     if (tRhs == &PyPUnaryCls) {
@@ -173,7 +187,7 @@ pvt PyObject * _punary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         // PyObject_CallObject
         struct Partial * partial = (struct Partial *) rhs;
         if (partial->num_tbc > 1)
-            return PyErr_Format(PyExc_SyntaxError, "Trying to pipe an argument into unary style partial fn %s.%s that needs a total of %u more arguments", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
+            return PyErr_Format(PyCoppertopSyntaxError, "Trying to pipe an argument into unary style partial fn %s.%s that needs a total of %u more arguments", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
         // this should not be called re-entrantly but we can't stop it - so detect and throw as it would be hard to debug
         int iPipe1 = 32;
         Py_ssize_t num_args = Py_SIZE(partial);
@@ -183,7 +197,7 @@ pvt PyObject * _punary_nb_rshift(PyObject *lhs, PyObject *rhs) {
                 break;
             }
         }
-        if (iPipe1 == 32) return PyErr_Format(PyExc_SyntaxError, "Can't find the slot for the piped argument - check that unary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+        if (iPipe1 == 32) return PyErr_Format(PyCoppertopSyntaxError, "Can't find the slot for the piped argument - check that unary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         partial->args[iPipe1] = lhs;
         PyObject * result = PyObject_Vectorcall(partial->Fn.d, partial->args, num_args, 0);
         partial->args[iPipe1] = partial->Fn.TBCSentinel;
@@ -217,7 +231,7 @@ pvt PyObject * _binary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else {
             // 1. _binary >> argN
             struct Fn *fn = (struct Fn *) lhs;
-            return PyErr_Format(PyExc_SyntaxError, "First arg to binary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+            return PyErr_Format(PyCoppertopSyntaxError, "First arg to binary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         }
     }
     if (tRhs == &PyBinaryCls) {
@@ -249,7 +263,7 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         // 2. _pbinary >> arg2 - dispatch (unless the is the first argument and the rhs is a function)
         struct Partial *partial = (struct Partial *) lhs;
         if (partial->pipe1 == 0 && (tRhs == &PyUnaryCls || tRhs == &PyBinaryCls || tRhs == &PyTernaryCls || tRhs == &PyPUnaryCls || tRhs == &PyPBinaryCls || tRhs == &PyPTernaryCls)) Py_RETURN_NOTIMPLEMENTED;
-        if (partial->pipe1 == 0) return PyErr_Format(PyExc_SyntaxError, "Trying to pipe the 2nd argument into binary style partial fn %s.%s but the first argument hasn't been piped yet", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+        if (partial->pipe1 == 0) return PyErr_Format(PyCoppertopSyntaxError, "Trying to pipe the 2nd argument into binary style partial fn %s.%s but the first argument hasn't been piped yet", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         if (Py_SIZE(partial) == 0)
             return PyObject_CallFunctionObjArgs((PyObject *)partial->Fn.d, partial->pipe1, rhs, 0);
         else {
@@ -265,8 +279,8 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
                         break;
                     }
                 }
-            if (iPipe1 == 32) return PyErr_Format(PyExc_SyntaxError, "Can't find the slot for the first piped argument - check that binary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
-            if (iPipe2 == 32) return PyErr_Format(PyExc_SyntaxError, "Can't find the slot for the second piped argument - check that binary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            if (iPipe1 == 32) return PyErr_Format(PyCoppertopSyntaxError, "Can't find the slot for the first piped argument - check that binary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            if (iPipe2 == 32) return PyErr_Format(PyCoppertopSyntaxError, "Can't find the slot for the second piped argument - check that binary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
             partial->args[iPipe1] = partial->pipe1;
             partial->args[iPipe2] = rhs;
             PyObject * result = PyObject_Vectorcall(partial->Fn.d, partial->args, num_args, 0);
@@ -279,9 +293,9 @@ pvt PyObject * _pbinary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         // 4. arg1 >> _pbinary - check this is the first arg, then create a partial that can pipe one more argument
         struct Partial *partial = (struct Partial *) rhs;
         if (partial->num_tbc != 2)
-            return PyErr_Format(PyExc_SyntaxError, "2 arguments will be piped into binary style partial fn %s.%s - but %u required", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
+            return PyErr_Format(PyCoppertopSyntaxError, "2 arguments will be piped into binary style partial fn %s.%s - but %u required", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
         if (partial->pipe1 != 0)
-            return PyErr_Format(PyExc_SyntaxError, "First argument has already been piped into binary style partial fn %s.%s", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            return PyErr_Format(PyCoppertopSyntaxError, "First argument has already been piped into binary style partial fn %s.%s", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         // we have to copy as
         // fred = add(1, _, _)
         // x = 1 >> fred >> (2 >> fred >> 3)
@@ -329,14 +343,14 @@ pvt PyObject * _ternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         else {
             // 1. _binary >> argN
             struct Fn *fn = (struct Fn *) lhs;
-            return PyErr_Format(PyExc_SyntaxError, "First arg to binary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+            return PyErr_Format(PyCoppertopSyntaxError, "First arg to binary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         }
     }
 
     if (tLhs == &PyTernaryCls) {
         // 1. _ternary >> argN
         struct Fn *fn = (struct Fn *) lhs;
-        return PyErr_Format(PyExc_SyntaxError, "First arg to ternary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+        return PyErr_Format(PyCoppertopSyntaxError, "First arg to ternary style fn %s.%s must be piped from the left", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     }
     else if (tRhs == &PyTernaryCls) {
         // 3. arg1 >> _ternary - create a partial that can pipe two more arguments
@@ -366,7 +380,7 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
     if (tLhs == &PyPTernaryCls) {
         // 2. _pternary >> arg2Or3 - if 2 is missing then keep it else it must be 3 so dispatch
         struct Partial *partial = (struct Partial *) lhs;
-        if (partial->pipe1 == 0) return PyErr_Format(PyExc_SyntaxError, "Trying to pipe the 2nd argument into ternary style partial fn %s.%s but the first argument hasn't been piped yet", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+        if (partial->pipe1 == 0) return PyErr_Format(PyCoppertopSyntaxError, "Trying to pipe the 2nd argument into ternary style partial fn %s.%s but the first argument hasn't been piped yet", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         if (partial->pipe1 != 0 && partial->pipe2 == 0) {
             // keeping argument 2
             partial->pipe2 = Py_NewRef(rhs);
@@ -390,9 +404,9 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
                         break;
                     }
                 }
-            if (iPipe1 == 32) return PyErr_Format(PyExc_SyntaxError, "Can't find the slot for the first piped argument - check that ternary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
-            if (iPipe2 == 32) return PyErr_Format(PyExc_SyntaxError, "Can't find the slot for the second piped argument - check that ternary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
-            if (iPipe3 == 32) return PyErr_Format(PyExc_SyntaxError, "Can't find the slot for the third piped argument - check that ternary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            if (iPipe1 == 32) return PyErr_Format(PyCoppertopSyntaxError, "Can't find the slot for the first piped argument - check that ternary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            if (iPipe2 == 32) return PyErr_Format(PyCoppertopSyntaxError, "Can't find the slot for the second piped argument - check that ternary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            if (iPipe3 == 32) return PyErr_Format(PyCoppertopSyntaxError, "Can't find the slot for the third piped argument - check that ternary style partial fn %s.%s has not been reentrantly called", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
             partial->args[iPipe1] = partial->pipe1;
             partial->args[iPipe2] = partial->pipe2;
             partial->args[iPipe3] = rhs;
@@ -407,9 +421,9 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
         // 4. arg1 >> _pternary - check this is the first arg, then create a partial that can pipe one more argument
         struct Partial *partial = (struct Partial *) rhs;
         if (partial->num_tbc != 3)
-            return PyErr_Format(PyExc_SyntaxError, "3 arguments will be piped into ternary style partial fn %s.%s - but %u required", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
+            return PyErr_Format(PyCoppertopSyntaxError, "3 arguments will be piped into ternary style partial fn %s.%s - but %u required", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc);
         if (partial->pipe1 != 0)
-            return PyErr_Format(PyExc_SyntaxError, "First argument has already been piped into ternary style partial fn %s.%s", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+            return PyErr_Format(PyCoppertopSyntaxError, "First argument has already been piped into ternary style partial fn %s.%s", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
         // we have to copy as
         // fred = add(1, _, _)
         // x = 1 >> fred >> (2 >> fred >> 3)
@@ -441,8 +455,8 @@ pvt PyObject * _pternary_nb_rshift(PyObject *lhs, PyObject *rhs) {
 
 pvt PyObject * _Fn__call__(struct Fn *fn, PyObject *args, PyObject *kwds) {
     int num_tbc = 0;  Py_ssize_t num_args = PyTuple_GET_SIZE(args);
-    if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "%s.%s does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
-    if (num_args > MAX_ARGS) return PyErr_Format(PyExc_SyntaxError, "Maximum number of args for fn %s.%s is %s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), MAX_ARGS);
+    if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyCoppertopSyntaxError, "%s.%s does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+    if (num_args > MAX_ARGS) return PyErr_Format(PyCoppertopSyntaxError, "Maximum number of args for fn %s.%s is %s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), MAX_ARGS);
     for (Py_ssize_t o=0; o < num_args ; o++)
         num_tbc += PyTuple_GET_ITEM(args, o) == fn->TBCSentinel;
     PyTypeObject *t = Py_TYPE(fn);
@@ -451,14 +465,14 @@ pvt PyObject * _Fn__call__(struct Fn *fn, PyObject *args, PyObject *kwds) {
         else if (t == &PyUnaryCls && num_args >= 1) return PyObject_CallObject(fn->d, args);
         else if (t == &PyBinaryCls && num_args >= 2) return PyObject_CallObject(fn->d, args);
         else if (t == &PyTernaryCls && num_args >= 3) return PyObject_CallObject(fn->d, args);
-        else return PyErr_Format(PyExc_SyntaxError, "Not enough args for fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+        else return PyErr_Format(PyCoppertopSyntaxError, "Not enough args for fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
     else {
         struct Partial *partial;
         if (t == &PyNullaryCls && num_args >= 0) partial = (struct Partial *) ((&PyPNullaryCls)->tp_alloc(&PyPNullaryCls, num_args));
         else if (t == &PyUnaryCls && num_args >= 1) partial = (struct Partial *) ((&PyPUnaryCls)->tp_alloc(&PyPUnaryCls, num_args));
         else if (t == &PyBinaryCls && num_args >= 2) partial = (struct Partial *) ((&PyPBinaryCls)->tp_alloc(&PyPBinaryCls, num_args));
         else if (t == &PyTernaryCls && num_args >= 3) partial = (struct Partial *) ((&PyPTernaryCls)->tp_alloc(&PyPTernaryCls, num_args));
-        else return PyErr_Format(PyExc_SyntaxError, "Not enough args for fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+        else return PyErr_Format(PyCoppertopSyntaxError, "Not enough args for fn %s.%s", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
         if (partial == 0) return 0;
         Partial_initFromFn(
             partial,
@@ -489,9 +503,9 @@ pvt PyObject * _Fn__call__(struct Fn *fn, PyObject *args, PyObject *kwds) {
 
 pvt PyObject * _Partial__call__(struct Partial *partial, PyObject *args, PyObject *kwds) {
     int new_missing = 0;  Py_ssize_t num_args = PyTuple_GET_SIZE(args);  PyObject * TBC = partial->Fn.TBCSentinel;
-    if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "%s.%s does not take keyword arguments", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
-    if (num_args != partial->num_tbc) return PyErr_Format(PyExc_SyntaxError, "Wrong number of args to partial fn %s.%s - %l expected, %l given", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc, num_args);
-    if (partial->pipe1 != 0) return PyErr_Format(PyExc_SyntaxError, "Partial fn %s.%s is now piping - it is no longer callable in fortran style", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+    if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyCoppertopSyntaxError, "%s.%s does not take keyword arguments", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
+    if (num_args != partial->num_tbc) return PyErr_Format(PyCoppertopSyntaxError, "Wrong number of args to partial fn %s.%s - %l expected, %l given", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name), partial->num_tbc, num_args);
+    if (partial->pipe1 != 0) return PyErr_Format(PyCoppertopSyntaxError, "Partial fn %s.%s is now piping - it is no longer callable in fortran style", PyUnicode_DATA(partial->Fn.bmod), PyUnicode_DATA(partial->Fn.name));
 
     for (Py_ssize_t o=0; o < num_args ; o++) new_missing += PyTuple_GET_ITEM(args, o) == TBC;
     Py_ssize_t full_size = Py_SIZE(partial);
@@ -599,8 +613,8 @@ pvt PyObject * Partial_args(struct Partial *partial, void* closure) {
 
 pvt PyObject * _Common__array_ufunc__(struct Fn *fn, PyObject *args, PyObject *kwds) {
     Py_ssize_t num_args = PyTuple_GET_SIZE(args);
-    if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyExc_TypeError, "fn %s.%s.__array_ufunc__ does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
-    if (num_args != 4) return PyErr_Format(PyExc_SyntaxError, "Wrong number of args to fn %s.%s.__array_ufunc__ - %l expected, %l given", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), 4, num_args);
+    if (kwds != 0 && PyDict_Size(kwds) > 0) return PyErr_Format(PyCoppertopSyntaxError, "fn %s.%s.__array_ufunc__ does not take keyword arguments", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name));
+    if (num_args != 4) return PyErr_Format(PyCoppertopSyntaxError, "Wrong number of args to fn %s.%s.__array_ufunc__ - %l expected, %l given", PyUnicode_DATA(fn->bmod), PyUnicode_DATA(fn->name), 4, num_args);
     // MORE ERROR DETECTION?
     PyObject *lhs = PyTuple_GET_ITEM(args, 2);
     PyObject *rhs = PyTuple_GET_ITEM(args, 3);

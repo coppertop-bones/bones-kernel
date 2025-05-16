@@ -68,7 +68,7 @@ HI_STRUCT_WITH(SM_SLID_BY_SLHASH, SM_SLID_T, BK_SM *sm;)
 pub BK_SM * SM_create(BK_MM*);
 pub int SM_trash(BK_SM *);
 
-pub symid_t sm_id(BK_SM *, char *);
+pub symid_t sm_id(BK_SM *, char const *);
 pub bool sm_id_le(BK_SM *, symid_t a, symid_t b);
 pvt inline RP sm_id_2_RP(BK_SM *sm, symid_t symid) {return sm->rp_by_symid[symid];};
 pub char * sm_name(BK_SM *, symid_t);

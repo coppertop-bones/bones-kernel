@@ -1,4 +1,18 @@
 // ---------------------------------------------------------------------------------------------------------------------
+//
+//                             Copyright (c) 2019-2025 David Briant. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+// the specific language governing permissions and limitations under the License.
+//
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
 // SM - SYM MANAGER
 //
 // DESCRIPTION:
@@ -23,7 +37,7 @@
 #ifndef __BK_SM_C
 #define __BK_SM_C "bk/sm.c"
 
-#include "../../include/bk/mm.h"
+#include "mm.c"
 #include "../../include/bk/sm.h"
 #include "../../include/bk/tp.h"
 #include "../../include/bk/lib/os.h"
@@ -39,12 +53,12 @@ pvt inline char * nameFromEntry(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entr
     return h->sm->symname_buf + h->sm->rp_by_symid[entry];
 }
 
-pvt bool inline nameFound(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, char *key) {
+pvt bool inline nameFound(hi_struct(SM_SYMID_BY_NAMEHASH) *h, symid_t entry, char const *key) {
     return strcmp(h->sm->symname_buf + h->sm->rp_by_symid[entry], key) == 0;
 }
 
 // HI_IMPL(name, token_t, hashable_t, __hash_fn, __found_fn, __hashable_from_token_fn)
-HI_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char *, hi_chars_X31_hash, nameFound, nameFromEntry)
+HI_IMPL(SM_SYMID_BY_NAMEHASH, symid_t, char const *, hi_chars_X31_hash, nameFound, nameFromEntry)
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -86,15 +100,15 @@ HI_IMPL(SM_SLID_BY_SLHASH, SM_SLID_T, btypeid_t *, sl_hash, slHashableFound, slF
 // s8 - print s8 - answers an s8
 // ---------------------------------------------------------------------------------------------------------------------
 
-pvt void sm_pb_symlist(BK_SM *sm, BK_TP *tp, symid_t *symlist) {
+pvt void sm_buf_symlist(BK_SM *sm, BK_TP *tp, symid_t *symlist) {
     for (u32 i = 1; i < symlist[0] + 1; i++) {
-        tp_pb_printf(tp, "`");
-        tp_pb_printf(tp, sm_name(sm, symlist[i]));
+        tp_buf_printf(tp, "`");
+        tp_buf_printf(tp, sm_name(sm, symlist[i]));
     }
 }
 
-pvt inline TPN sm_pp_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_pb_symlist(sm, tp, sl); return tp_snap(tp);}
-pvt inline S8 sm_s8_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_pb_symlist(sm, tp, sl); return tp_s8(tp, tp_snap_with_null(tp));}
+pvt inline TPN sm_pp_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_buf_symlist(sm, tp, sl); return tp_flush(tp);}
+pvt inline S8 sm_s8_symlist(BK_SM *sm, BK_TP *tp, symid_t *sl) {sm_buf_symlist(sm, tp, sl); return tp_s8(tp, tp_flush(tp));}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -173,7 +187,7 @@ pub bool sm_id_le(BK_SM *sm, symid_t a, symid_t b) {
 // type accessing / creation fns
 // ---------------------------------------------------------------------------------------------------------------------
 
-pub symid_t sm_id(BK_SM *sm, char *name) {
+pub symid_t sm_id(BK_SM *sm, char const *name) {
     i32 res, pageSize = 0;
     u32 idx = hi_put_idx(SM_SYMID_BY_NAMEHASH, sm->symid_by_namehash, name, &res);
 
@@ -227,12 +241,19 @@ pub symid_t * sm_sl(BK_SM *sm, SM_SLID_T slid) {
 }
 
 pub SM_SLID_T sm_slid(BK_SM *sm, symid_t *symlist) {
-    i32 outcome, i, numSyms;  u32 idx;  symid_t *p1, *nextSymlist;  SM_SLID_T slid;
+    i32 outcome, i, numSyms = symlist[0];  u32 idx;  symid_t *p1, *nextSymlist;  SM_SLID_T slid;
 
     // validate contents of symlist
-    if (!(numSyms = symlist[0])) return 0;
-    for (i = 1; i <= (i32)symlist[0]; i++) if (!(0 < symlist[i] && symlist[i] < sm->next_symid)) return 0;
+    // PP(info, "%s:%i numSyms=%i", FN_NAME, __LINE__, numSyms);
+    if (!(numSyms = symlist[0]))
+        return 0;
 
+    for (i = 1; i <= numSyms; i++) {
+        if (!(0 < symlist[i] && symlist[i] < sm->next_symid)) {
+            PP(info, "%s:%i sym%i=%i not in range", FN_NAME, __LINE__, i, symlist[i]);
+            return 0;
+        }
+    }
     // make next page of sm->typelist_buf writable if necessary
     if (sm->next_slrp + numSyms >= sm->max_slrp) {
         if (sm->next_slrp + numSyms >= TM_MAX_TL_STORAGE) die("%s: out of symlist storage", FN_NAME);  // OPEN: really we should add an error reporting mechanism, e.g. TM_ERR_OUT_OF_NAME_STORAGE, etc
@@ -243,10 +264,11 @@ pub SM_SLID_T sm_slid(BK_SM *sm, symid_t *symlist) {
 
     nextSymlist = sm->symlist_buf + sm->next_slrp;
 
-    // copy symlist into symlist_buf
+    // copy symlist into symlist_buf, including the size
     p1 = nextSymlist;
     *p1++ = numSyms;
-    for (i = 1; i <= (i32)symlist[0]; i++) *p1++ = symlist[i];
+
+    for (i = 1; i <= numSyms; i++) *p1++ = symlist[i];
 
     // get the slid for the symlist - adding if missing, returning 0 if invalid
     idx = hi_put_idx(SM_SLID_BY_SLHASH, sm->slid_by_slhash, symlist, &outcome);
@@ -256,6 +278,7 @@ pub SM_SLID_T sm_slid(BK_SM *sm, symid_t *symlist) {
         case HI_LIVE:
             return sm->slid_by_slhash->tokens[idx];
         case HI_EMPTY:
+            // PP(info, "%s:%i", FN_NAME, __LINE__);
             if ((slid = sm->next_slid++) >= sm->max_slid) {
                 sm->max_slid += SM_RP_BY_SLID_INC_SIZE;
                 sm->slrp_by_slid = sm->mm->realloc(sm->slrp_by_slid, sm->max_slid * sizeof(RP));
@@ -269,7 +292,11 @@ pub SM_SLID_T sm_slid(BK_SM *sm, symid_t *symlist) {
                 sm->max_slrp += pageSize / sizeof(TM_TLID_T);
             }
             sm->next_slrp += numSyms + 1;
-            if (!slid) return 0;       // an error occurred OPEN handle properly
+            if (!slid) {
+                PP(info, "%s:%i", FN_NAME, __LINE__);
+                return 0;       // an error occurred OPEN handle properly
+            }
+            // PP(info, "%s:%i slid=%i len=%i", FN_NAME, __LINE__, slid, nextSymlist[0]);
             return slid;
     }
 

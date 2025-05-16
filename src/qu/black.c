@@ -1,4 +1,18 @@
 // ---------------------------------------------------------------------------------------------------------------------
+//
+//                             Copyright (c) 2012-2025 David Briant. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+// the specific language governing permissions and limitations under the License.
+//
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
 // black76
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -105,6 +119,31 @@ pub double qu_bs_call(double t, double k, double s, double sigma, double r, doub
     d1 = (log(s / k) + rt + sigma * sigma * t * 0.5) * sigmaRootT;
     d2 = d1 - sigmaRootT;
     return CN(d1) * s - CN(d2) * k * exp(-rt);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// bachelier
+// ---------------------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------------------------------------------
+// qu_bachelier_call
+// ---------------------------------------------------------------------------------------------------------------------
+pub double qu_bachelier_call(double t, double k, double f, double sigma, double df, double (* CN)(double), double (* NPDF)(double)) {
+    double sigmaRootT, D;
+    sigmaRootT = sigma * sqrt(t);
+    D = (f - k) / sigmaRootT;
+    return df * ((f - k) * CN(D) + sigmaRootT * NPDF(D));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// qu_bachelier_put
+// ---------------------------------------------------------------------------------------------------------------------
+pub double qu_bachelier_put(double t, double k, double f, double sigma, double df, double (* CN)(double), double (* NPDF)(double)) {
+    double sigmaRootT, D;
+    sigmaRootT = sigma * sqrt(t);
+    D = (f - k) / sigmaRootT;
+    return df * ((k - f) * CN(-D) + sigmaRootT * NPDF(D));
 }
 
 #endif  // SRC_QU_BLACK_C
