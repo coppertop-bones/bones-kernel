@@ -4,8 +4,8 @@
 // Single point of compile time configuration for the jones and qu libraries.
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef LIB_CONFIG_COMMON_H
-#define LIB_CONFIG_COMMON_H "config/common.h"
+#ifndef INC_BK__CFG_H
+#define INC_BK__CFG_H "bk/_cfg.h"
 
 #define BK_EXPOSE_TDD
 
@@ -32,4 +32,4 @@
 //#define JONES_INCLUDE_PLAY
 
 
-#endif  // LIB_CONFIG_COMMON_H
+#endif  // INC_BK__CFG_H

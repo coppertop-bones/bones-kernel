@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_SEQ_C
-#define __BK_TM_SEQ_C "bk/tm/seq.c"
+#ifndef SRC_BK_TM_SEQ_C
+#define SRC_BK_TM_SEQ_C "bk/tm/seq.c"
 
 
 #include "core.c"
@@ -54,4 +54,4 @@ pub btypeid_t tm_seq_t(BK_TM *tm, btypeid_t self) {
     return TM_BMT_ID(*sum) == bmtseq ? TM_DETAILS_ID(*sum) : B_NAT;
 }
 
-#endif  // __BK_TM_SEQ_C
+#endif  // SRC_BK_TM_SEQ_C

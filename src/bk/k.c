@@ -4,8 +4,8 @@
 // K - KERNEL
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_K_C
-#define __BK_K_C "bk/k.c"
+#ifndef SRC_BK_K_C
+#define SRC_BK_K_C "bk/k.c"
 
 #include "../../include/bk/k.h"
 #include "tp.c"
@@ -87,4 +87,4 @@ pub int K_trash(BK_K *k) {
     return 0;
 }
 
-#endif // __BK_K_C
+#endif  // SRC_BK_K_C

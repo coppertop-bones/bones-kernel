@@ -24,4 +24,4 @@ pub int EM_trash(BK_EM *em) {
 }
 
 
-#endif // SRC_BK_EM_C
+#endif  // SRC_BK_EM_C

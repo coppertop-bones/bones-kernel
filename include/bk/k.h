@@ -30,5 +30,5 @@ typedef struct {
 pub BK_K * K_create(BK_MM *mm, Buckets *buckets);
 pub int K_trash(BK_K *k);
 
-#endif // INC_BK_K_H
+#endif  // INC_BK_K_H
 

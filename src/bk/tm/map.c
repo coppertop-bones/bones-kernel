@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_MAP_C
-#define __BK_TM_MAP_C "bk/tm/map.c"
+#ifndef SRC_BK_TM_MAP_C
+#define SRC_BK_TM_MAP_C "bk/tm/map.c"
 
 
 #include "core.c"
@@ -69,4 +69,4 @@ pub TM_T1T2 tm_map_tk_tv(BK_TM *tm, btypeid_t self) {
     return tm->t1t2_by_mapid[TM_DETAILS_ID(*sum)];
 }
 
-#endif  // __BK_TM_MAP_C
+#endif  // SRC_BK_TM_MAP_C

@@ -16,4 +16,4 @@ pub double qu_invcn_Acklam(double);
 // normal from linear RN
 
 
-#endif // INC_QU_DISTS_H
+#endif  // INC_QU_DISTS_H

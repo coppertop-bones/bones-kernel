@@ -9,7 +9,8 @@ bk - bones kernel
 
 
 BUILDING
-Use relative includes to make building Python libraries easier since only one .c file per lib is needed in setup.py.
+
+We use relative includes. This makes building Python libraries easier since only one .c file per lib is needed in setup.py.
 
 
 COMPONENTS

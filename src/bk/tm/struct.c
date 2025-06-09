@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_STRUCT_C
-#define __BK_TM_STRUCT_C "bk/tm/struct.c"
+#ifndef SRC_BK_TM_STRUCT_C
+#define SRC_BK_TM_STRUCT_C "bk/tm/struct.c"
 
 
 #include "core.c"
@@ -88,4 +88,4 @@ pub TM_TLID_T tm_struct_tlid(BK_TM *tm, btypeid_t btypeid) {
     return (TM_BMT_ID(sum) == bmtstr) ? tm->tlid_by_strid[TM_DETAILS_ID(sum)] : 0;
 }
 
-#endif  // __BK_TM_STRUCT_C
+#endif  // SRC_BK_TM_STRUCT_C

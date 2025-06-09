@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef INC_BK_HI_H
-#define INC_BK_HI_H
+#define INC_BK_HI_H  "bk/lib/hi.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -213,4 +213,4 @@
     }
 
 
-#endif // INC_BK_HI_H
+#endif  // INC_BK_HI_H

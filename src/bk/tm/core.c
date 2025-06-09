@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_CORE_C
-#define __BK_TM_CORE_C "bk/tm/core.c"
+#ifndef SRC_BK_TM_CORE_C
+#define SRC_BK_TM_CORE_C "bk/tm/core.c"
 
 
 #include "../../../include/bk/mm.h"
@@ -319,4 +319,4 @@ pvt btypeid_t _err_btypeidOutOfRange(btypeid_t ret, char const *filename, char c
     return setErrAndDesc(ret, "%s self t%i is out of btypeId range", filename, lineno, fnname, self);
 }
 
-#endif  // __BK_TM_CORE_C
+#endif  // SRC_BK_TM_CORE_C

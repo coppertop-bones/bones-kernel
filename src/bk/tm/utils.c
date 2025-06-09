@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_UTILS_C
-#define __BK_TM_UTILS_C "bk/tm/utils.c"
+#ifndef SRC_BK_TM_UTILS_C
+#define SRC_BK_TM_UTILS_C "bk/tm/utils.c"
 
 
 #include "core.c"
@@ -295,4 +295,4 @@ pub TM_TLID_T tm_tlid_for(BK_TM *tm, btypeid_t *typelist) {
     return tlid;
 }
 
-#endif  // __BK_TM_UTILS_C
+#endif  // SRC_BK_TM_UTILS_C

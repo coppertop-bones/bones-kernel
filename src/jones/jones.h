@@ -13,7 +13,7 @@
 //#include <unistd.h>
 //#include <sys/mman.h>
 
-#include "../../lib/config/common.h"
+#include "../../include/bk/_cfg.h"
 #include BK_PYTHON_H
 #include BK_DESCROBJECT_H
 #include BK_STRUCTMEMBER_H

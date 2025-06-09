@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_UNION_C
-#define __BK_TM_UNION_C "bk/tm/union.c"
+#ifndef SRC_BK_TM_UNION_C
+#define SRC_BK_TM_UNION_C "bk/tm/union.c"
 
 
 #include "core.c"
@@ -225,4 +225,4 @@ pub btypeid_t * tm_union_tl(BK_TM *tm, btypeid_t btypeid) {
     _tm_unionv((tm), 0, sizeof(args) / sizeof(args[0]), args);                                                        \
 })
 
-#endif  // __BK_TM_UNION_C
+#endif  // SRC_BK_TM_UNION_C

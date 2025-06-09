@@ -76,4 +76,4 @@ pvt inline RP sm_id_2_RP(BK_SM *sm, symid_t symid) {return sm->rp_by_symid[symid
 pub char * sm_name(BK_SM *, symid_t);
 pub SM_SLID_T sm_slid(BK_SM *, symid_t *);
 
-#endif // INC_BK_SM_H
+#endif  // INC_BK_SM_H

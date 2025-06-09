@@ -128,4 +128,4 @@ typedef BTYPEID_T_TYPE btypeid_t;
 #define B_TS B_T19
 #define B_TT B_T20
 
-#endif // INC_BK_TM_BTYPE_T_ENUM_H
+#endif  // INC_BK_TM_BTYPE_T_ENUM_H

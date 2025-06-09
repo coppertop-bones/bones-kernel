@@ -15,4 +15,4 @@
 // Mersenne Twister
 
 
-#endif // INC_QU_RN_H
+#endif  // INC_QU_RN_H

@@ -4,8 +4,8 @@
 // PP - PRETTY PRINTING
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_PP_C
-#define __BK_PP_C "bk/pp.c"
+#ifndef SRC_BK_PP_C
+#define SRC_BK_PP_C "bk/pp.c"
 
 
 #include <stdarg.h>
@@ -123,4 +123,4 @@ _Pragma("GCC diagnostic pop")
 #endif
 
 
-#endif  // __BK_PP_C
+#endif  // SRC_BK_PP_C
