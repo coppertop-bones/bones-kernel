@@ -11,7 +11,11 @@ print(f'Python include: {python_include_folder}')
 print(f'Numpy include: {numpy_include_folder}\n\n')
 
 if not os.path.exists(target_folder) or not os.path.isdir(target_folder): os.makedirs(target_folder, exist_ok=True)
+# https://stackoverflow.com/questions/61692952/how-to-pass-debug-to-build-ext-when-invoking-setup-py-install
 COMPILE_ARGS = ['-O2'] #, '-std=c99']
+
+
+# path/to/pythonX.Y setup.py build_ext --debug install
 
 setuptools.setup(
     ext_modules=[
