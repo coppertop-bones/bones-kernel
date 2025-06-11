@@ -2,9 +2,9 @@ DIRECTORY STRUCTURE
 
 bk - bones kernel
     ├── include - c api definition - i.e. types and function signatures
-    ├── lib - scripts and config for compiling a shared library / dll
+    │   └─── bk/_cfg.h has config for compiling a shared library / dll
     ├── src - c source and macros
-    ├── tdd - development focussed tests (more complete test code can be found in coppertop-bones/dm)
+    ├── tdd - development focussed tests (see coppertop-bones/testing for a more complete Python test suite)
     └── README.md
 
 
