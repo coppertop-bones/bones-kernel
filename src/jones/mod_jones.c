@@ -16,6 +16,7 @@
 #include "pytm.c"
 #include "pyfs.c"
 #include "pykernel.c"
+#include "pytvfunc.c"
 
 
 
@@ -38,6 +39,8 @@ pvt PyMethodDef jones_fns[] = {
     {"sc_test_numSlots", (PyCFunction)          _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
     {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _fs_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
 
+    //  tvfunc, overload, family functions
+    {"sc_test_numSlots", (PyCFunction)          _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
     {0}
 };
 
@@ -195,6 +198,34 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
     if (PyType_Ready(&PyPTernaryCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyPTernaryCls is not ready, %s, %i", __FILE__, __LINE__);}
     if (PyModule_AddObject(m, "_pternary", (PyObject *) &PyPTernaryCls) < 0) {
         Py_DECREF(&PyPTernaryCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if (PyType_Ready(&PySelectionResultCls) < 0) {return PyErr_Format(PyExc_ImportError, "PySelectionResultCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "SelectionResult", (PyObject *) &PySelectionResultCls) < 0) {
+        Py_DECREF(&PySelectionResultCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if (PyType_Ready(&PyJFuncCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJFuncCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JFunc", (PyObject *) &PyJFuncCls) < 0) {
+        Py_DECREF(&PyJFuncCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if (PyType_Ready(&PyJOverloadCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJOverloadCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JOverload", (PyObject *) &PyJOverloadCls) < 0) {
+        Py_DECREF(&PyJOverloadCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if (PyType_Ready(&PyJFamilyCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJFamilyCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JFamily", (PyObject *) &PyJFamilyCls) < 0) {
+        Py_DECREF(&PyJFamilyCls);
         Py_DECREF(m);
         return 0;
     }

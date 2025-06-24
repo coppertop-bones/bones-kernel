@@ -9,7 +9,7 @@
 
 #define BK_EXPOSE_TDD
 
-// #define C_LION
+#define C_LION
 // #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #ifdef C_LION

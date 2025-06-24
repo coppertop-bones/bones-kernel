@@ -36,6 +36,16 @@ setuptools.setup(
                 numpy_include_folder,
             ],
         ),
+        setuptools.Extension(
+            'bones.qu',
+            sources=[
+                'src/jones/mod_qu.c'
+            ],
+            include_dirs=[
+                python_include_folder,
+                numpy_include_folder,
+            ],
+        ),
     ],
     # packages=setuptools.find_packages(where='src'),
     # package_dir={'': 'src'},
