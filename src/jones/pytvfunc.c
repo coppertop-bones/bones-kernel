@@ -109,6 +109,7 @@ pvt PyObject *setDisableReturnCheck(PyObject *b) {
 pvt PyObject *disableTracing() {
     PyObject *sysTraceFn, *pycharmDebugger_, *_args;
     sysTraceFn =  PyObject_CallMethod(sysModule, "gettrace", NULL);
+    // PP(info, "%s@%i", FN_NAME, __LINE__);
     if (PyObject_HasAttrString(sysTraceFn, "_args")) {
         _args = PyObject_GetAttrString(sysTraceFn, "_args");
         pycharmDebugger_ = PyTuple_GET_ITEM(_args, 0);                   // borrowed
@@ -126,10 +127,24 @@ pvt PyObject *disableTracing() {
 pvt void enableTracingAndDec(PyObject *sysTraceFn) {
     PyObject *pycharmDebugger_, *_args;
     if (sysTraceFn) {
+        // PP(info, "%s@%i", FN_NAME, __LINE__);
         _args = PyObject_GetAttrString(sysTraceFn, "_args");
+        // PP(info, "%s@%i", FN_NAME, __LINE__);
         pycharmDebugger_ = PyTuple_GET_ITEM(_args, 0);                   // borrowed
-        PyObject *result = PyObject_CallMethod(pycharmDebugger_, "enable_tracing", NULL);
-        if (result != Py_None) Py_DECREF(result);
+        // PP(info, "%s@%i", FN_NAME, __LINE__);
+        PyObject *ret = PyObject_CallMethod(pycharmDebugger_, "enable_tracing", NULL);
+        // PP(info, "%s@%i", FN_NAME, __LINE__);
+        if (ret != Py_None) {
+            // PP(info, "%s@%i", FN_NAME, __LINE__);
+            PyObject *repr_obj = PyObject_Repr(ret);
+            if (repr_obj) {
+                const char *repr_str = PyUnicode_AsUTF8(repr_obj);
+                // PP(info, "%s@%i - %s", FN_NAME, __LINE__, repr_str);
+                Py_DECREF(repr_str);
+            }
+            // PP(info, "%s@%i", FN_NAME, __LINE__);
+            Py_XDECREF(ret);
+        }
         Py_DECREF(_args);  Py_DECREF(sysTraceFn);
     }
 }
@@ -249,17 +264,65 @@ typedef struct {
 //                 else:
 //                     _tvfuncErrorCallback2(self, ret)
 
+
+//     if (!PyTuple_Check(tup) || PyTuple_GET_SIZE(tup) != 3) RETURN_NEW_ERR(decs, ndecs, PyExc_TypeError, "Expected a tuple of (tvfunc, schemaVars, hasValue) from function selection");
+//
+//     // unpack tup
+//     tvfunc = PyTuple_GET_ITEM(tup, 0);             // No need to add to decs for later DECREF as it's a borrowed reference
+//     schemaVars = PyTuple_GET_ITEM(tup, 1);
+//     hasValue = PyTuple_GET_ITEM(tup, 2);
+//
+//     dispatchEvenIfAllTypes = PyObject_GetAttrString(tvfunc, "dispatchEvenIfAllTypes");
+//
+//     if (hasValue == Py_True || dispatchEvenIfAllTypes == Py_True) {
+//         // call the function
+//         PyObject *fncargs[nargs + 1];                            // variable-length array
+//         for (i =0; i < nargs; i++) fncargs[i] = args[i];     // positional args
+//         fncargs[nargs] = schemaVars;                          // keyword arg schemaVars
+//         fnkwnames = decs[ndecs++] = PyTuple_Pack(1, PyUnicode_FromString("schemaVars"));
+//         if (!fnkwnames) RETURN_PRIOR_ERR(decs, ndecs);
+//
+//         // PyObject *repr_obj = decs[ndecs++] = PyObject_Repr(tvfunc);
+//         // if (repr_obj) {
+//         //     const char *repr_str = PyUnicode_AsUTF8(repr_obj);
+//         //     PP(info, "%s@%i - nargs: %i - %s", FN_NAME, __LINE__, nargs, repr_str);
+//         // }
+//         answer = PyObject_Vectorcall(tvfunc, fncargs, nargs, fnkwnames);        // nargs is the number of positional arguments
+
+
+
+
 pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t nargsf, PyObject *kwnames) {
-    PyObject *sysTraceFn, *ret, *tRet;  Py_ssize_t nargs;  int i;
+    PyObject *sysTraceFn, *ret, *tRet, *schemaVars, *schemaVarsOld, *fnkwnames;  Py_ssize_t nargs;  int i;
     PyObject *decs[8] = {0,0,0,0,0,0,0,0};  int ndecs = 0;
     nargs = PyVectorcall_NARGS(nargsf);
-    // if (kwnames) return PyErr_Format(PyExc_RuntimeError, "kwargs are not allowed");
 
     // try calling the underlying callable
-    // PP(info, "PyJFunc_vectorcall - %s(%zd args)", PyUnicode_AsUTF8(self->name), nargs);
+    // PP(info, "%s@%i - %s(%zd args)", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
     if (self->pass_tByT == Py_True) {
-        PP(info, "%s@%i - %s(%zd args) with tByT", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
-        RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "tByT NotYetImplemented");
+        // PP(info, "%s@%i - PyJFunc_vectorcall - tByT", FN_NAME, __LINE__);
+        if (kwnames && PyTuple_GET_SIZE(kwnames) == 1 && strcmp(PyUnicode_AsUTF8(PyTuple_GET_ITEM(kwnames, 0)), "schemaVars") == 0) {
+                schemaVars = args[nargs];
+                if (!PyDict_Check(schemaVars)) {
+                    RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "tByT is not a dict");
+                }
+        } else {
+            // match, fallback, schemaVars, argDistances = _distancesEtAl([_typeOf(arg) for arg in args], self.sig)
+            RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "get _distancesEtAl - NotYetImplemented");
+        }
+        fnkwnames = decs[ndecs++] = PyTuple_Pack(1, PyUnicode_FromString("tByT"));
+        if (!fnkwnames) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "can't create tuple of kwargnames");
+        if (self->typeHelper_pyfn) {
+            // PP(info, "%s@%i - %s(%zd args) with typeHelper", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
+            schemaVars = decs[ndecs++] = PyObject_Vectorcall(self->typeHelper_pyfn, args, nargsf, fnkwnames);
+            PyObject *fncargs[nargs + 1];                            // variable-length array
+            for (i =0; i < nargs; i++) fncargs[i] = args[i];     // positional args
+            fncargs[nargs] = schemaVars;                          // keyword arg schemaVars
+            ret = PyObject_Vectorcall(self->_v, fncargs, nargs, fnkwnames);        // nargs is the number of positional arguments
+        } else {
+            // PP(info, "%s@%i - %s(%zd args) with tByT", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
+            ret = PyObject_Vectorcall(self->_v, args, nargsf, fnkwnames);
+        }
     } else {
         ret = PyObject_Vectorcall(self->_v, args, nargsf, NULL);
     }
@@ -272,8 +335,11 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
             PyObject *exc_type = NULL, *exc_value = NULL, *exc_tb = NULL;
             PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
             PyErr_NormalizeException(&exc_type, &exc_value, &exc_tb);
+            // PP(info, "%s@%i - %s(%zd args) - _tvfuncErrorCallback1_pyfn", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
             PyObject *err_result = PyObject_CallFunctionObjArgs(_tvfuncErrorCallback1_pyfn, exc_value, self, NULL);
-            Py_XDECREF(err_result);  Py_XDECREF(exc_type);  Py_XDECREF(exc_value);  Py_XDECREF(exc_tb);
+            // PP(info, "%s@%i", FN_NAME, __LINE__);
+            PyErr_Restore(exc_type, exc_value, exc_tb);                                 // steals reference so do not DECREF
+            // PP(info, "%s@%i", FN_NAME, __LINE__);
             return NULL;
         }
     }
@@ -430,10 +496,12 @@ pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, 
     if (kwnames) return PyErr_Format(PyExc_RuntimeError, "PyJOverload_vectorcall: kwargs are not allowed");
 
     // select the function to call
-    // PP(info, "%s@%i", FN_NAME, __LINE__);
+    // PP(info, "%s@%i - %s(%zd args)", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
     sysTraceFn = disableTracing();
     tup = decs[ndecs++] = PyObject_Vectorcall(self->_selectFunctionCallback, args, nargsf, NULL);
+    // PP(info, "%s@%i - %s(%zd args)", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
     enableTracingAndDec(sysTraceFn);
+    // PP(info, "%s@%i - %s(%zd args)", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
 
     // check the result
     if (!tup) RETURN_PRIOR_ERR(decs, ndecs);
@@ -473,7 +541,7 @@ pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, 
     }
     else {
         // return SelectionResult(tvfunc, schemaVars)
-        PP(info, "%s@%i", FN_NAME, __LINE__);
+        // PP(info, "%s@%i", FN_NAME, __LINE__);
         answer = PyObject_CallFunction((PyObject *) &PySelectionResultCls, "OO", tvfunc, schemaVars);
         if (!answer) RETURN_PRIOR_ERR(decs, ndecs);
         XDEFREF_ALL(decs, ndecs);
