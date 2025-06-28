@@ -40,7 +40,13 @@ pvt PyMethodDef jones_fns[] = {
     {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _fs_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
 
     //  tvfunc, overload, family functions
-    {"sc_test_numSlots", (PyCFunction)          _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
+    {"disableReturnCheck",              (PyCFunction) setDisableReturnCheck,                    METH_FASTCALL, "disableReturnCheck(bool) -> None"},
+    {"set_typeOf",                             (PyCFunction) set_typeOf_pyfn,                              METH_FASTCALL, "set_typeOf(callable) -> None"},
+    {"set_distancesEtAl",                  (PyCFunction) set_distancesEtAl_pyfn,                   METH_FASTCALL, "set_distancesEtAl(callable) -> None"},
+    {"set_fitsWithin",                         (PyCFunction) set_fitsWithin_pyfn,                          METH_FASTCALL, "set_fitsWithin(callable) -> None"},
+    {"set_tvfuncErrorCallback1",      (PyCFunction) set_tvfuncErrorCallback1_pyfn,      METH_FASTCALL, "set_tvfuncErrorCallback1(callable) -> None"},
+    {"set_tvfuncErrorCallback2",     (PyCFunction) set_tvfuncErrorCallback2_pyfn,       METH_FASTCALL, "set_tvfuncErrorCallback2(callable) -> None"},
+    {"set_BType_py",                        (PyCFunction) set_BType_py,                                  METH_FASTCALL, "set_BType_py(BType) -> None"},
     {0}
 };
 
@@ -229,6 +235,13 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
         Py_DECREF(m);
         return 0;
     }
+
+    threadingModule = PyImport_ImportModule("threading");
+    if (!threadingModule) return PyErr_Format(PyExc_ImportError, "Can't import threading!");
+    sysModule = PyImport_ImportModule("sys");
+    if (!sysModule) return PyErr_Format(PyExc_ImportError, "Can't import sys!");
+
+    _disableReturnCheck = false;
 
     return m;
 }
