@@ -300,7 +300,7 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
     // try calling the underlying callable
     // PP(info, "%s@%i - %s(%zd args)", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
     if (self->pass_tByT == Py_True) {
-        // PP(info, "%s@%i - PyJFunc_vectorcall - tByT", FN_NAME, __LINE__);
+        // PP(info, "%s@%i - tByT", FN_NAME, __LINE__);
         if (kwnames && PyTuple_GET_SIZE(kwnames) == 1 && strcmp(PyUnicode_AsUTF8(PyTuple_GET_ITEM(kwnames, 0)), "schemaVars") == 0) {
                 schemaVars = args[nargs];
                 if (!PyDict_Check(schemaVars)) {
@@ -324,6 +324,7 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
             ret = PyObject_Vectorcall(self->_v, args, nargsf, fnkwnames);
         }
     } else {
+        // PP(info, "%s@%i - %s(%zd args)", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
         ret = PyObject_Vectorcall(self->_v, args, nargsf, NULL);
     }
 
