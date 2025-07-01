@@ -37,13 +37,14 @@
     } while (0)
 
 
-pvt PyObject *threadingModule, *sysModule, *_BType_py = 0;
+pvt PyObject *threadingModule, *sysModule = 0;
 
 pvt PyObject *_typeOf_pyfn = 0;
 pvt PyObject *_distancesEtAl_pyfn = 0;          // OPEN: do in C
 pvt PyObject *_fitsWithin_pyfn = 0;                 // OPEN: do in C
 pvt PyObject *_tvfuncErrorCallback1_pyfn = 0;
 pvt PyObject *_tvfuncErrorCallback2_pyfn = 0;
+pvt PyObject *_updateSchemaVarsWith_pyfn = 0;
 pvt bool _disableReturnCheck = false;
 
 pvt PyObject * set_typeOf_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
@@ -56,7 +57,7 @@ pvt PyObject * set_typeOf_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nargs)
 }
 
 pvt PyObject *set_distancesEtAl_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_typeOf takes 1 argument but %zd were given", nargs);
+    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_distancesEtAl takes 1 argument but %zd were given", nargs);
     PyObject *fn = args[0];
     if (!(PyCallable_Check(fn) || PyFunction_Check(fn))) return PyErr_Format(PyExc_TypeError, "distancesEtAl must be callable");
     if (_distancesEtAl_pyfn) return PyErr_Format(PyExc_TypeError, "distancesEtAl already set");
@@ -65,7 +66,7 @@ pvt PyObject *set_distancesEtAl_pyfn(PyObject *mod, PyObject **args, Py_ssize_t 
 }
 
 pvt PyObject *set_fitsWithin_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_typeOf takes 1 argument but %zd were given", nargs);
+    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_fitsWithin takes 1 argument but %zd were given", nargs);
     PyObject *fn = args[0];
     if (!(PyCallable_Check(fn) || PyFunction_Check(fn))) return PyErr_Format(PyExc_TypeError, "fitsWithin must be callable");
     if (_fitsWithin_pyfn) return PyErr_Format(PyExc_TypeError, "fitsWithin already set");
@@ -74,7 +75,7 @@ pvt PyObject *set_fitsWithin_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nar
 }
 
 pvt PyObject *set_tvfuncErrorCallback1_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_typeOf takes 1 argument but %zd were given", nargs);
+    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_tvfuncErrorCallback1 takes 1 argument but %zd were given", nargs);
     PyObject *fn = args[0];
     if (!(PyCallable_Check(fn) || PyFunction_Check(fn))) return PyErr_Format(PyExc_TypeError, "tvfuncErrorCallback1 must be callable");
     if (_tvfuncErrorCallback1_pyfn) return PyErr_Format(PyExc_TypeError, "tvfuncErrorCallback1 already set");
@@ -83,7 +84,7 @@ pvt PyObject *set_tvfuncErrorCallback1_pyfn(PyObject *mod, PyObject **args, Py_s
 }
 
 pvt PyObject *set_tvfuncErrorCallback2_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_typeOf takes 1 argument but %zd were given", nargs);
+    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_tvfuncErrorCallback2 takes 1 argument but %zd were given", nargs);
     PyObject *fn = args[0];
     if (!(PyCallable_Check(fn) || PyFunction_Check(fn))) return PyErr_Format(PyExc_TypeError, "tvfuncErrorCallback2 must be callable");
     if (_tvfuncErrorCallback2_pyfn) return PyErr_Format(PyExc_TypeError, "tvfuncErrorCallback2 already set");
@@ -91,12 +92,21 @@ pvt PyObject *set_tvfuncErrorCallback2_pyfn(PyObject *mod, PyObject **args, Py_s
     return Py_None;
 }
 
+pvt PyObject *set_updateSchemaVarsWith_pyfn(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
+    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_updateSchemaVarsWith takes 1 argument but %zd were given", nargs);
+    PyObject *fn = args[0];
+    if (!(PyCallable_Check(fn) || PyFunction_Check(fn))) return PyErr_Format(PyExc_TypeError, "updateSchemaVarsWith must be callable");
+    if (_updateSchemaVarsWith_pyfn) return PyErr_Format(PyExc_TypeError, "updateSchemaVarsWith already set");
+    _updateSchemaVarsWith_pyfn = Py_NewRef(fn);
+    return Py_None;
+}
+
 pvt PyObject *set_BType_py(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
-    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_typeOf takes 1 argument but %zd were given", nargs);
+    if (nargs != 1) return PyErr_Format(PyExc_TypeError, "set_BType_py takes 1 argument but %zd were given", nargs);
     PyObject *btype = args[0];
     // if (!PyCallable_Check(btype)) return PyErr_Format(PyExc_TypeError, "tvfuncErrorCallback2 must be a callable");
-    if (btype) return PyErr_Format(PyExc_TypeError, "tvfuncErrorCallback2 already set");
-    _BType_py = Py_NewRef(btype);
+    if (PyBType_py) return PyErr_Format(PyExc_TypeError, "BType_py already set");
+    PyBType_py = Py_NewRef(btype);
     return Py_None;
 }
 
@@ -151,30 +161,117 @@ pvt void enableTracingAndDec(PyObject *sysTraceFn) {
 
 
 // ---------------------------------------------------------------------------------------------------------------------
-// PySelectionResult
-// OPEN: rename as JSelectionResult
+// PyFits
+// ---------------------------------------------------------------------------------------------------------------------
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *fits;
+    PyObject *tByT;
+    PyObject *distance;
+} PyFits;
+
+pvt void PyFits_dealloc(PyFits *self) {
+    Py_XDECREF(self->fits);
+    Py_XDECREF(self->tByT);
+    Py_XDECREF(self->distance);
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+pvt PyObject * PyFits_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+    PyFits *self = (PyFits *)type->tp_alloc(type, 0);
+    if (!self) return NULL;
+    self->fits = self->tByT = self->distance = NULL;
+    return (PyObject *)self;
+}
+
+pvt int PyFits_init(PyFits *self, PyObject *args, PyObject *kwds) {
+    PyObject *fits, *tByT, *distance;
+    if (!PyArg_ParseTuple(args, "OOO", &fits, &tByT, &distance))
+        return -1;
+    Py_INCREF(fits);
+    Py_INCREF(tByT);
+    Py_INCREF(distance);
+    self->fits = fits;
+    self->tByT = tByT;
+    self->distance = distance;
+    return 0;
+}
+
+pvt int PyFits_bool(PyFits *self) {
+    return PyObject_IsTrue(self->fits);
+}
+
+pvt Py_ssize_t PyFits_length(PyObject *self) {
+    return 3;
+}
+
+static PyObject * PyFits_item(PyObject *self, Py_ssize_t i) {
+    PyFits *obj = (PyFits *)self;
+    switch (i) {
+        case 0: return Py_NewRef(obj->fits);
+        case 1: return Py_NewRef(obj->tByT);
+        case 2: return Py_NewRef(obj->distance);
+        default:
+            PyErr_SetString(PyExc_IndexError, "Fits index out of range");
+            return NULL;
+    }
+}
+
+pvt PySequenceMethods PyFits_as_sequence = {
+        .sq_length = PyFits_length,
+        .sq_item = PyFits_item,
+};
+
+pvt PyMemberDef PyFits_members[] = {
+        {"fits", T_OBJECT_EX, offsetof(PyFits, fits), 0, "fits"},
+        {"tByT", T_OBJECT_EX, offsetof(PyFits, tByT), 0, "tByT"},
+        {"distance", T_OBJECT_EX, offsetof(PyFits, distance), 0, "distance"},
+        {NULL}
+};
+
+pvt PyTypeObject PyFitsCls = {
+        PyVarObject_HEAD_INIT(NULL, 0)
+        .tp_name = "jones.Fits",
+        .tp_basicsize = sizeof(PyFits),
+        .tp_itemsize = 0,
+        .tp_dealloc = (destructor)PyFits_dealloc,
+        .tp_flags = Py_TPFLAGS_DEFAULT,
+        .tp_new = PyFits_new,
+        .tp_init = (initproc)PyFits_init,
+        .tp_members = PyFits_members,
+        .tp_doc = PyDoc_STR("Fits(fits, tByT, distance)"),
+        .tp_as_number = &(PyNumberMethods){
+                .nb_bool = (inquiry)PyFits_bool,
+        },
+        .tp_as_sequence = &PyFits_as_sequence,
+};
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// PyJSelectionResult
 // ---------------------------------------------------------------------------------------------------------------------
 
 typedef struct {
     PyObject_HEAD
     PyObject *tvfunc;
     PyObject *tByT;
-} PySelectionResult;
+} PyJSelectionResult;
 
 // ---------------------------------------------------------------------------------------------------------------------
-// PySelectionResult lifecycle
+// PyJSelectionResult lifecycle
 
-pvt void PySelectionResult_dealloc(PySelectionResult *self) {
+pvt void PyJSelectionResult_dealloc(PyJSelectionResult *self) {
     Py_XDECREF(self->tvfunc);
     Py_XDECREF(self->tByT);
 }
 
-pvt PyObject * PySelectionResult_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-    if (PyTuple_GET_SIZE(args) != 2) return PyErr_Format(PyExc_Exception, "Must be created as SelectionResult(tvfunc, tByT)");
+pvt PyObject * PyJSelectionResult_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+    if (PyTuple_GET_SIZE(args) != 2) return PyErr_Format(PyExc_Exception, "Must be created as JSelectionResult(tvfunc, tByT)");
     return type->tp_alloc(type, 0);
 }
 
-pvt int PySelectionResult_init(PySelectionResult *self, PyObject *args, PyObject *kwds) {
+pvt int PyJSelectionResult_init(PyJSelectionResult *self, PyObject *args, PyObject *kwds) {
     PyObject *tvfunc, *tByT;
     if (!PyArg_ParseTuple(args, "OO:", &tvfunc, &tByT)) return -1;
     if (!PyCallable_Check(tvfunc)) {PyErr_Format(PyExc_TypeError, "tvfunc is not a callable"); return -1;}
@@ -184,31 +281,160 @@ pvt int PySelectionResult_init(PySelectionResult *self, PyObject *args, PyObject
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// PySelectionResult members, get/setter, methods
+// PyJSelectionResult members, get/setter, methods
 
-pvt PyMemberDef PySelectionResult_members[] = {
-        {"tvfunc", Py_T_OBJECT_EX, offsetof(PySelectionResult, tvfunc), Py_READWRITE, "tvfunc callable"},
-        {"tByT", Py_T_OBJECT_EX, offsetof(PySelectionResult, tByT), Py_READWRITE, "dict of BType by BSchemaVar"},
+pvt PyMemberDef PyJSelectionResult_members[] = {
+        {"tvfunc", Py_T_OBJECT_EX, offsetof(PyJSelectionResult, tvfunc), Py_READWRITE, "tvfunc callable"},
+        {"tByT", Py_T_OBJECT_EX, offsetof(PyJSelectionResult, tByT), Py_READWRITE, "dict of BType by BSchemaVar"},
         {0}
 };
 
-pvt PyTypeObject PySelectionResultCls = {
+pvt PyTypeObject PyJSelectionResultCls = {
         PyVarObject_HEAD_INIT(0, 0)
-        .tp_name = "jones.SelectionResult",
-        .tp_basicsize = sizeof(PySelectionResult),
+        .tp_name = "jones.JSelectionResult",
+        .tp_basicsize = sizeof(PyJSelectionResult),
         .tp_itemsize = 0,
-        .tp_doc = PyDoc_STR("SelectionResult is a struct with a tvfunc and tByT."),
+        .tp_doc = PyDoc_STR("JSelectionResult is a struct with a tvfunc and tByT."),
         .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-        .tp_new = PySelectionResult_new,
-        .tp_init = (initproc) PySelectionResult_init,
-        .tp_dealloc = (destructor) PySelectionResult_dealloc,
-        .tp_members = PySelectionResult_members,
-        // .tp_methods = PySelectionResult_methods,
-        // .tp_getset = PySelectionResult_getsetters,
+        .tp_new = PyJSelectionResult_new,
+        .tp_init = (initproc) PyJSelectionResult_init,
+        .tp_dealloc = (destructor) PyJSelectionResult_dealloc,
+        .tp_members = PyJSelectionResult_members,
+        // .tp_methods = PyJSelectionResult_methods,
+        // .tp_getset = PyJSelectionResult_getsetters,
         // .tp_call = (ternaryfunc) PyVectorcall_Call,
-        // .tp_vectorcall_offset = offsetof(PySelectionResult, vectorcall),
+        // .tp_vectorcall_offset = offsetof(PyJSelectionResult, vectorcall),
 };
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// _distancesEtAl
+// ---------------------------------------------------------------------------------------------------------------------
+
+// def _distancesEtAl(callerSig, fnSig):
+//     match = True
+//     fallback = False
+//     argDistances = []
+//     schemaVars = {}
+//     for tArg, tFnArg in zip(callerSig, fnSig):
+//         if tFnArg == py:
+//             fallback = True
+//             argDistances.append(0.5)
+//         else:
+//             fits = fitsWithin(tArg, tFnArg)
+//             if not fits:
+//                 match = False
+//                 break
+//             try:
+//                 schemaVars, argDistance = updateSchemaVarsWith(schemaVars, 0, fits)
+//             except PySchemaError:
+//                 match = False
+//                 break
+//             argDistances.append(argDistance)
+//     return match, fallback, schemaVars, argDistances
+
+pvt PyObject * _distancesEtAl(PyObject *mod, PyObject **args, Py_ssize_t nargs) {
+    PyObject *b_callerSig, *fnSig, *argDistances, *schemaVars, *tArg, *tFnArg, *fits, *result, *newSchemaVars, *argDistance, *answer, *zero;
+    Py_ssize_t N, i;  bool match = true, fallback = false;
+
+    if (nargs != 2) {
+        PyErr_Format(PyExc_TypeError, "distancesEtAl() takes exactly 2 arguments (%zd given)", nargs);
+        return NULL;
+    }
+    b_callerSig = args[0];
+    fnSig = args[1];
+    zero = PyLong_FromLong(0);
+
+    // PP(info, "%s@%i - i = %i", FN_NAME, __LINE__, i);
+
+    N = PySequence_Size(b_callerSig);
+    if (N != PySequence_Size(fnSig)) return PyErr_Format((PyExc_TypeError), "Signatures must be of equal length");
+    argDistances = PyList_New(0);
+    schemaVars = PyDict_New();
+
+    for (i = 0; i < N; ++i) {
+        tArg = PySequence_GetItem(b_callerSig, i);
+        tFnArg = PySequence_GetItem(fnSig, i);
+
+        // PyObject *a = PyObject_Repr(tArg);  PyObject *b = PyObject_Repr(tFnArg);  PyObject *c = PyObject_Repr(PyBType_py);
+        // PP(info, "%s@%i - i = %i, tArg = %s, tFnArg = %s, py = %s", FN_NAME, __LINE__, i, PyUnicode_AsUTF8(a), PyUnicode_AsUTF8(b), PyUnicode_AsUTF8(c));
+        // Py_DECREF(a);  Py_DECREF(b); Py_DECREF(c);
+
+        if (tFnArg == PyBType_py) {
+            fallback = true;
+            PyList_Append(argDistances, PyFloat_FromDouble(0.5));
+        } else {
+            fits = PyObject_CallFunctionObjArgs(_fitsWithin_pyfn, tArg, tFnArg, NULL);
+            if (!fits) {
+                match = false;
+                Py_DECREF(tArg);
+                Py_DECREF(tFnArg);
+                break;
+            }
+            // Check if fits is a PyFitsCls instance and if its .fits attribute is true
+            if (PyObject_TypeCheck(fits, &PyFitsCls)) {
+                if (!PyObject_IsTrue(((PyFits *)fits)->fits)) {
+                    match = false;
+                    Py_DECREF(fits);
+                    Py_DECREF(tArg);
+                    Py_DECREF(tFnArg);
+                    break;
+                }
+            } else if (fits == Py_False) {
+                // PP(info, "%s@%i - i = %i", FN_NAME, __LINE__, i);
+                match = false;
+                Py_DECREF(fits);
+                Py_DECREF(tArg);
+                Py_DECREF(tFnArg);
+                break;
+            }
+            // PP(info, "%s@%i - i = %i", FN_NAME, __LINE__, i);
+            // try: schemaVars, argDistance = updateSchemaVarsWith(schemaVars, 0, fits)
+
+            result = PyObject_CallFunctionObjArgs(_updateSchemaVarsWith_pyfn, schemaVars, zero, fits, NULL);
+            // PP(info, "%s@%i - i = %i", FN_NAME, __LINE__, i);
+            if (!result) {
+                if (PyErr_ExceptionMatches(PySchemaError)) {
+                    // PP(info, "%s@%i - i = %i", FN_NAME, __LINE__, i);
+                    PyErr_Clear();
+                    match = false;
+                    Py_DECREF(fits);
+                    Py_DECREF(tArg);
+                    Py_DECREF(tFnArg);
+                    break;
+                } else {
+                    // propagate other errors
+                    Py_DECREF(fits);
+                    Py_DECREF(tArg);
+                    Py_DECREF(tFnArg);
+                    Py_DECREF(argDistances);
+                    Py_DECREF(schemaVars);
+                    Py_DECREF(zero);
+                    return NULL;
+                }
+            }
+            // result is (schemaVars, argDistance)
+            newSchemaVars = PyTuple_GetItem(result, 0);
+            argDistance = PyTuple_GetItem(result, 1);
+            Py_INCREF(newSchemaVars);
+            Py_INCREF(argDistance);
+            Py_DECREF(schemaVars);
+            schemaVars = newSchemaVars;
+            PyList_Append(argDistances, argDistance);
+            Py_DECREF(argDistance);
+            Py_DECREF(result);
+            Py_DECREF(fits);
+        }
+        Py_DECREF(tArg);
+        Py_DECREF(tFnArg);
+    }
+
+    // Py_BuildValue steals references to schemaVars and argDistances - so no need to DECREF
+    // PP(info, "%s@%i", FN_NAME, __LINE__);
+    answer = Py_BuildValue("(NNNO)", match ? Py_True : Py_False, fallback ? Py_True : Py_False, schemaVars, argDistances);
+    Py_DECREF(zero);
+    return answer;
+}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -253,7 +479,7 @@ typedef struct {
 //             return ret
 //         else:
 //             tRet = self.tRet
-//             if tRet == py or isinstance(ret, jones.SelectionResult):
+//             if tRet == py or isinstance(ret, jones.JSelectionResult):
 //                 return ret
 //             else:
 //                 # OPEN: BTTuples are products whereas pytuples are exponentials therefore we can reliably type check
@@ -289,12 +515,9 @@ typedef struct {
 //         // }
 //         answer = PyObject_Vectorcall(tvfunc, fncargs, nargs, fnkwnames);        // nargs is the number of positional arguments
 
-
-
-
 pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t nargsf, PyObject *kwnames) {
-    PyObject *sysTraceFn, *ret, *tRet, *schemaVars, *schemaVarsOld, *fnkwnames;  Py_ssize_t nargs;  int i;
-    PyObject *decs[8] = {0,0,0,0,0,0,0,0};  int ndecs = 0;
+    PyObject *sysTraceFn, *ret, *tRet, *schemaVars, *schemaVarsOld, *fnkwnames, *argTypes, *btype, *distancesResult, *match, *fallback, *argDistances;
+    Py_ssize_t nargs;  int i;  PyObject *decs[9] = {0};  int ndecs = 0;
     nargs = PyVectorcall_NARGS(nargsf);
 
     // try calling the underlying callable
@@ -303,12 +526,30 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
         // PP(info, "%s@%i - tByT", FN_NAME, __LINE__);
         if (kwnames && PyTuple_GET_SIZE(kwnames) == 1 && strcmp(PyUnicode_AsUTF8(PyTuple_GET_ITEM(kwnames, 0)), "schemaVars") == 0) {
                 schemaVars = args[nargs];
-                if (!PyDict_Check(schemaVars)) {
-                    RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "tByT is not a dict");
-                }
+                if (!PyDict_Check(schemaVars)) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "tByT is not a dict");
         } else {
             // match, fallback, schemaVars, argDistances = _distancesEtAl([_typeOf(arg) for arg in args], self.sig)
-            RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "get _distancesEtAl - NotYetImplemented");
+            // Build [ _typeOf(arg) for arg in args ]
+            argTypes = decs[ndecs++] = PyList_New(nargs);
+            if (!argTypes) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "Failed to allocate argTypes list");
+            for (i = 0; i < nargs; ++i) {
+                btype = PyObject_CallFunctionObjArgs(_typeOf_pyfn, args[i], NULL);
+                if (!btype) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "typeOf call failed");
+                PyList_SET_ITEM(argTypes, i, btype);                                    // steals ref to btype
+            }
+
+            // Call _distancesEtAl_pyfn([types], self->sig)
+            distancesResult = decs[ndecs++] = PyObject_CallFunctionObjArgs(_distancesEtAl_pyfn, argTypes, self->sig, NULL);
+            if (!distancesResult) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "Call to _distancesEtAl failed");
+
+            if (!PyTuple_Check(distancesResult) || PyTuple_GET_SIZE(distancesResult) != 4) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "_distancesEtAl did not return a 4-tuple");
+
+            // Unpack: match, fallback, schemaVars, argDistances
+            match = PyTuple_GET_ITEM(distancesResult, 0);    // borrowed
+            fallback = PyTuple_GET_ITEM(distancesResult, 1);  // borrowed
+            schemaVars = PyTuple_GET_ITEM(distancesResult, 2);            // borrowed
+            Py_INCREF(schemaVars); // will be DECREF'd later
+            argDistances = PyTuple_GET_ITEM(distancesResult, 3); // borrowed
         }
         fnkwnames = decs[ndecs++] = PyTuple_Pack(1, PyUnicode_FromString("tByT"));
         if (!fnkwnames) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "can't create tuple of kwargnames");
@@ -341,7 +582,7 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
             // PP(info, "%s@%i", FN_NAME, __LINE__);
             PyErr_Restore(exc_type, exc_value, exc_tb);                                 // steals reference so do not DECREF
             // PP(info, "%s@%i", FN_NAME, __LINE__);
-            return NULL;
+            RETURN (decs, ndecs, NULL);
         }
     }
 
@@ -488,7 +729,7 @@ typedef struct {
 //         if hasValue or tvfunc.dispatchEvenIfAllTypes:
 //             return tvfunc(*args, schemaVars=schemaVars)
 //         else:
-//             return SelectionResult(tvfunc, schemaVars)
+//             return JSelectionResult(tvfunc, schemaVars)
 
 pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, size_t nargsf, PyObject *kwnames) {
     PyObject *sysTraceFn, *tup, *tvfunc, *schemaVars, * hasValue, *dispatchEvenIfAllTypes, *fnkwnames, *answer;  Py_ssize_t nargs;  int i;
@@ -541,9 +782,9 @@ pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, 
         return answer;
     }
     else {
-        // return SelectionResult(tvfunc, schemaVars)
+        // return JSelectionResult(tvfunc, schemaVars)
         // PP(info, "%s@%i", FN_NAME, __LINE__);
-        answer = PyObject_CallFunction((PyObject *) &PySelectionResultCls, "OO", tvfunc, schemaVars);
+        answer = PyObject_CallFunction((PyObject *) &PyJSelectionResultCls, "OO", tvfunc, schemaVars);
         if (!answer) RETURN_PRIOR_ERR(decs, ndecs);
         XDEFREF_ALL(decs, ndecs);
         return answer;
@@ -701,37 +942,5 @@ pvt PyTypeObject PyJFamilyCls = {
         .tp_call = (ternaryfunc) PyVectorcall_Call,
         .tp_vectorcall_offset = offsetof(PyJFamily, vectorcall),
 };
-
-
-
-
-// def _distancesEtAl(callerSig, fnSig):
-// # OPEN: implement this in C
-// # if len(callerSig) == 2 and len(fnSig) == 2 and callerSig[0].id == 108 and callerSig[1].id == 106 and fnSig[0].id == 108 and fnSig[1].id == 106:
-// #     pass
-//     match = True
-//     fallback = False
-//     argDistances = []
-//     schemaVars = {}
-//     for tArg, tFnArg in zip(callerSig, fnSig):
-//         if tFnArg == py:
-//             fallback = True
-//             argDistances.append(0.5)
-//         else:
-//             fits = fitsWithin(tArg, tFnArg)
-//             if not fits:
-//                 match = False
-//                 break
-//             try:
-//                 schemaVars, argDistance = updateSchemaVarsWith(schemaVars, 0, fits)
-//             except SchemaError:
-//                 match = False
-//                 break
-//             argDistances.append(argDistance)
-//     return match, fallback, schemaVars, argDistances
-
-
-
-
 
 #endif  // SRC_JONES_PYTVFUNC_C

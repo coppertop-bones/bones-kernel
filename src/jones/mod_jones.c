@@ -46,7 +46,10 @@ pvt PyMethodDef jones_fns[] = {
     {"set_fitsWithin",                         (PyCFunction) set_fitsWithin_pyfn,                          METH_FASTCALL, "set_fitsWithin(callable) -> None"},
     {"set_tvfuncErrorCallback1",      (PyCFunction) set_tvfuncErrorCallback1_pyfn,      METH_FASTCALL, "set_tvfuncErrorCallback1(callable) -> None"},
     {"set_tvfuncErrorCallback2",     (PyCFunction) set_tvfuncErrorCallback2_pyfn,       METH_FASTCALL, "set_tvfuncErrorCallback2(callable) -> None"},
+    {"set_updateSchemaVarsWith", (PyCFunction) set_updateSchemaVarsWith_pyfn, METH_FASTCALL, "set_updateSchemaVarsWith(callable) -> None"},
     {"set_BType_py",                        (PyCFunction) set_BType_py,                                  METH_FASTCALL, "set_BType_py(BType) -> None"},
+    {"_distancesEtAl",                        (PyCFunction) _distancesEtAl,                                 METH_FASTCALL, "distancesEtAl(callerSig, fnSig) -> fnId\n\nanswers match, fallback, schemaVars and argDistances for the given callerSig and fnSig"},
+
     {0}
 };
 
@@ -208,9 +211,17 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
         return 0;
     }
 
-    if (PyType_Ready(&PySelectionResultCls) < 0) {return PyErr_Format(PyExc_ImportError, "PySelectionResultCls is not ready, %s, %i", __FILE__, __LINE__);}
-    if (PyModule_AddObject(m, "SelectionResult", (PyObject *) &PySelectionResultCls) < 0) {
-        Py_DECREF(&PySelectionResultCls);
+
+    if (PyType_Ready(&PyJSelectionResultCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJSelectionResultCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JSelectionResult", (PyObject *) &PyJSelectionResultCls) < 0) {
+        Py_DECREF(&PyJSelectionResultCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if (PyType_Ready(&PyFitsCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyFitsCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "Fits", (PyObject *) &PyFitsCls) < 0) {
+        Py_DECREF(&PyFitsCls);
         Py_DECREF(m);
         return 0;
     }
@@ -232,6 +243,14 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
     if (PyType_Ready(&PyJFamilyCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJFamilyCls is not ready, %s, %i", __FILE__, __LINE__);}
     if (PyModule_AddObject(m, "JFamily", (PyObject *) &PyJFamilyCls) < 0) {
         Py_DECREF(&PyJFamilyCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    PySchemaError = PyErr_NewException("jones.SchemaError", PyBTypeError, NULL);
+    if (!PySchemaError) return PyErr_Format(PyExc_ImportError, "Can't create SchemaError");
+    if (PyModule_AddObject(m, "SchemaError", PySchemaError) < 0) {
+        Py_DECREF(PySchemaError);
         Py_DECREF(m);
         return 0;
     }

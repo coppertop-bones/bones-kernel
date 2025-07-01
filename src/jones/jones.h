@@ -88,6 +88,7 @@ pvt PyObject *PyJonesError;
 pvt PyObject *PyCoppertopSyntaxError;
 
 pvt PyObject *PyBTypeError;
+pvt PyObject *PySchemaError;
 
 pvt PyTypeObject PyBTypeCls;
 pvt PyTypeObject PyKernelCls;
@@ -102,7 +103,8 @@ pvt PyTypeObject PyPUnaryCls;
 pvt PyTypeObject PyPBinaryCls;
 pvt PyTypeObject PyPTernaryCls;
 
-pvt PyTypeObject PySelectionResultCls;
+pvt PyTypeObject PyJSelectionResultCls;
+pvt PyTypeObject PyFitsCls;
 pvt PyTypeObject PyJFuncCls;
 pvt PyTypeObject PyJOverloadCls;
 pvt PyTypeObject PyJFamilyCls;
