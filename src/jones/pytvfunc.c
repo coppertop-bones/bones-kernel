@@ -11,37 +11,37 @@
 #include "../bk/pp.c"
 
 
-#define XDEFREF_ALL(decs, n) \
-    do { \
-        for (Py_ssize_t _i = 0; _i < (n); _i++) { \
-            Py_XDECREF((decs)[_i]); \
-        } \
+#define XDEFREF_ALL(decs, n)                                                                                            \
+    do {                                                                                                                \
+        for (Py_ssize_t _i = 0; _i < (n); _i++) {                                                                       \
+            Py_XDECREF((decs)[_i]);                                                                                     \
+        }                                                                                                               \
     } while (0)
 
-#define RETURN(decs, n, answer) \
-    do { \
-        XDEFREF_ALL(decs, n); \
-        return answer; \
+#define RETURN(decs, n, answer)                                                                                         \
+    do {                                                                                                                \
+        XDEFREF_ALL(decs, n);                                                                                           \
+        return answer;                                                                                                  \
     } while (0)
 
-#define RETURN_NEW_ERR(decs, n, errtype, msg) \
-    do { \
-        XDEFREF_ALL(decs, n); \
-        return PyErr_Format((errtype), (msg)); \
+#define RETURN_NEW_ERR(decs, n, errtype, msg)                                                                           \
+    do {                                                                                                                \
+        XDEFREF_ALL(decs, n);                                                                                           \
+        return PyErr_Format((errtype), (msg));                                                                          \
     } while (0)
 
-#define RETURN_PRIOR_ERR(decs, n) \
-    do { \
-        XDEFREF_ALL(decs, n); \
-        return NULL; \
+#define RETURN_PRIOR_ERR(decs, n)                                                                                       \
+    do {                                                                                                                \
+        XDEFREF_ALL(decs, n);                                                                                           \
+        return NULL;                                                                                                    \
     } while (0)
 
 
 pvt PyObject *threadingModule, *sysModule = 0;
 
 pvt PyObject *_typeOf_pyfn = 0;
-pvt PyObject *_distancesEtAl_pyfn = 0;          // OPEN: do in C
-pvt PyObject *_fitsWithin_pyfn = 0;                 // OPEN: do in C
+pvt PyObject *_distancesEtAl_pyfn = 0;                                          // OPEN: do in C
+pvt PyObject *_fitsWithin_pyfn = 0;                                             // OPEN: do in C
 pvt PyObject *_tvfuncErrorCallback1_pyfn = 0;
 pvt PyObject *_tvfuncErrorCallback2_pyfn = 0;
 pvt PyObject *_updateSchemaVarsWith_pyfn = 0;
@@ -122,15 +122,15 @@ pvt PyObject *disableTracing() {
     // PP(info, "%s@%i", FN_NAME, __LINE__);
     if (PyObject_HasAttrString(sysTraceFn, "_args")) {
         _args = PyObject_GetAttrString(sysTraceFn, "_args");
-        pycharmDebugger_ = PyTuple_GET_ITEM(_args, 0);                   // borrowed
+        pycharmDebugger_ = PyTuple_GET_ITEM(_args, 0);                          // borrowed
         PyObject *result = PyObject_CallMethod(pycharmDebugger_, "disable_tracing", NULL);
         if (result != Py_None) Py_DECREF(result);
         Py_DECREF(_args);
-        return sysTraceFn;  // return the sysTraceFn so it can be restored later
+        return sysTraceFn;                                                      // return the sysTraceFn so it can be restored later
     }
     else {
         Py_DECREF(sysTraceFn);
-        return NULL;  // no  Pycharm debugger
+        return NULL;                                                            // no Pycharm debugger
     }
 }
 
@@ -140,7 +140,7 @@ pvt void enableTracingAndDec(PyObject *sysTraceFn) {
         // PP(info, "%s@%i", FN_NAME, __LINE__);
         _args = PyObject_GetAttrString(sysTraceFn, "_args");
         // PP(info, "%s@%i", FN_NAME, __LINE__);
-        pycharmDebugger_ = PyTuple_GET_ITEM(_args, 0);                   // borrowed
+        pycharmDebugger_ = PyTuple_GET_ITEM(_args, 0);                          // borrowed
         // PP(info, "%s@%i", FN_NAME, __LINE__);
         PyObject *ret = PyObject_CallMethod(pycharmDebugger_, "enable_tracing", NULL);
         // PP(info, "%s@%i", FN_NAME, __LINE__);
@@ -284,26 +284,22 @@ pvt int PyJSelectionResult_init(PyJSelectionResult *self, PyObject *args, PyObje
 // PyJSelectionResult members, get/setter, methods
 
 pvt PyMemberDef PyJSelectionResult_members[] = {
-        {"tvfunc", Py_T_OBJECT_EX, offsetof(PyJSelectionResult, tvfunc), Py_READWRITE, "tvfunc callable"},
-        {"tByT", Py_T_OBJECT_EX, offsetof(PyJSelectionResult, tByT), Py_READWRITE, "dict of BType by BSchemaVar"},
-        {0}
+    {"tvfunc", Py_T_OBJECT_EX, offsetof(PyJSelectionResult, tvfunc), Py_READWRITE, "tvfunc callable"},
+    {"tByT", Py_T_OBJECT_EX, offsetof(PyJSelectionResult, tByT), Py_READWRITE, "dict of BType by BSchemaVar"},
+    {0}
 };
 
 pvt PyTypeObject PyJSelectionResultCls = {
-        PyVarObject_HEAD_INIT(0, 0)
-        .tp_name = "jones.JSelectionResult",
-        .tp_basicsize = sizeof(PyJSelectionResult),
-        .tp_itemsize = 0,
-        .tp_doc = PyDoc_STR("JSelectionResult is a struct with a tvfunc and tByT."),
-        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-        .tp_new = PyJSelectionResult_new,
-        .tp_init = (initproc) PyJSelectionResult_init,
-        .tp_dealloc = (destructor) PyJSelectionResult_dealloc,
-        .tp_members = PyJSelectionResult_members,
-        // .tp_methods = PyJSelectionResult_methods,
-        // .tp_getset = PyJSelectionResult_getsetters,
-        // .tp_call = (ternaryfunc) PyVectorcall_Call,
-        // .tp_vectorcall_offset = offsetof(PyJSelectionResult, vectorcall),
+    PyVarObject_HEAD_INIT(0, 0)
+    .tp_name = "jones.JSelectionResult",
+    .tp_basicsize = sizeof(PyJSelectionResult),
+    .tp_itemsize = 0,
+    .tp_doc = PyDoc_STR("JSelectionResult is a struct with a tvfunc and tByT."),
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyJSelectionResult_new,
+    .tp_init = (initproc) PyJSelectionResult_init,
+    .tp_dealloc = (destructor) PyJSelectionResult_dealloc,
+    .tp_members = PyJSelectionResult_members,
 };
 
 
@@ -452,7 +448,7 @@ typedef struct {
     PyObject *sig;
     PyObject *tArgs;
     PyObject *tRet;
-    PyObject *pass_tByT;                            // bool
+    PyObject *pass_tByT;                                                        // bool
     PyObject *dispatchEvenIfAllTypes;
     PyObject *typeHelper_pyfn;
     PyObject *__doc__;
@@ -490,33 +486,9 @@ typedef struct {
 //                 else:
 //                     _tvfuncErrorCallback2(self, ret)
 
-
-//     if (!PyTuple_Check(tup) || PyTuple_GET_SIZE(tup) != 3) RETURN_NEW_ERR(decs, ndecs, PyExc_TypeError, "Expected a tuple of (tvfunc, schemaVars, hasValue) from function selection");
-//
-//     // unpack tup
-//     tvfunc = PyTuple_GET_ITEM(tup, 0);             // No need to add to decs for later DECREF as it's a borrowed reference
-//     schemaVars = PyTuple_GET_ITEM(tup, 1);
-//     hasValue = PyTuple_GET_ITEM(tup, 2);
-//
-//     dispatchEvenIfAllTypes = PyObject_GetAttrString(tvfunc, "dispatchEvenIfAllTypes");
-//
-//     if (hasValue == Py_True || dispatchEvenIfAllTypes == Py_True) {
-//         // call the function
-//         PyObject *fncargs[nargs + 1];                            // variable-length array
-//         for (i =0; i < nargs; i++) fncargs[i] = args[i];     // positional args
-//         fncargs[nargs] = schemaVars;                          // keyword arg schemaVars
-//         fnkwnames = decs[ndecs++] = PyTuple_Pack(1, PyUnicode_FromString("schemaVars"));
-//         if (!fnkwnames) RETURN_PRIOR_ERR(decs, ndecs);
-//
-//         // PyObject *repr_obj = decs[ndecs++] = PyObject_Repr(tvfunc);
-//         // if (repr_obj) {
-//         //     const char *repr_str = PyUnicode_AsUTF8(repr_obj);
-//         //     PP(info, "%s@%i - nargs: %i - %s", FN_NAME, __LINE__, nargs, repr_str);
-//         // }
-//         answer = PyObject_Vectorcall(tvfunc, fncargs, nargs, fnkwnames);        // nargs is the number of positional arguments
-
 pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t nargsf, PyObject *kwnames) {
-    PyObject *sysTraceFn, *ret, *tRet, *schemaVars, *schemaVarsOld, *fnkwnames, *argTypes, *btype, *distancesResult, *match, *fallback, *argDistances;
+    PyObject *ret, *tRet, *schemaVars, *schemaVarsOld, *fnkwnames, *argTypes, *btype, *distancesResult,
+        *match, *fallback, *argDistances, *helperSchemaVars;
     Py_ssize_t nargs;  int i;  PyObject *decs[9] = {0};  int ndecs = 0;
     nargs = PyVectorcall_NARGS(nargsf);
 
@@ -525,8 +497,8 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
     if (self->pass_tByT == Py_True) {
         // PP(info, "%s@%i - tByT", FN_NAME, __LINE__);
         if (kwnames && PyTuple_GET_SIZE(kwnames) == 1 && strcmp(PyUnicode_AsUTF8(PyTuple_GET_ITEM(kwnames, 0)), "schemaVars") == 0) {
-                schemaVars = args[nargs];
-                if (!PyDict_Check(schemaVars)) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "tByT is not a dict");
+            schemaVars = args[nargs];
+            if (!PyDict_Check(schemaVars)) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "tByT is not a dict");
         } else {
             // match, fallback, schemaVars, argDistances = _distancesEtAl([_typeOf(arg) for arg in args], self.sig)
             // Build [ _typeOf(arg) for arg in args ]
@@ -535,7 +507,7 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
             for (i = 0; i < nargs; ++i) {
                 btype = PyObject_CallFunctionObjArgs(_typeOf_pyfn, args[i], NULL);
                 if (!btype) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "typeOf call failed");
-                PyList_SET_ITEM(argTypes, i, btype);                                    // steals ref to btype
+                PyList_SET_ITEM(argTypes, i, btype);                            // steals ref to btype
             }
 
             // Call _distancesEtAl_pyfn([types], self->sig)
@@ -545,21 +517,21 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
             if (!PyTuple_Check(distancesResult) || PyTuple_GET_SIZE(distancesResult) != 4) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "_distancesEtAl did not return a 4-tuple");
 
             // Unpack: match, fallback, schemaVars, argDistances
-            match = PyTuple_GET_ITEM(distancesResult, 0);    // borrowed
-            fallback = PyTuple_GET_ITEM(distancesResult, 1);  // borrowed
-            schemaVars = PyTuple_GET_ITEM(distancesResult, 2);            // borrowed
-            Py_INCREF(schemaVars); // will be DECREF'd later
-            argDistances = PyTuple_GET_ITEM(distancesResult, 3); // borrowed
+            match = PyTuple_GET_ITEM(distancesResult, 0);                       // borrowed
+            fallback = PyTuple_GET_ITEM(distancesResult, 1);                    // borrowed
+            schemaVars = PyTuple_GET_ITEM(distancesResult, 2);                  // borrowed
+            Py_INCREF(schemaVars);                                              // will be DECREF'd later
+            argDistances = PyTuple_GET_ITEM(distancesResult, 3);                // borrowed
         }
         fnkwnames = decs[ndecs++] = PyTuple_Pack(1, PyUnicode_FromString("tByT"));
         if (!fnkwnames) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "can't create tuple of kwargnames");
         if (self->typeHelper_pyfn) {
             // PP(info, "%s@%i - %s(%zd args) with typeHelper", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
-            schemaVars = decs[ndecs++] = PyObject_Vectorcall(self->typeHelper_pyfn, args, nargsf, fnkwnames);
-            PyObject *fncargs[nargs + 1];                            // variable-length array
-            for (i =0; i < nargs; i++) fncargs[i] = args[i];     // positional args
-            fncargs[nargs] = schemaVars;                          // keyword arg schemaVars
-            ret = PyObject_Vectorcall(self->_v, fncargs, nargs, fnkwnames);        // nargs is the number of positional arguments
+            helperSchemaVars = decs[ndecs++] = PyObject_Vectorcall(self->typeHelper_pyfn, args, nargsf, fnkwnames);
+            PyObject *fncargs[nargs + 1];                                       // variable-length array
+            for (i =0; i < nargs; i++) fncargs[i] = args[i];                    // positional args
+            fncargs[nargs] = helperSchemaVars;                                  // keyword arg schemaVars
+            ret = PyObject_Vectorcall(self->_v, fncargs, nargs, fnkwnames);     // nargs is the number of positional arguments
         } else {
             // PP(info, "%s@%i - %s(%zd args) with tByT", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
             ret = PyObject_Vectorcall(self->_v, args, nargsf, fnkwnames);
@@ -580,7 +552,7 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
             // PP(info, "%s@%i - %s(%zd args) - _tvfuncErrorCallback1_pyfn", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
             PyObject *err_result = PyObject_CallFunctionObjArgs(_tvfuncErrorCallback1_pyfn, exc_value, self, NULL);
             // PP(info, "%s@%i", FN_NAME, __LINE__);
-            PyErr_Restore(exc_type, exc_value, exc_tb);                                 // steals reference so do not DECREF
+            PyErr_Restore(exc_type, exc_value, exc_tb);                         // steals reference so do not DECREF
             // PP(info, "%s@%i", FN_NAME, __LINE__);
             RETURN (decs, ndecs, NULL);
         }
@@ -662,44 +634,44 @@ pvt int PyJFunc_set_d(PyJFunc *self, PyObject *d, void* closure) {
 }
 
 pvt PyGetSetDef PyJFunc_getsetters[] = {
-        // {"d", (getter) PyJFunc_get_d, (setter) PyJFunc_set_d, "dispatcher", 0},
-        // {"__doc__", (getter) PyJFunc_get_doc, 0, 0, 0},
-        {0}
+    // {"d", (getter) PyJFunc_get_d, (setter) PyJFunc_set_d, "dispatcher", 0},
+    // {"__doc__", (getter) PyJFunc_get_doc, 0, 0, 0},
+    {0}
 };
 
 // https://docs.python.org/3/c-api/structures.html#c.Py_READONLY
 pvt PyMemberDef PyJFunc_members[] = {
-        {"style",                                Py_T_OBJECT_EX, offsetof(PyJFunc, style), Py_READWRITE, "style"},
-        {"name",                               Py_T_OBJECT_EX, offsetof(PyJFunc, name), Py_READWRITE, "name"},
-        {"_t",                                     Py_T_OBJECT_EX, offsetof(PyJFunc, _t), Py_READWRITE, "_t"},
-        {"modname",                        Py_T_OBJECT_EX, offsetof(PyJFunc, modname), Py_READWRITE, "modname"},
-        {"_v",                                     Py_T_OBJECT_EX, offsetof(PyJFunc, _v), Py_READWRITE, "_v"},
-        {"argNames",                        Py_T_OBJECT_EX, offsetof(PyJFunc, argNames), Py_READWRITE, "argNames"},
-        {"sig",                                    Py_T_OBJECT_EX, offsetof(PyJFunc, sig), Py_READWRITE, "sig"},
-        {"tArgs",                                Py_T_OBJECT_EX, offsetof(PyJFunc, tArgs), Py_READWRITE, "tArgs"},
-        {"tRet",                                  Py_T_OBJECT_EX, offsetof(PyJFunc, tRet), Py_READWRITE, "tRet"},
-        {"pass_tByT",                       Py_T_OBJECT_EX, offsetof(PyJFunc, pass_tByT), Py_READWRITE, "pass_tByT"},
-        {"dispatchEvenIfAllTypes", Py_T_OBJECT_EX, offsetof(PyJFunc, dispatchEvenIfAllTypes), Py_READWRITE, "dispatchEvenIfAllTypes"},
-        {"typeHelper",                      Py_T_OBJECT_EX, offsetof(PyJFunc, typeHelper_pyfn), Py_READWRITE, "typeHelper"},
-        {"__doc__",                          Py_T_OBJECT_EX, offsetof(PyJFunc, __doc__), Py_READWRITE, "__doc__"},
-        {0}
+    {"style",                   Py_T_OBJECT_EX, offsetof(PyJFunc, style), Py_READWRITE, "style"},
+    {"name",                    Py_T_OBJECT_EX, offsetof(PyJFunc, name), Py_READWRITE, "name"},
+    {"_t",                      Py_T_OBJECT_EX, offsetof(PyJFunc, _t), Py_READWRITE, "_t"},
+    {"modname",                 Py_T_OBJECT_EX, offsetof(PyJFunc, modname), Py_READWRITE, "modname"},
+    {"_v",                      Py_T_OBJECT_EX, offsetof(PyJFunc, _v), Py_READWRITE, "_v"},
+    {"argNames",                Py_T_OBJECT_EX, offsetof(PyJFunc, argNames), Py_READWRITE, "argNames"},
+    {"sig",                     Py_T_OBJECT_EX, offsetof(PyJFunc, sig), Py_READWRITE, "sig"},
+    {"tArgs",                   Py_T_OBJECT_EX, offsetof(PyJFunc, tArgs), Py_READWRITE, "tArgs"},
+    {"tRet",                    Py_T_OBJECT_EX, offsetof(PyJFunc, tRet), Py_READWRITE, "tRet"},
+    {"pass_tByT",               Py_T_OBJECT_EX, offsetof(PyJFunc, pass_tByT), Py_READWRITE, "pass_tByT"},
+    {"dispatchEvenIfAllTypes",  Py_T_OBJECT_EX, offsetof(PyJFunc, dispatchEvenIfAllTypes), Py_READWRITE, "dispatchEvenIfAllTypes"},
+    {"typeHelper",              Py_T_OBJECT_EX, offsetof(PyJFunc, typeHelper_pyfn), Py_READWRITE, "typeHelper"},
+    {"__doc__",                 Py_T_OBJECT_EX, offsetof(PyJFunc, __doc__), Py_READWRITE, "__doc__"},
+    {0}
 };
 
 pvt PyTypeObject PyJFuncCls = {
-        PyVarObject_HEAD_INIT(0, 0)
-        .tp_name = "jones.JFunc",
-        .tp_basicsize = sizeof(PyJFunc),
-        .tp_itemsize = 0,
-        .tp_doc = PyDoc_STR("JFunc"),
-        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-        .tp_new = PyJFunc_new,
-        .tp_init = (initproc) PyJFunc_init,
-        .tp_dealloc = (destructor) PyJFunc_dealloc,
-        .tp_members = PyJFunc_members,
-        // .tp_methods = PyJFunc_methods,
-        .tp_getset = PyJFunc_getsetters,
-        .tp_call = (ternaryfunc) PyVectorcall_Call,
-        .tp_vectorcall_offset = offsetof(PyJFunc, vectorcall),
+    PyVarObject_HEAD_INIT(0, 0)
+    .tp_name = "jones.JFunc",
+    .tp_basicsize = sizeof(PyJFunc),
+    .tp_itemsize = 0,
+    .tp_doc = PyDoc_STR("JFunc"),
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyJFunc_new,
+    .tp_init = (initproc) PyJFunc_init,
+    .tp_dealloc = (destructor) PyJFunc_dealloc,
+    .tp_members = PyJFunc_members,
+    // .tp_methods = PyJFunc_methods,
+    .tp_getset = PyJFunc_getsetters,
+    .tp_call = (ternaryfunc) PyVectorcall_Call,
+    .tp_vectorcall_offset = offsetof(PyJFunc, vectorcall),
 };
 
 
@@ -710,8 +682,8 @@ pvt PyTypeObject PyJFuncCls = {
 
 typedef struct {
     PyObject_HEAD
-    PyObject *_tvfuncBySig;                 // dict of JFunc by sig
-    PyObject *name;                              // str
+    PyObject *_tvfuncBySig;                                                     // dict of JFunc by sig
+    PyObject *name;                                                             // str
     PyObject *numargs;
     PyObject *_selectFunctionCallback; 
     vectorcallfunc vectorcall;
@@ -725,7 +697,7 @@ typedef struct {
 //             tvfunc = firstValue(self._tvfuncBySig)
 //             return tvfunc(*args)
 //         with disable_tracing():
-//             tvfunc, schemaVars, hasValue = self.selectFunction(*args)        // call back into Python to select the function
+//             tvfunc, schemaVars, hasValue = self.selectFunction(*args)    // << call back into Python to select the function
 //         if hasValue or tvfunc.dispatchEvenIfAllTypes:
 //             return tvfunc(*args, schemaVars=schemaVars)
 //         else:
@@ -750,7 +722,7 @@ pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, 
     if (!PyTuple_Check(tup) || PyTuple_GET_SIZE(tup) != 3) RETURN_NEW_ERR(decs, ndecs, PyExc_TypeError, "Expected a tuple of (tvfunc, schemaVars, hasValue) from function selection");
 
     // unpack tup
-    tvfunc = PyTuple_GET_ITEM(tup, 0);             // No need to add to decs for later DECREF as it's a borrowed reference
+    tvfunc = PyTuple_GET_ITEM(tup, 0);                                          // borrowed
     schemaVars = PyTuple_GET_ITEM(tup, 1);
     hasValue = PyTuple_GET_ITEM(tup, 2);
     
@@ -758,9 +730,9 @@ pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, 
     
     if (hasValue == Py_True || dispatchEvenIfAllTypes == Py_True) {
         // call the function
-        PyObject *fncargs[nargs + 1];                            // variable-length array
-        for (i =0; i < nargs; i++) fncargs[i] = args[i];     // positional args
-        fncargs[nargs] = schemaVars;                          // keyword arg schemaVars
+        PyObject *fncargs[nargs + 1];                                           // variable-length array
+        for (i =0; i < nargs; i++) fncargs[i] = args[i];                        // positional args
+        fncargs[nargs] = schemaVars;                                            // keyword arg schemaVars
         fnkwnames = decs[ndecs++] = PyTuple_Pack(1, PyUnicode_FromString("schemaVars"));
         if (!fnkwnames) RETURN_PRIOR_ERR(decs, ndecs);
 
@@ -782,7 +754,6 @@ pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, 
         return answer;
     }
     else {
-        // return JSelectionResult(tvfunc, schemaVars)
         // PP(info, "%s@%i", FN_NAME, __LINE__);
         answer = PyObject_CallFunction((PyObject *) &PyJSelectionResultCls, "OO", tvfunc, schemaVars);
         if (!answer) RETURN_PRIOR_ERR(decs, ndecs);
@@ -816,28 +787,28 @@ pvt int PyJOverload_init(struct Fn *self, PyObject *args, PyObject *kwds) {
 }
 
 pvt PyMemberDef PyJOverload_members[] = {
-        {"_tvfuncBySig", Py_T_OBJECT_EX, offsetof(PyJOverload, _tvfuncBySig), Py_READWRITE, "_tvfuncBySig description"},
-        {"name", Py_T_OBJECT_EX, offsetof(PyJOverload, name), Py_READWRITE, "name description"},
-        {"numargs", Py_T_OBJECT_EX, offsetof(PyJOverload, numargs), Py_READWRITE, "numargs description"},
-        {"_selectFunctionCallback", Py_T_OBJECT_EX, offsetof(PyJOverload, _selectFunctionCallback), Py_READWRITE, "_selectFunctionCallback description"},
-        {0}
+    {"_tvfuncBySig", Py_T_OBJECT_EX, offsetof(PyJOverload, _tvfuncBySig), Py_READWRITE, "_tvfuncBySig description"},
+    {"name", Py_T_OBJECT_EX, offsetof(PyJOverload, name), Py_READWRITE, "name description"},
+    {"numargs", Py_T_OBJECT_EX, offsetof(PyJOverload, numargs), Py_READWRITE, "numargs description"},
+    {"_selectFunctionCallback", Py_T_OBJECT_EX, offsetof(PyJOverload, _selectFunctionCallback), Py_READWRITE, "_selectFunctionCallback description"},
+    {0}
 };
 
 pvt PyTypeObject PyJOverloadCls = {
-        PyVarObject_HEAD_INIT(0, 0)
-        .tp_name = "jones.JOverload",
-        .tp_basicsize = sizeof(PyJOverload),
-        .tp_itemsize = 0,
-        .tp_doc = PyDoc_STR("JOverload holds a map of JFunc by sig"),
-        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-        .tp_new = PyJOverload_new,
-        .tp_init = (initproc) PyJOverload_init,
-        .tp_dealloc = (destructor) PyJOverload_dealloc,
-        .tp_members = PyJOverload_members,
-        // .tp_methods = PyJOverload_methods,
-        // .tp_getset = PyJOverload_getsetters,
-        .tp_call = (ternaryfunc) PyVectorcall_Call,
-        .tp_vectorcall_offset = offsetof(PyJOverload, vectorcall),
+    PyVarObject_HEAD_INIT(0, 0)
+    .tp_name = "jones.JOverload",
+    .tp_basicsize = sizeof(PyJOverload),
+    .tp_itemsize = 0,
+    .tp_doc = PyDoc_STR("JOverload holds a map of JFunc by sig"),
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_new = PyJOverload_new,
+    .tp_init = (initproc) PyJOverload_init,
+    .tp_dealloc = (destructor) PyJOverload_dealloc,
+    .tp_members = PyJOverload_members,
+    // .tp_methods = PyJOverload_methods,
+    // .tp_getset = PyJOverload_getsetters,
+    .tp_call = (ternaryfunc) PyVectorcall_Call,
+    .tp_vectorcall_offset = offsetof(PyJOverload, vectorcall),
 };
 
 
@@ -848,9 +819,9 @@ pvt PyTypeObject PyJOverloadCls = {
 
 typedef struct {
     PyObject_HEAD
-    PyObject *_overloadByNumArgs;   // list of Overload
-    PyObject *name;                              // str
-    PyObject *style;
+    PyObject *_overloadByNumArgs;                                               // list of Overload
+    PyObject *name;                                                             // str
+    PyObject *style;                                                            // BType
     PyObject *_t;
     PyObject *_doc;
     vectorcallfunc vectorcall;
