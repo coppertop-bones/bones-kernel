@@ -22,8 +22,8 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 
-#ifndef __BK_SM_C
-#define __BK_SM_C "bk/sm.c"
+#ifndef SRC_BK_SM_C
+#define SRC_BK_SM_C "bk/sm.c"
 
 #include "mm.c"
 #include "../../include/bk/sm.h"
@@ -292,4 +292,4 @@ pub SM_SLID_T sm_slid(BK_SM *sm, symid_t *symlist) {
 
 
 
-#endif // __BK_SM_C
+#endif  // SRC_BK_SM_C

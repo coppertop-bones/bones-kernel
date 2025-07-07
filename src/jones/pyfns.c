@@ -519,7 +519,7 @@ pvt PyObject * _Partial__call__(struct Partial *partial, PyObject *args, PyObjec
             new_partial, partial->Fn.name, partial->Fn.bmod, partial->Fn.d, TBC,
             new_missing, 0, partial->args
         );
-        // replace the TBIs with the new args
+        // replace the TBCs with the new args
         int oNextArg = 0;
         for (Py_ssize_t o=0; o < full_size; o++) {
             PyObject * arg = partial->args[o];
@@ -924,7 +924,6 @@ pvt PyTypeObject PyPTernaryCls = {
     .tp_call = (ternaryfunc) _Partial__call__,
     .tp_as_number = (PyNumberMethods*) &_pternary_tp_as_number,
 };
-
 
 
 #endif  // SRC_JONES_PYFNS_C

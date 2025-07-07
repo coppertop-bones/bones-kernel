@@ -13,4 +13,4 @@
 
 
 
-#endif // INC_QU_SOBOL_H
+#endif  // INC_QU_SOBOL_H

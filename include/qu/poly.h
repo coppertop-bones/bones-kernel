@@ -13,4 +13,4 @@
 
 
 
-#endif // INC_QU_POLY_H
+#endif  // INC_QU_POLY_H

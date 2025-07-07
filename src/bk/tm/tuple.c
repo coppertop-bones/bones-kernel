@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_TUPLE_C
-#define __BK_TM_TUPLE_C "bk/tm/tuple.c"
+#ifndef SRC_BK_TM_TUPLE_C
+#define SRC_BK_TM_TUPLE_C "bk/tm/tuple.c"
 
 
 #include "core.c"
@@ -82,4 +82,4 @@ pub TM_TLID_T tm_tuple_tlid(BK_TM *tm, btypeid_t btypeid) {
     return (TM_BMT_ID(sum) == bmttup) ? tm->tlid_by_tupid[TM_DETAILS_ID(sum)] : 0;
 }
 
-#endif  // __BK_TM_TUPLE_C
+#endif  // SRC_BK_TM_TUPLE_C

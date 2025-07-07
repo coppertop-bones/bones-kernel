@@ -22,4 +22,4 @@ pub int EM_trash(BK_EM *);
 
 // sort order stuff
 
-#endif // INC_BK_EM_H
+#endif  // INC_BK_EM_H

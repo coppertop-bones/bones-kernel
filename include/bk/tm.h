@@ -306,6 +306,6 @@ pub int TM_trash(BK_TM *);
 
 
 
-#endif // BK_TM_H
+#endif  // BK_TM_H
 
 

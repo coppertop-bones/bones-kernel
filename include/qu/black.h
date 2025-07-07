@@ -32,4 +32,4 @@ pub double qu_bachelier_call(double t, double k, double s, double sigma, double 
 pub double qu_bachelier_put(double t, double k, double s, double sigma, double df, double (* CN)(double), double (* NPDF)(double));
 
 
-#endif // INC_QU_BLACK_H
+#endif  // INC_QU_BLACK_H

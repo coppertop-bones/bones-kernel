@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_ATOM_C
-#define __BK_TM_ATOM_C "bk/tm/atom.c"
+#ifndef SRC_BK_TM_ATOM_C
+#define SRC_BK_TM_ATOM_C "bk/tm/atom.c"
 
 
 #include "core.c"
@@ -38,4 +38,4 @@ pub btypeid_t tm_check_atom(BK_TM *tm, btypeid_t btypeid, btypeid_t implicitid, 
 }
 
 
-#endif  // __BK_TM_ATOM_C
+#endif  // SRC_BK_TM_ATOM_C

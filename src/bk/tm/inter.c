@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_INTER_C
-#define __BK_TM_INTER_C "bk/tm/inter.c"
+#ifndef SRC_BK_TM_INTER_C
+#define SRC_BK_TM_INTER_C "bk/tm/inter.c"
 
 
 #include "core.c"
@@ -321,4 +321,4 @@ pub btypeid_t * tm_inter_tl(BK_TM *tm, btypeid_t btypeid) {
     tm_interv((tm), 0, sizeof(args) / sizeof(args[0]), args);                                                           \
 })
 
-#endif  // __BK_TM_INTER_C
+#endif  // SRC_BK_TM_INTER_C

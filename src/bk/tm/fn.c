@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_FN_C
-#define __BK_TM_FN_C "bk/tm/fn.c"
+#ifndef SRC_BK_TM_FN_C
+#define SRC_BK_TM_FN_C "bk/tm/fn.c"
 
 
 #include "core.c"
@@ -71,4 +71,4 @@ pub TM_T1T2 tm_fn_targs_tret(BK_TM *tm, btypeid_t btypeid) {
     return tm->t1t2_by_fncid[TM_DETAILS_ID(*sum)];
 }
 
-#endif  // __BK_TM_FN_C
+#endif  // SRC_BK_TM_FN_C

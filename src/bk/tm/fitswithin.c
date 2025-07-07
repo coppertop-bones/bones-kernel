@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_FITSWITHIN_C
-#define __BK_TM_FITSWITHIN_C "bk/tm/fitswithin.c"
+#ifndef SRC_BK_TM_FITSWITHIN_C
+#define SRC_BK_TM_FITSWITHIN_C "bk/tm/fitswithin.c"
 
 
 #include "core.c"
@@ -27,4 +27,4 @@ int tm_fitsWithin(BK_TM *tm, btypeid_t a, btypeid_t b) {
     return 0;
 }
 
-#endif  // __BK_TM_FITSWITHIN_C
+#endif  // SRC_BK_TM_FITSWITHIN_C

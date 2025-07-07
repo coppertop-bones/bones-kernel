@@ -1,0 +1,11 @@
+[project]
+name = "bones-kernel"
+requires-python = ">= 3.11"
+dependencies = [
+    "numpy>=1.17.3",
+]
+description = "Jones - the kernel for coppertop-bones."
+version = "2025.7.5a1"              # https://packaging.python.org/en/latest/specifications/version-specifiers/#version-specifiers
+
+[tool.cibuildwheel]
+build = "cp311-*"                   # https://cibuildwheel.pypa.io/en/stable/options/#build-skip

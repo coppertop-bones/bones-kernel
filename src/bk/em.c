@@ -4,7 +4,6 @@
 // EM - ENUM MANAGER
 // ---------------------------------------------------------------------------------------------------------------------
 
-
 #ifndef SRC_BK_EM_C
 #define SRC_BK_EM_C "bk/em.c"
 
@@ -24,4 +23,4 @@ pub int EM_trash(BK_EM *em) {
 }
 
 
-#endif // SRC_BK_EM_C
+#endif  // SRC_BK_EM_C

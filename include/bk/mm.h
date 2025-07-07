@@ -113,4 +113,4 @@ tdd int isDead(Buckets *, void *p);
 pub BK_MM * MM_create();
 pub int MM_trash(BK_MM *);
 
-#endif // INC_BK_MM_H
+#endif  // INC_BK_MM_H

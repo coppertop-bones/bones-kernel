@@ -97,4 +97,4 @@ pub int os_mwipe(void *addr, size_t sz);
 pub int os_mrelease(void *addr, size_t sz);
 
 
-#endif // INC_BK_LIB_OS_H
+#endif  // INC_BK_LIB_OS_H

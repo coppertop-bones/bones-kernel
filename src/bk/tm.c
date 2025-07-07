@@ -5,8 +5,8 @@
 // KEEPER REQUISITES: core
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_TM_C
-#define __BK_TM_C "bk/tm.c"
+#ifndef SRC_BK_TM_C
+#define SRC_BK_TM_C "bk/tm.c"
 
 
 #include "../../include/bk/mm.h"
@@ -30,4 +30,4 @@
 #include "tm/tm.c"
 
 
-#endif  // __BK_TM_C
+#endif  // SRC_BK_TM_C

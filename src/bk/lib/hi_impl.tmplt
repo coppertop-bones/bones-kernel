@@ -234,4 +234,4 @@ static bk_inline u32 __hi_Wang_hash(u32 h) {
 }
 
 
-#endif // SRC_BK_LIB_HI_IMPL_TMPLT
+#endif  // SRC_BK_LIB_HI_IMPL_TMPLT

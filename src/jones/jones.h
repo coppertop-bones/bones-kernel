@@ -13,13 +13,14 @@
 //#include <unistd.h>
 //#include <sys/mman.h>
 
-#include "../../lib/config/common.h"
+#include "../../include/bk/_cfg.h"
 #include BK_PYTHON_H
 #include BK_DESCROBJECT_H
 #include BK_STRUCTMEMBER_H
 
 // Python 3.12 prefixes stuff with Py_
 #define Py_T_OBJECT_EX  /*6*/       T_OBJECT
+#define Py_READWRITE     /*0*/       0
 #define Py_READONLY     /*1*/       READONLY
 #define Py_T_INT        /*1*/       T_INT
 #define Py_T_UBYTE      /*9*/       T_UBYTE
@@ -34,6 +35,7 @@ struct Base {
     PyObject_VAR_HEAD
 };
 
+// OPEN: rename to CoppertopFn
 struct Fn {
     struct Base Base;
     PyObject *name;
@@ -42,6 +44,7 @@ struct Fn {
     PyObject *TBCSentinel;
 };
 
+// OPEN: rename to CoppertopPartial
 struct Partial {
     struct Fn Fn;
     u8 num_tbc;             // the number of arguments missing in the args array
@@ -85,6 +88,7 @@ pvt PyObject *PyJonesError;
 pvt PyObject *PyCoppertopSyntaxError;
 
 pvt PyObject *PyBTypeError;
+pvt PyObject *PySchemaError;
 
 pvt PyTypeObject PyBTypeCls;
 pvt PyTypeObject PyKernelCls;
@@ -99,6 +103,13 @@ pvt PyTypeObject PyPUnaryCls;
 pvt PyTypeObject PyPBinaryCls;
 pvt PyTypeObject PyPTernaryCls;
 
+pvt PyTypeObject PyJSelectionResultCls;
+pvt PyTypeObject PyFitsCls;
+pvt PyTypeObject PyJFuncCls;
+pvt PyTypeObject PyJOverloadCls;
+pvt PyTypeObject PyJFamilyCls;
+
+pvt PyObject *PyBType_py;       // like an any
 
 #define PTR_MASK 0x0000FFFFFFFFFFFF
 

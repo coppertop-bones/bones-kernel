@@ -65,6 +65,9 @@ typedef enum : BTYPEID_T_TYPE {
     B_FN_PTR,
     B_EXTERN_FN,
     B_EXTERN_FN_PTR,
+    B_PTR,
+    B_PTR_PTR,
+    B_PTR_PTR_PTR,
 
     B_T,
     B_T1,       // aka B_TA
@@ -128,4 +131,4 @@ typedef BTYPEID_T_TYPE btypeid_t;
 #define B_TS B_T19
 #define B_TT B_T20
 
-#endif // INC_BK_TM_BTYPE_T_ENUM_H
+#endif  // INC_BK_TM_BTYPE_T_ENUM_H

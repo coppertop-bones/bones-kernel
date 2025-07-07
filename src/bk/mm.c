@@ -10,8 +10,8 @@
 // https://stackoverflow.com/questions/17197615/no-mremap-for-windows - use windows AWE
 
 
-#ifndef __BK_MM_C
-#define __BK_MM_C "bk/mm.c"
+#ifndef SRC_BK_MM_C
+#define SRC_BK_MM_C "bk/mm.c"
 
 #include <stdlib.h>
 #include "lib/os.c"
@@ -166,4 +166,4 @@ pub int isDead(Buckets *a, void *p) {
 }
 
 
-#endif // __BK_MM_C
+#endif  // SRC_BK_MM_C

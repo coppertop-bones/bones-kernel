@@ -16,6 +16,7 @@
 #include "pytm.c"
 #include "pyfs.c"
 #include "pykernel.c"
+#include "pytvfunc.c"
 
 
 
@@ -24,19 +25,30 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 pvt PyMethodDef jones_fns[] = {
-    {"sc_new", (PyCFunction)                    _fs_create, METH_FASTCALL, "sc_new(numArgs, arrayLen) -> pSC"},
-    {"sc_drop", (PyCFunction)                   _fs_trash, METH_FASTCALL, "sc_drop(pSC) -> None"},
-    {"sc_nextFreeArrayIndex", (PyCFunction)     _fs_next_free_array_index, METH_FASTCALL, ""},
-    {"sc_atArrayPut", (PyCFunction)             _fs_atArrayPut, METH_FASTCALL, "sc_atArrayPut(pSC, index, pSig, fnId) -> Void\n\nin pSig belonging to pSC, at index put fnId"},
-    {"sc_queryPtr", (PyCFunction)               _fs_pQuery, METH_FASTCALL, "scQueryPtr(pSC)\n\nanswer a pointer to the query buffer"},
-    {"sc_getFnId", (PyCFunction)                _fs_get_result, METH_FASTCALL, ""},
-    {"sc_tArgsFromQuery", (PyCFunction)         _fs_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
-    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction) _fs_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_new", (PyCFunction)                        _fs_create, METH_FASTCALL, "sc_new(numArgs, arrayLen) -> pSC"},
+    {"sc_drop", (PyCFunction)                       _fs_trash, METH_FASTCALL, "sc_drop(pSC) -> None"},
+    {"sc_nextFreeArrayIndex", (PyCFunction)         _fs_next_free_array_index, METH_FASTCALL, ""},
+    {"sc_atArrayPut", (PyCFunction)                 _fs_atArrayPut, METH_FASTCALL, "sc_atArrayPut(pSC, index, pSig, fnId) -> Void\n\nin pSig belonging to pSC, at index put fnId"},
+    {"sc_queryPtr", (PyCFunction)                   _fs_pQuery, METH_FASTCALL, "scQueryPtr(pSC)\n\nanswer a pointer to the query buffer"},
+    {"sc_getFnId", (PyCFunction)                    _fs_get_result, METH_FASTCALL, ""},
+    {"sc_tArgsFromQuery", (PyCFunction)             _fs_tArgs_from_query, METH_FASTCALL, "sc_tArgsFromQuery(pSC : ptr, allTypes : pylist)\n\nanswers a tuple of tArgs from the slot"},
+    {"sc_fillQuerySlotWithBTypesOf", (PyCFunction)  _fs_fill_query_slot_with_btypes_of, METH_FASTCALL, "sc_fillQuerySlotWithBTypesOf(pSC : ptr, args : tuple)\n\nanswers a tuple of tArgs from the slot"},
 
-    {"sc_test_arrayPtr", (PyCFunction)          _fs_test_pArray, METH_FASTCALL, "sc_test_arrayPtr(pSC)\n\nanswer a pointer to the array of sigs"},
-    {"sc_test_slotWidth", (PyCFunction)         _fs_test_slot_width, METH_FASTCALL, "sc_test_slotWidth(pSC) -> count"},
-    {"sc_test_numSlots", (PyCFunction)          _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
+    {"sc_test_arrayPtr", (PyCFunction)              _fs_test_pArray, METH_FASTCALL, "sc_test_arrayPtr(pSC)\n\nanswer a pointer to the array of sigs"},
+    {"sc_test_slotWidth", (PyCFunction)             _fs_test_slot_width, METH_FASTCALL, "sc_test_slotWidth(pSC) -> count"},
+    {"sc_test_numSlots", (PyCFunction)              _fs_test_num_slots, METH_FASTCALL, "sc_test_numSlots(pSC) -> count"},
     {"sc_test_fillQuerySlotAndGetFnId", (PyCFunction) _fs_test_fill_query_slot_and_get_result, METH_FASTCALL, "sc_test_fillQuerySlotAndGetFnId(pSC, tArgs : pytuple) -> fnId\n\nanswer the resultId for the signature tArgs"},
+
+    //  tvfunc, overload, family functions
+    {"disableReturnCheck", (PyCFunction)            setDisableReturnCheck,          METH_FASTCALL, "disableReturnCheck(bool) -> None"},
+    {"set_typeOf", (PyCFunction)                    set_typeOf_pyfn,                METH_FASTCALL, "set_typeOf(callable) -> None"},
+    {"set_distancesEtAl", (PyCFunction)             set_distancesEtAl_pyfn,         METH_FASTCALL, "set_distancesEtAl(callable) -> None"},
+    {"set_fitsWithin",  (PyCFunction)               set_fitsWithin_pyfn,            METH_FASTCALL, "set_fitsWithin(callable) -> None"},
+    {"set_tvfuncErrorCallback1", (PyCFunction)      set_tvfuncErrorCallback1_pyfn,  METH_FASTCALL, "set_tvfuncErrorCallback1(callable) -> None"},
+    {"set_tvfuncErrorCallback2", (PyCFunction)      set_tvfuncErrorCallback2_pyfn,  METH_FASTCALL, "set_tvfuncErrorCallback2(callable) -> None"},
+    {"set_updateSchemaVarsWith", (PyCFunction)      set_updateSchemaVarsWith_pyfn,  METH_FASTCALL, "set_updateSchemaVarsWith(callable) -> None"},
+    {"set_BType_py", (PyCFunction)                  set_BType_py,                   METH_FASTCALL, "set_BType_py(BType) -> None"},
+    {"_distancesEtAl", (PyCFunction)                _distancesEtAl,                 METH_FASTCALL, "distancesEtAl(callerSig, fnSig) -> fnId\n\nanswers match, fallback, schemaVars and argDistances for the given callerSig and fnSig"},
 
     {0}
 };
@@ -58,6 +70,14 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
     if (m == 0) {return PyErr_Format(PyExc_ImportError, "PySMCls is not ready, %s, %i", __FILE__, __LINE__);}
 
     g_logging_level = info;
+
+    // import threading and sys modules
+    threadingModule = PyImport_ImportModule("threading");
+    if (!threadingModule) return PyErr_Format(PyExc_ImportError, "Can't import threading!");
+    sysModule = PyImport_ImportModule("sys");
+    if (!sysModule) return PyErr_Format(PyExc_ImportError, "Can't import sys!");
+
+    _disableReturnCheck = false;
 
 
     // PyJonesError
@@ -128,7 +148,7 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
     }
 
 
-    // add function classes
+    // add pipeable function and partial classes
     if (PyType_Ready(&FnCls) < 0) {return PyErr_Format(PyExc_ImportError, "FnCls is not ready, %s, %i", __FILE__, __LINE__);}
     if (PyModule_AddObject(m, "_fn", (PyObject *) &FnCls) < 0) {
         Py_DECREF(&FnCls);
@@ -195,6 +215,53 @@ pub PyMODINIT_FUNC PyInit_jones(void) {
     if (PyType_Ready(&PyPTernaryCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyPTernaryCls is not ready, %s, %i", __FILE__, __LINE__);}
     if (PyModule_AddObject(m, "_pternary", (PyObject *) &PyPTernaryCls) < 0) {
         Py_DECREF(&PyPTernaryCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    // JSelectionResult
+    if (PyType_Ready(&PyJSelectionResultCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJSelectionResultCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JSelectionResult", (PyObject *) &PyJSelectionResultCls) < 0) {
+        Py_DECREF(&PyJSelectionResultCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    // Fits
+    if (PyType_Ready(&PyFitsCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyFitsCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "Fits", (PyObject *) &PyFitsCls) < 0) {
+        Py_DECREF(&PyFitsCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    // JFunc, JOverload, JFamily
+    if (PyType_Ready(&PyJFuncCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJFuncCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JFunc", (PyObject *) &PyJFuncCls) < 0) {
+        Py_DECREF(&PyJFuncCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if (PyType_Ready(&PyJOverloadCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJOverloadCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JOverload", (PyObject *) &PyJOverloadCls) < 0) {
+        Py_DECREF(&PyJOverloadCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    if (PyType_Ready(&PyJFamilyCls) < 0) {return PyErr_Format(PyExc_ImportError, "PyJFamilyCls is not ready, %s, %i", __FILE__, __LINE__);}
+    if (PyModule_AddObject(m, "JFamily", (PyObject *) &PyJFamilyCls) < 0) {
+        Py_DECREF(&PyJFamilyCls);
+        Py_DECREF(m);
+        return 0;
+    }
+
+    //  SchemaError
+    PySchemaError = PyErr_NewException("jones.SchemaError", PyBTypeError, NULL);
+    if (!PySchemaError) return PyErr_Format(PyExc_ImportError, "Can't create SchemaError");
+    if (PyModule_AddObject(m, "SchemaError", PySchemaError) < 0) {
+        Py_DECREF(PySchemaError);
         Py_DECREF(m);
         return 0;
     }

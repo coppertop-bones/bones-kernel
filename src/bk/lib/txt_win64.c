@@ -2,8 +2,8 @@
 // Copyright 2025 David Briant, https://github.com/coppertop-bones. Licensed under the Apache License, Version 2.0
 // ---------------------------------------------------------------------------------------------------------------------
 
-#ifndef __BK_LIB_TXT_WIN64_C
-#define __BK_LIB_TXT_WIN64_C "bk/lib/txt_win64.c"
+#ifndef SRC_BK_LIB_TXT_WIN64_C
+#define SRC_BK_LIB_TXT_WIN64_C "bk/lib/txt_win64.c"
 
 #include "../bk.c"
 
