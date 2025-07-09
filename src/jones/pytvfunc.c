@@ -528,7 +528,7 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
         if (self->typeHelper_pyfn) {
             // PP(info, "%s@%i - %s(%zd args) with typeHelper", FN_NAME, __LINE__, PyUnicode_AsUTF8(self->name), nargs);
             helperSchemaVars = decs[ndecs++] = PyObject_Vectorcall(self->typeHelper_pyfn, args, nargsf, fnkwnames);
-            PyObject *fncargs[nargs + 1];                                       // variable-length array
+            PyObject **fncargs = (PyObject **)bk_alloca((nargs + 1) * sizeof(PyObject *));    // variable-length array
             for (i =0; i < nargs; i++) fncargs[i] = args[i];                    // positional args
             fncargs[nargs] = helperSchemaVars;                                  // keyword arg schemaVars
             ret = PyObject_Vectorcall(self->_v, fncargs, nargs, fnkwnames);     // nargs is the number of positional arguments
@@ -730,7 +730,7 @@ pvt PyObject * PyJOverload_vectorcall(PyJOverload *self, PyObject *const *args, 
     
     if (hasValue == Py_True || dispatchEvenIfAllTypes == Py_True) {
         // call the function
-        PyObject *fncargs[nargs + 1];                                           // variable-length array
+        PyObject **fncargs = (PyObject **)bk_alloca((nargs + 1) * sizeof(PyObject *));
         for (i =0; i < nargs; i++) fncargs[i] = args[i];                        // positional args
         fncargs[nargs] = schemaVars;                                            // keyword arg schemaVars
         fnkwnames = decs[ndecs++] = PyTuple_Pack(1, PyUnicode_FromString("schemaVars"));
