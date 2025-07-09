@@ -63,6 +63,17 @@
 #include <stdint.h>
 
 
+#ifdef _MSC_VER
+    #include <malloc.h>         // MSVC (Windows)
+    #define bk_alloca _alloca
+#else
+    #include <alloca.h>         // GCC/Clang (Linux, macOS)
+    #define bk_alloca alloca
+#endif
+
+
+
+
 #define _4K 0x1000          /* 4096 */
 #define _8K 0x2000
 #define _16K 0x4000         /* 16384 */
@@ -103,21 +114,30 @@
 #define WIN_X64_CACHE_LINE_SIZE 128
 
 
+
+
+
+
 #ifndef bk_inline
 #ifdef _MSC_VER
-#define bk_inline __inline
+    #define bk_inline __inline
+    #include <malloc.h>         // MSVC (Windows)
 #else
-#define bk_inline inline
+    #define bk_inline inline
+    #include <alloca.h>         // GCC/Clang (Linux, macOS)
 #endif
 #endif /* bk_inline */
 
 
+int *arr = (int *)_alloca(n * sizeof(int)); // or alloca() on GCC/Clang
+
+
 #ifndef bk_unused
-#if (defined __clang__ && __clang_major__ >= 3) || (defined __GNUC__ && __GNUC__ >= 3)
-#define bk_unused __attribute__ ((__unused__))
-#else
-#define bk_unused
-#endif
+    #if (defined __clang__ && __clang_major__ >= 3) || (defined __GNUC__ && __GNUC__ >= 3)
+        #define bk_unused __attribute__ ((__unused__))
+    #else
+        #define bk_unused
+    #endif
 #endif /* bk_unused */
 
 

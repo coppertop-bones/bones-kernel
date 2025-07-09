@@ -19,7 +19,7 @@
 #include "pp.c"
 
 
-pvt unsigned int PAGE_SIZE = 0;
+pvt unsigned int BK_PAGE_SIZE = 0;
 
 
 pub BK_MM * MM_create() {
@@ -40,12 +40,12 @@ tdd void *_allocBucket(size size);
 
 
 pub void * Buckets_init(Buckets *a, size chunkSize) {
-    if (PAGE_SIZE == 0) {PAGE_SIZE = os_page_size();}
+    if (BK_PAGE_SIZE == 0) {BK_PAGE_SIZE = os_page_size();}
     a->first_bucket = 0;
     a->current_bucket = 0;
     a->next = 0;
     a->eoc = 0;
-    a->nPages = (int)(chunkSize / PAGE_SIZE + (chunkSize % PAGE_SIZE > 0));
+    a->nPages = (int)(chunkSize / BK_PAGE_SIZE + (chunkSize % BK_PAGE_SIZE > 0));
     return _nextBucket(a, 0, 1);
 }
 
@@ -80,14 +80,14 @@ tdd void * _nextBucket(Buckets *a, size n, size align) {
     if (!a->current_bucket) {
         // OPEN: allocate enough pages to hold size n aligned to align
         // which might mean fast forwarding to a big enough chunk
-        p = a->first_bucket = a->current_bucket = _allocBucket(a -> nPages * PAGE_SIZE);
+        p = a->first_bucket = a->current_bucket = _allocBucket(a -> nPages * BK_PAGE_SIZE);
         if (!p) return 0;
     } else {
         ch = (BucketHeader *)a->current_bucket;
         p = ch->next_chunk;
         if (!p) {
             // OPEN: see above
-            p = _allocBucket(a -> nPages * PAGE_SIZE);
+            p = _allocBucket(a -> nPages * BK_PAGE_SIZE);
             if (!p) return 0;
             ch->next_chunk = p;
         }
