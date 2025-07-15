@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef SRC_BK_LIB_OS_WIN64_C
-#define SRC_BK_LIB_OS_WIN64_C "bk/os_win64.c"
+#define SRC_BK_LIB_OS_WIN64_C "bk/lib/os_win64.c"
 
 #include <errno.h>
 #include <limits.h>         /* for INT_MAX */

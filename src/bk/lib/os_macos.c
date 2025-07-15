@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef SRC_BK_LIB_OS_MACOS_C
-#define SRC_BK_LIB_OS_MACOS_C "bk/os_macos.c"
+#define SRC_BK_LIB_OS_MACOS_C "bk/lib/os_macos.c"
 
 // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/MemoryAlloc.html
 // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/AboutMemory.html

@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifndef SRC_BK_LIB_OS_C
-#define SRC_BK_LIB_OS_C "bk/os.c"
+#define SRC_BK_LIB_OS_C "bk/lib/os.c"
 
 #if defined _WIN64 || defined _WIN32
 #include "os_win64.c"
