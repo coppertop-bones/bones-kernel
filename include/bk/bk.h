@@ -129,7 +129,7 @@
 #endif /* bk_inline */
 
 
-int *arr = (int *)_alloca(n * sizeof(int)); // or alloca() on GCC/Clang
+// int *arr = (int *)bk_alloca(n * sizeof(int));
 
 
 #ifndef bk_unused

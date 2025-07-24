@@ -497,11 +497,13 @@ pvt PyObject * PyJFunc_vectorcall(PyJFunc *self, PyObject *const *args, size_t n
     if (self->pass_tByT == Py_True) {
         // PP(info, "%s@%i - tByT", FN_NAME, __LINE__);
         if (kwnames && PyTuple_GET_SIZE(kwnames) == 1 && strcmp(PyUnicode_AsUTF8(PyTuple_GET_ITEM(kwnames, 0)), "schemaVars") == 0) {
+            // PP(info, "%s@%i - tByT", FN_NAME, __LINE__);
             schemaVars = args[nargs];
             if (!PyDict_Check(schemaVars)) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "tByT is not a dict");
         } else {
             // match, fallback, schemaVars, argDistances = _distancesEtAl([_typeOf(arg) for arg in args], self.sig)
             // Build [ _typeOf(arg) for arg in args ]
+            // PP(info, "%s@%i - tByT", FN_NAME, __LINE__);
             argTypes = decs[ndecs++] = PyList_New(nargs);
             if (!argTypes) RETURN_NEW_ERR(decs, ndecs, PyExc_RuntimeError, "Failed to allocate argTypes list");
             for (i = 0; i < nargs; ++i) {
