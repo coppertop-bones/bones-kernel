@@ -34,11 +34,8 @@ typedef enum {
 
 
 // bmetatypeid_t - 4 bits - 15 metatypes plus the err / uninitialized type
-#if defined _APPLE_ || defined __MACH__
+#ifdef _APPLE_ || defined __MACH__
 typedef enum : u32 {
-#else
-typedef enum {
-#endif
     bmterr = 0x00000000,
     bmtatm = 0x10000000, // atomic type with a given name
 
@@ -62,6 +59,20 @@ typedef enum {
     // inference metatypes? 11 - 15
 
 } bmetatypeid_t;
+#else
+    typedef u32 bmetatypeid_t;
+    #define bmterr 0x00000000
+    #define bmtatm 0x10000000
+    #define bmtint 0x20000000
+    #define bmtuni 0x30000000
+    #define bmttup 0x40000000
+    #define bmtstr 0x50000000
+    #define bmtrec 0x60000000
+    #define bmtseq 0x70000000
+    #define bmtmap 0x80000000
+    #define bmtfnc 0x90000000
+    #define bmtsvr 0xA0000000
+#endif
 
 
 // OM_BTYPEID_MASK is 20 bits - 1,048,576 types. We can possibly drop a bit from the DETAILS_ID allowing an extra
